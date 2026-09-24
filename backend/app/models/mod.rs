@@ -10,6 +10,7 @@ pub mod certificado_digital;
 pub mod cliente;
 pub mod documento_fiscal;
 pub mod empresa;
+pub mod empresa_usuario;
 pub mod evento_documento_fiscal;
 pub mod item_documento_fiscal;
 pub mod log_mensagem_retorno;
@@ -19,4 +20,5 @@ pub mod doido_job;
 pub mod storage_attachment;
 pub mod storage_blob;
 pub mod storage_variant_record;
+pub mod user;
 // @generated-models

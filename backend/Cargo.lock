@@ -1038,6 +1038,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa3fca11142c57150d80b61a9eb6bd6cdeb2d5866e36d5035a0647dadc74292"
 dependencies = [
  "clap",
+ "doido-auth",
  "doido-cable",
  "doido-cache",
  "doido-controller",
@@ -2684,7 +2685,9 @@ name = "quicknfe"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "doido",
+ "doido-auth",
  "doido-controller",
  "doido-core",
  "doido-jobs",

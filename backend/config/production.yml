@@ -24,3 +24,18 @@ storage:
       root: storage
     test:
       type: memory
+auth:
+  user_model: User
+  modules:
+    - database_authenticatable
+    - registerable
+    - recoverable
+    - rememberable
+    - validatable
+  strategies:
+    - cookie
+  two_factor:
+    enabled: false
+    issuer: QuickNFe
+  routes:
+    prefix: /users

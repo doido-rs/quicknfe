@@ -18,3 +18,18 @@ storage:
   drivers:
     test:
       type: memory
+auth:
+  user_model: User
+  modules:
+    - database_authenticatable
+    - registerable
+    - recoverable
+    - rememberable
+    - validatable
+  strategies:
+    - cookie
+  two_factor:
+    enabled: false
+    issuer: MyApp
+  routes:
+    prefix: /users

@@ -9,3 +9,4 @@ irregulars:
   - { singular: tributo_item, plural: tributos_item }
   - { singular: evento_documento_fiscal, plural: eventos_documento_fiscal }
   - { singular: log_mensagem_retorno, plural: logs_mensagens_retorno }
+  - { singular: empresa_usuario, plural: empresas_usuarios }
