@@ -44,3 +44,19 @@ auth:
     issuer: MyApp
   routes:
     prefix: /users
+middleware:
+  cors:
+    enabled: true
+    allow_credentials: true
+    allowed_origins:
+      - "http://localhost:5173"
+    allowed_methods:
+      - GET
+      - POST
+      - PATCH
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed_headers:
+      - Content-Type
+      - Accept

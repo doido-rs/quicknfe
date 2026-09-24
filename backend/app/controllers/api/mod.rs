@@ -1,0 +1,21 @@
+mod certificados_controller;
+mod clientes_controller;
+mod documentos_controller;
+mod empresa_controller;
+mod eventos_controller;
+mod itens_controller;
+mod logs_controller;
+mod lotes_controller;
+mod session_controller;
+mod tributos_controller;
+
+pub use certificados_controller::ApiCertificadosController;
+pub use clientes_controller::ApiClientesController;
+pub use documentos_controller::ApiDocumentosController;
+pub use empresa_controller::ApiEmpresaController;
+pub use eventos_controller::ApiEventosController;
+pub use itens_controller::ApiItensController;
+pub use logs_controller::ApiLogsController;
+pub use lotes_controller::ApiLotesController;
+pub use session_controller::ApiSessionController;
+pub use tributos_controller::ApiTributosController;

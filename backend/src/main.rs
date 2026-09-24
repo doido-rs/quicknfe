@@ -1,6 +1,9 @@
 #[path = "../app/auth/mod.rs"]
 mod auth;
 
+#[path = "../app/services/mod.rs"]
+mod services;
+
 #[path = "../app/controllers/mod.rs"]
 mod controllers;
 

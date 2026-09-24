@@ -8,7 +8,8 @@ use doido::controller::secret::key_base;
 use doido::controller::session::{EncryptedCookieSessionStore, Session};
 use doido::model::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use doido_auth::extractors::CurrentUser;
-use doido_auth::session::SESSION_COOKIE;
+use doido_auth::session::{SESSION_COOKIE, USER_ID_KEY};
+use doido_auth::AuthUser;
 
 use crate::models::empresa::Model as Empresa;
 use crate::models::empresa_usuario::{Column as MembroColumn, Entity as MembroEntity};
@@ -93,6 +94,49 @@ pub fn empresa_id_from_session(parts: &Parts) -> Option<i64> {
 
 pub fn set_empresa_in_session(session: &mut Session, empresa_id: i64) {
     session.set(EMPRESA_ID_KEY, empresa_id);
+}
+
+/// Usuário autenticado a partir da sessão do [`Context`].
+pub async fn user_from_ctx(ctx: &mut doido::controller::Context) -> Result<User, TenantError> {
+    let user_id: i64 = ctx
+        .session()
+        .get(USER_ID_KEY)
+        .ok_or(TenantError::Unauthorized)?;
+    let db = ctx.db();
+    User::find_by_id(db, user_id)
+        .await
+        .map_err(|e| TenantError::Internal(e.to_string()))?
+        .ok_or(TenantError::Unauthorized)
+}
+
+/// Empresa ativa + usuário a partir da sessão (equivalente a [`CurrentTenant`]).
+pub async fn tenant_from_ctx(
+    ctx: &mut doido::controller::Context,
+) -> Result<TenantAccess, TenantError> {
+    let user = user_from_ctx(ctx).await?;
+    let empresa_id = ctx
+        .session()
+        .get(EMPRESA_ID_KEY)
+        .ok_or(TenantError::NoTenantSelected)?;
+    let db = ctx.db();
+    let Some(papel) = membership(db, user.id, empresa_id)
+        .await
+        .map_err(|e| TenantError::Internal(e.to_string()))?
+    else {
+        return Err(TenantError::Forbidden);
+    };
+    let Some(empresa) = crate::models::empresa::Entity::find_by_id(empresa_id)
+        .one(db)
+        .await
+        .map_err(|e| TenantError::Internal(e.to_string()))?
+    else {
+        return Err(TenantError::Forbidden);
+    };
+    Ok(TenantAccess {
+        user,
+        empresa,
+        papel,
+    })
 }
 
 /// Exige usuário autenticado + empresa ativa na sessão com vínculo válido.
