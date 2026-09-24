@@ -1,0 +1,8 @@
+//! Model extensions for LoteTransmissao.
+#![allow(dead_code, unused_imports)]
+
+pub use super::_entities::lotes_transmissao::*;
+
+use doido::model::sea_orm::ActiveModelBehavior;
+
+impl ActiveModelBehavior for ActiveModel {}

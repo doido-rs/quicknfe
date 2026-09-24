@@ -6,4 +6,17 @@
 
 pub mod _entities;
 
+pub mod certificado_digital;
+pub mod cliente;
+pub mod documento_fiscal;
+pub mod empresa;
+pub mod evento_documento_fiscal;
+pub mod item_documento_fiscal;
+pub mod log_mensagem_retorno;
+pub mod lote_transmissao;
+pub mod tributo_item;
+pub mod doido_job;
+pub mod storage_attachment;
+pub mod storage_blob;
+pub mod storage_variant_record;
 // @generated-models

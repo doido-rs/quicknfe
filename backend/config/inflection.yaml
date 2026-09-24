@@ -1,29 +1,11 @@
-# Custom inflection rules for this application.
-#
-# These layer on top of Doido's default English rules and are used wherever the
-# framework pluralizes/singularizes names — most visibly when generators derive
-# a table name from a model (e.g. `doido generate model Person` → `people`).
-#
-# Every section is optional. Uncomment and edit as needed.
-
-# Irregular singular/plural pairs.
-# irregulars:
-#   - { singular: goose, plural: geese }
-#   - { singular: person, plural: people }
-
-# Words that are the same in singular and plural.
-# uncountables:
-#   - bitcoin
-#   - equipment
-
-# Acronyms kept fully uppercase when camelizing (e.g. `api_client` → `APIClient`).
-# acronyms:
-#   - API
-#   - HTTP
-
-# Regex-based rules. `pattern` supports captures referenced as `${1}` in
-# `replacement`. Later rules take priority over earlier ones and the defaults.
-# plurals:
-#   - { pattern: "(quiz)$", replacement: "${1}zes" }
-# singulars:
-#   - { pattern: "(quiz)zes$", replacement: "${1}" }
+# Regras para nomes de tabelas do domínio fiscal (português).
+irregulars:
+  - { singular: empresa, plural: empresas }
+  - { singular: certificado_digital, plural: certificados_digitais }
+  - { singular: cliente, plural: clientes }
+  - { singular: lote_transmissao, plural: lotes_transmissao }
+  - { singular: documento_fiscal, plural: documentos_fiscais }
+  - { singular: item_documento_fiscal, plural: itens_documento_fiscal }
+  - { singular: tributo_item, plural: tributos_item }
+  - { singular: evento_documento_fiscal, plural: eventos_documento_fiscal }
+  - { singular: log_mensagem_retorno, plural: logs_mensagens_retorno }

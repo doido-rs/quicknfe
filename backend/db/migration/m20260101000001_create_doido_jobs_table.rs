@@ -12,15 +12,14 @@ impl MigrationName for Migration {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // `doido_jobs` uses a TEXT primary key (job id), not the implicit bigint `id`
-        // that `create_table` adds, so the schema is emitted as raw SQL.
+        // String PK and indexed columns use VARCHAR — MySQL cannot index TEXT without a prefix.
         manager
             .get_connection()
             .execute_unprepared(
                 "CREATE TABLE IF NOT EXISTS doido_jobs (
-                    id TEXT PRIMARY KEY,
-                    queue TEXT NOT NULL,
-                    status TEXT NOT NULL,
+                    id VARCHAR(191) PRIMARY KEY,
+                    queue VARCHAR(191) NOT NULL,
+                    status VARCHAR(64) NOT NULL,
                     priority INTEGER NOT NULL DEFAULT 0,
                     run_at BIGINT NOT NULL,
                     locked_at BIGINT,
@@ -31,7 +30,7 @@ impl MigrationTrait for Migration {
         manager
             .get_connection()
             .execute_unprepared(
-                "CREATE INDEX IF NOT EXISTS idx_doido_jobs_reserve
+                "CREATE INDEX idx_doido_jobs_reserve
                     ON doido_jobs (queue, status, run_at)",
             )
             .await?;
