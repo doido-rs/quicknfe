@@ -17,6 +17,32 @@ impl From<TenantError> for ApiError {
     }
 }
 
+pub async fn require_tenant(
+    ctx: &mut doido::controller::Context,
+) -> ApiResponse<crate::auth::tenant::TenantAccess> {
+    to_response(crate::auth::tenant::tenant_from_ctx(ctx).await)
+}
+
+pub async fn require_user(
+    ctx: &mut doido::controller::Context,
+) -> ApiResponse<crate::models::user::Model> {
+    to_response(crate::auth::tenant::user_from_ctx(ctx).await)
+}
+
+pub async fn json_body<T: serde::de::DeserializeOwned>(
+    ctx: &mut doido::controller::Context,
+) -> ApiResponse<T> {
+    to_response(
+        ctx.body_json()
+            .await
+            .map_err(|e| ApiError::Validation(e.to_string())),
+    )
+}
+
+pub fn db<T, E: std::fmt::Display>(result: Result<T, E>) -> ApiResponse<T> {
+    to_response(result.map_err(|e| ApiError::Internal(e.to_string())))
+}
+
 impl std::fmt::Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -50,10 +76,25 @@ impl IntoResponse for ApiError {
     }
 }
 
+pub fn id_param(ctx: &doido::controller::Context, name: &str) -> ApiResponse<i64> {
+    to_response(parse_id(ctx, name))
+}
+
 pub fn parse_id(ctx: &doido::controller::Context, name: &str) -> Result<i64, ApiError> {
     ctx.param(name)
         .and_then(|v| v.parse().ok())
         .ok_or(ApiError::NotFound)
+}
+
+/// Early-return helper for handlers that return [`Response`](doido::controller::Response).
+#[macro_export]
+macro_rules! api {
+    ($expr:expr) => {
+        match $expr {
+            Ok(__api_ok) => __api_ok,
+            Err(__api_err) => return __api_err,
+        }
+    };
 }
 
 pub trait ApiErrExt<T> {
@@ -63,11 +104,5 @@ pub trait ApiErrExt<T> {
 impl<T, E: Into<ApiError>> ApiErrExt<T> for Result<T, E> {
     fn api(self) -> ApiResponse<T> {
         self.map_err(|e| e.into().into_response())
-    }
-}
-
-impl<T> ApiErrExt<T> for Result<T, crate::auth::tenant::TenantError> {
-    fn api(self) -> ApiResponse<T> {
-        self.map_err(|e| e.into_response())
     }
 }

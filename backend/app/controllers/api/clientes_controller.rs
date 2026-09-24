@@ -2,9 +2,8 @@ use doido::controller::controller;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
-use crate::auth::tenant;
 use crate::models::cliente::{ActiveModel as ClienteActive, Column as ClienteColumn, Entity as ClienteEntity};
-use crate::services::api_error::{parse_id, ApiErrExt, ApiError};
+use crate::services::api_error::{db, id_param, json_body, require_tenant};
 use crate::services::dto::ClienteDto;
 use crate::services::tenant_scope;
 
@@ -27,15 +26,14 @@ pub struct ApiClientesController;
 
 #[controller]
 impl ApiClientesController {
-    pub async fn index(
-        mut ctx: doido::controller::Context,
-    ) -> doido::controller::Response {
-        let access = tenant::tenant_from_ctx(ctx).await.api()?;
-        let rows = ClienteEntity::find()
-            .filter(ClienteColumn::EmpresaId.eq(access.empresa.id))
-            .all(ctx.db())
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string())).api()?;
+    pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let rows = crate::api!(db(
+            ClienteEntity::find()
+                .filter(ClienteColumn::EmpresaId.eq(access.empresa.id))
+                .all(ctx.db())
+                .await,
+        ));
         ctx.json(
             rows.into_iter()
                 .map(ClienteDto::from)
@@ -43,55 +41,43 @@ impl ApiClientesController {
         )
     }
 
-    pub async fn show(
-        mut ctx: doido::controller::Context,
-    ) -> doido::controller::Response {
-        let access = tenant::tenant_from_ctx(ctx).await.api()?;
-        let id = parse_id(&ctx, "id").api()?;
-        let row = tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await.api()?;
+    pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        let row = crate::api!(db(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
         ctx.json(ClienteDto::from(row))
     }
 
-    pub async fn create(
-        mut ctx: doido::controller::Context,
-    ) -> doido::controller::Response {
-        let access = tenant::tenant_from_ctx(ctx).await.api()?;
-        let form: ClienteForm = ctx
-            .body_json()
-            .await
-            .map_err(|e| ApiError::Validation(e.to_string())).api()?;
-        let record = ClienteActive {
-            empresa_id: Set(access.empresa.id),
-            cpf_cnpj: Set(form.cpf_cnpj),
-            razao_social: Set(form.razao_social),
-            inscricao_municipal: Set(form.inscricao_municipal),
-            inscricao_estadual: Set(form.inscricao_estadual),
-            logradouro: Set(form.logradouro),
-            numero: Set(form.numero),
-            bairro: Set(form.bairro),
-            codigo_municipio_ibge: Set(form.codigo_municipio_ibge),
-            uf: Set(form.uf),
-            email: Set(form.email),
-            telefone: Set(form.telefone),
-            ..Default::default()
-        };
-        let created = record
+    pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let form: ClienteForm = crate::api!(json_body(ctx).await);
+        let created = crate::api!(db(
+            ClienteActive {
+                empresa_id: Set(access.empresa.id),
+                cpf_cnpj: Set(form.cpf_cnpj),
+                razao_social: Set(form.razao_social),
+                inscricao_municipal: Set(form.inscricao_municipal),
+                inscricao_estadual: Set(form.inscricao_estadual),
+                logradouro: Set(form.logradouro),
+                numero: Set(form.numero),
+                bairro: Set(form.bairro),
+                codigo_municipio_ibge: Set(form.codigo_municipio_ibge),
+                uf: Set(form.uf),
+                email: Set(form.email),
+                telefone: Set(form.telefone),
+                ..Default::default()
+            }
             .insert(ctx.db())
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string())).api()?;
+            .await,
+        ));
         ctx.json(ClienteDto::from(created))
     }
 
-    pub async fn update(
-        mut ctx: doido::controller::Context,
-    ) -> doido::controller::Response {
-        let access = tenant::tenant_from_ctx(ctx).await.api()?;
-        let id = parse_id(&ctx, "id").api()?;
-        let existing = tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await.api()?;
-        let form: ClienteForm = ctx
-            .body_json()
-            .await
-            .map_err(|e| ApiError::Validation(e.to_string())).api()?;
+    pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        let existing = crate::api!(db(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let form: ClienteForm = crate::api!(json_body(ctx).await);
         let mut record: ClienteActive = existing.into();
         record.cpf_cnpj = Set(form.cpf_cnpj);
         record.razao_social = Set(form.razao_social);
@@ -104,23 +90,15 @@ impl ApiClientesController {
         record.uf = Set(form.uf);
         record.email = Set(form.email);
         record.telefone = Set(form.telefone);
-        let updated = record
-            .update(ctx.db())
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string())).api()?;
+        let updated = crate::api!(db(record.update(ctx.db()).await));
         ctx.json(ClienteDto::from(updated))
     }
 
-    pub async fn destroy(
-        mut ctx: doido::controller::Context,
-    ) -> doido::controller::Response {
-        let access = tenant::tenant_from_ctx(ctx).await.api()?;
-        let id = parse_id(&ctx, "id").api()?;
-        tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await.api()?;
-        ClienteEntity::delete_by_id(id)
-            .exec(ctx.db())
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string())).api()?;
+    pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        crate::api!(db(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(db(ClienteEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }
 }

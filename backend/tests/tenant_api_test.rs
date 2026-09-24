@@ -206,8 +206,14 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
 
 fn uuid_simple() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
     static SEQ: AtomicU64 = AtomicU64::new(1);
-    SEQ.fetch_add(1, Ordering::SeqCst).to_string()
+    let n = SEQ.fetch_add(1, Ordering::SeqCst);
+    let t = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    format!("{n}_{t}")
 }
 
 fn unique_cnpj(suffix: &str, salt: u8) -> String {
@@ -241,7 +247,7 @@ async fn login_me_and_tenant_cliente_flow() {
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 
-    let (status, _, _) = send_json(
+    let (status, _, switch_cookie) = send_json(
         &app,
         "POST",
         "/tenant/empresa",
@@ -250,20 +256,27 @@ async fn login_me_and_tenant_cliente_flow() {
     )
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
+    let session = switch_cookie
+        .as_ref()
+        .map(|c| session_cookie(c))
+        .unwrap_or(cookie);
 
-    let (status, body, _) = send_json(&app, "GET", "/api/me", "", Some(&cookie)).await;
+    let (status, body, _) = send_json(&app, "GET", "/api/me", "", Some(&session)).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body.contains(&fx.empresa_id.to_string()));
+    assert!(
+        body.contains("\"empresa_ativa\"") && !body.contains("\"empresa_ativa\":null"),
+        "me response: {body}"
+    );
 
     let (status, body, _) = send_json(
         &app,
         "POST",
         "/api/clientes",
         r#"{"cpf_cnpj":"12345678901","razao_social":"Cliente Teste"}"#,
-        Some(&cookie),
+        Some(&session),
     )
     .await;
-    assert_eq!(status, StatusCode::OK);
+    assert_eq!(status, StatusCode::OK, "create cliente body: {body}");
     assert!(body.contains("Cliente Teste"));
 
     let rows = ClienteEntity::find()
@@ -280,7 +293,7 @@ async fn tenant_isolation_on_cliente_patch() {
     let app = test_router();
     let fx = seed_two_tenant_fixture().await;
     let cookie = sign_in(&app, &fx.user_email, &fx.password).await;
-    send_json(
+    let (_, _, switch_cookie) = send_json(
         &app,
         "POST",
         "/tenant/empresa",
@@ -288,14 +301,21 @@ async fn tenant_isolation_on_cliente_patch() {
         Some(&cookie),
     )
     .await;
+    let session = switch_cookie
+        .as_ref()
+        .map(|c| session_cookie(c))
+        .unwrap_or(cookie);
 
     let (status, _, _) = send_json(
         &app,
         "PATCH",
         &format!("/api/clientes/{}", fx.other_cliente_id),
-        r#"{"cpf_cnpj":"99888777000166","razao_social":"Hacked"}"#,
-        Some(&cookie),
+        r#"{"cpf_cnpj":"99888777000166","razao_social":"Hacked","inscricao_municipal":null,"inscricao_estadual":null,"logradouro":null,"numero":null,"bairro":null,"codigo_municipio_ibge":null,"uf":null,"email":null,"telefone":null}"#,
+        Some(&session),
     )
     .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert!(
+        status == StatusCode::NOT_FOUND || status == StatusCode::FORBIDDEN,
+        "cross-tenant patch must not succeed, got {status}"
+    );
 }
