@@ -1,0 +1,31 @@
+server:
+  bind: 0.0.0.0
+  port: 3000
+database:
+  url: '{{ get_env(name="DATABASE_URL", default="mysql://root:password@localhost:3306/quicknfe_development") }}'
+logger:
+  # Base application log level: trace, debug, info, warn, or error.
+  # Set `directives` for a full tracing EnvFilter string instead, e.g.
+  # `directives: info,quicknfe=debug,sqlx=warn`. RUST_LOG overrides both.
+  level: debug
+  # Output renderer: compact (default) | verbose (pretty, all fields) |
+  # json_response (one JSON line per response, with latency_ms).
+  format: verbose
+cache:
+  type: memory
+jobs:
+  type: db
+  queues: [default]
+  concurrency: 5
+storage:
+  driver: local
+  drivers:
+    local:
+      type: disk
+      root: storage
+    test:
+      type: memory
+mailer:
+  type: smtp
+  smtp:
+    address: localhost:1025

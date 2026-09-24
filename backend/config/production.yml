@@ -1,0 +1,26 @@
+server:
+  bind: 0.0.0.0
+  port: 8080
+database:
+  # `DATABASE_URL` at deploy time (via get_env); default is a CHANGE_ME placeholder.
+  url: '{{ get_env(name="DATABASE_URL", default="mysql://root:CHANGE_ME@localhost:3306/quicknfe_production") }}'
+logger:
+  # Quieter logging in production. Override at deploy time with RUST_LOG.
+  level: info
+  # Structured access logs: one JSON line per response (status, latency_ms,
+  # request_id). Override at deploy time with RUST_LOG if you need more.
+  format: json_response
+cache:
+  type: memory
+jobs:
+  type: db
+  queues: [default]
+  concurrency: 5
+storage:
+  driver: local
+  drivers:
+    local:
+      type: disk
+      root: storage
+    test:
+      type: memory

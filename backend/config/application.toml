@@ -1,0 +1,5 @@
+[app]
+name = "quicknfe"
+
+[database]
+url = "mysql://root:password@localhost:3306/quicknfe_development"

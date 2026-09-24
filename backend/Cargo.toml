@@ -1,0 +1,34 @@
+[package]
+name = "quicknfe"
+description = "Starter Doido web application: Axum server, routed hello endpoint, templating scaffolding."
+version = "0.1.0"
+edition = "2021"
+# Default binary when running `cargo run` from the app root.
+# Equivalent to `cargo run --bin quicknfe` / `cargo doido`.
+default-run = "quicknfe"
+
+# Migrations live in `db/migration/mod.rs` and are compiled into this binary.
+# `doido db migrate` runs the `Migrator` in-process (registered via `.migrator`
+# in `src/main.rs`).
+
+# Standalone workspace root so the app can live inside another checkout
+# (e.g. `target/e2e/apps/`) without joining that parent workspace.
+[workspace]
+
+[dependencies]
+doido = { version = "0.0.30", default-features = false, features = ["mysql"] }
+doido-core = { version = "0.0.30" }
+doido-controller = { version = "0.0.30", features = ["mysql"] }
+doido-model = { version = "0.0.30", features = ["mysql"] }
+doido-jobs = { version = "0.0.30", features = ["jobs-db", "mysql"] }
+doido-mailer = { version = "0.0.30" }
+async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", features = ["runtime-tokio", "mysql"] }
+tokio = { version = "1", features = ["full"] }
+dotenvy = "0.15"
+
+[dev-dependencies]
+# Used by generated scaffold controller request tests (Router::oneshot).
+tower = { version = "0.5", features = ["util"] }
