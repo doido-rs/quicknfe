@@ -71,6 +71,8 @@ pub fn router() -> axum::Router {
         delete!("/api/logs-retorno/{id}", ApiLogsController::destroy);
     };
 
+    let api = api.merge(crate::api_docs::router());
+
     if crate::mcp::enabled() {
         crate::mcp::McpConfig::init();
         let api_for_mcp = api.clone();

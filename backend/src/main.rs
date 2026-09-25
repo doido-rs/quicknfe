@@ -34,6 +34,9 @@ mod oauth;
 #[path = "../app/mcp/mod.rs"]
 mod mcp;
 
+#[path = "../app/api_docs/mod.rs"]
+mod api_docs;
+
 #[path = "../config/routes.rs"]
 mod routes;
 

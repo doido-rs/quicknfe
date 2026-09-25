@@ -16,6 +16,7 @@ export default defineConfig({
       '/api': 'http://localhost:3000',
       '/users': 'http://localhost:3000',
       '/tenant': 'http://localhost:3000',
+      '/api-docs': 'http://localhost:3000',
     },
   },
   test: {

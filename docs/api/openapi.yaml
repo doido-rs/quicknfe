@@ -1,0 +1,1309 @@
+openapi: 3.0.3
+info:
+  title: QuickNFe API
+  description: |
+    REST API for QuickNFe (multi-tenant fiscal documents). Session authentication via Doido
+    encrypted cookie after `POST /users/sign_in`. Tenant-scoped routes require an active
+    empresa in session (`POST /tenant/empresa`).
+
+    **Swagger UI:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+    **MCP (optional):** Streamable HTTP at `/mcp` with OAuth 2.1 — see [docs/guides/mcp.md](../guides/mcp.md).
+  version: 0.1.0
+  contact:
+    name: QuickNFe
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: http://127.0.0.1:3000
+    description: Local (127.0.0.1)
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Tenant
+  - name: Session
+  - name: Empresa
+  - name: Clientes
+  - name: Certificados
+  - name: Lotes
+  - name: Documentos
+  - name: Itens
+  - name: Tributos
+  - name: Eventos
+  - name: LogsRetorno
+  - name: MCP
+  - name: OAuth
+
+paths:
+  /:
+    get:
+      tags: [Health]
+      summary: Health / hello
+      operationId: hello
+      responses:
+        '200':
+          description: JSON greeting
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /users/sign_in:
+    post:
+      tags: [Auth]
+      summary: Sign in (session cookie)
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: Authenticated user
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/sign_up:
+    post:
+      tags: [Auth]
+      summary: Register user
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '200':
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+
+  /users/sign_out:
+    delete:
+      tags: [Auth]
+      summary: Sign out
+      operationId: signOut
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Signed out
+
+  /tenant/empresa:
+    post:
+      tags: [Tenant]
+      summary: Select active empresa (tenant)
+      operationId: switchEmpresa
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchTenantRequest'
+      responses:
+        '200':
+          description: Tenant switched
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/me:
+    get:
+      tags: [Session]
+      summary: Current user and tenant context
+      operationId: getMe
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          description: Session profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+
+  /api/empresa:
+    get:
+      tags: [Empresa]
+      summary: Active empresa
+      operationId: getEmpresa
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmpresaPublic'
+    patch:
+      tags: [Empresa]
+      summary: Update active empresa
+      operationId: patchEmpresa
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmpresaForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmpresaPublic'
+
+  /api/clientes:
+    get:
+      tags: [Clientes]
+      summary: List clientes
+      operationId: listClientes
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClienteDto'
+    post:
+      tags: [Clientes]
+      summary: Create cliente
+      operationId: createCliente
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteDto'
+
+  /api/clientes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Clientes]
+      summary: Get cliente
+      operationId: getCliente
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteDto'
+    patch:
+      tags: [Clientes]
+      summary: Update cliente
+      operationId: updateCliente
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteDto'
+    delete:
+      tags: [Clientes]
+      summary: Delete cliente
+      operationId: deleteCliente
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /api/certificados:
+    get:
+      tags: [Certificados]
+      summary: List certificados
+      operationId: listCertificados
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CertificadoDto'
+    post:
+      tags: [Certificados]
+      summary: Create certificado
+      operationId: createCertificado
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificadoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificadoDto'
+
+  /api/certificados/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Certificados]
+      operationId: getCertificado
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificadoDto'
+    patch:
+      tags: [Certificados]
+      operationId: updateCertificado
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificadoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificadoDto'
+    delete:
+      tags: [Certificados]
+      operationId: deleteCertificado
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /api/lotes:
+    get:
+      tags: [Lotes]
+      operationId: listLotes
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoteDto'
+    post:
+      tags: [Lotes]
+      operationId: createLote
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoteForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoteDto'
+
+  /api/lotes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Lotes]
+      operationId: getLote
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoteDto'
+    patch:
+      tags: [Lotes]
+      operationId: updateLote
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoteForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoteDto'
+    delete:
+      tags: [Lotes]
+      operationId: deleteLote
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /api/documentos:
+    get:
+      tags: [Documentos]
+      operationId: listDocumentos
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentoListDto'
+    post:
+      tags: [Documentos]
+      operationId: createDocumento
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoDto'
+
+  /api/documentos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Documentos]
+      operationId: getDocumento
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoDto'
+    patch:
+      tags: [Documentos]
+      operationId: updateDocumento
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoDto'
+    delete:
+      tags: [Documentos]
+      operationId: deleteDocumento
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /api/documentos/{id}/transmitir:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      tags: [Documentos]
+      summary: Transmit documento (NFSe)
+      operationId: transmitirDocumento
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransmitirForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransmitirDocumentoResponse'
+
+  /api/documentos/{doc_id}/itens:
+    parameters:
+      - $ref: '#/components/parameters/DocIdPath'
+    get:
+      tags: [Itens]
+      operationId: listItens
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemDto'
+    post:
+      tags: [Itens]
+      operationId: createItem
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemDto'
+
+  /api/documentos/{doc_id}/itens/{id}:
+    parameters:
+      - $ref: '#/components/parameters/DocIdPath'
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Itens]
+      operationId: getItem
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemDto'
+    patch:
+      tags: [Itens]
+      operationId: updateItem
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemDto'
+    delete:
+      tags: [Itens]
+      operationId: deleteItem
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /api/itens/{item_id}/tributos:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPath'
+    get:
+      tags: [Tributos]
+      operationId: listTributos
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TributoDto'
+    post:
+      tags: [Tributos]
+      operationId: createTributo
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TributoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TributoDto'
+
+  /api/itens/{item_id}/tributos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPath'
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Tributos]
+      operationId: getTributo
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TributoDto'
+    patch:
+      tags: [Tributos]
+      operationId: updateTributo
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TributoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TributoDto'
+    delete:
+      tags: [Tributos]
+      operationId: deleteTributo
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /api/documentos/{doc_id}/eventos:
+    parameters:
+      - $ref: '#/components/parameters/DocIdPath'
+    get:
+      tags: [Eventos]
+      operationId: listEventos
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventoDto'
+    post:
+      tags: [Eventos]
+      operationId: createEvento
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoDto'
+
+  /api/documentos/{doc_id}/eventos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/DocIdPath'
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Eventos]
+      operationId: getEvento
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoDto'
+    patch:
+      tags: [Eventos]
+      operationId: updateEvento
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoDto'
+    delete:
+      tags: [Eventos]
+      operationId: deleteEvento
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /api/logs-retorno:
+    get:
+      tags: [LogsRetorno]
+      operationId: listLogsRetorno
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogRetornoDto'
+
+  /api/logs-retorno/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [LogsRetorno]
+      operationId: getLogRetorno
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogRetornoDto'
+    patch:
+      tags: [LogsRetorno]
+      operationId: updateLogRetorno
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogRetornoDto'
+    delete:
+      tags: [LogsRetorno]
+      operationId: deleteLogRetorno
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
+  /mcp:
+    post:
+      tags: [MCP]
+      summary: MCP Streamable HTTP (Bearer OAuth)
+      description: Model Context Protocol endpoint when MCP_ENABLED. Requires OAuth access token.
+      security:
+        - bearerMcp: []
+      responses:
+        '401':
+          description: Unauthorized — OAuth discovery via WWW-Authenticate
+
+  /.well-known/oauth-protected-resource:
+    get:
+      tags: [OAuth]
+      summary: OAuth protected resource metadata (RFC 9728)
+      responses:
+        '200':
+          description: PRM JSON
+
+  /.well-known/oauth-authorization-server:
+    get:
+      tags: [OAuth]
+      summary: OAuth authorization server metadata (RFC 8414)
+      responses:
+        '200':
+          description: AS metadata JSON
+
+  /oauth/authorize:
+    get:
+      tags: [OAuth]
+      summary: Browser authorization (login)
+      responses:
+        '200':
+          description: HTML login form
+    post:
+      tags: [OAuth]
+      summary: Submit login and consent
+      responses:
+        '302':
+          description: Redirect with authorization code
+
+  /oauth/token:
+    post:
+      tags: [OAuth]
+      summary: Token endpoint (PKCE)
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                code:
+                  type: string
+                redirect_uri:
+                  type: string
+                client_id:
+                  type: string
+                code_verifier:
+                  type: string
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token response
+
+  /oauth/register:
+    post:
+      tags: [OAuth]
+      summary: Dynamic client registration (dev)
+      responses:
+        '200':
+          description: client_id and redirect_uris
+
+components:
+  securitySchemes:
+    cookieSession:
+      type: apiKey
+      in: cookie
+      name: _doido_session
+      description: |
+        Encrypted session cookie set by `POST /users/sign_in`. In Swagger UI, sign in first
+        (same origin) so the browser stores the cookie, then call tenant-scoped routes.
+    bearerMcp:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OAuth access token for MCP (not used for REST /api/*).
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    DocIdPath:
+      name: doc_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ItemIdPath:
+      name: item_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    Unauthorized:
+      description: Not authenticated
+    Forbidden:
+      description: Forbidden or no tenant selected
+
+  schemas:
+    SignInRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    SignUpRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    SwitchTenantRequest:
+      type: object
+      required: [empresa_id]
+      properties:
+        empresa_id:
+          type: integer
+          format: int64
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    EmpresaPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+        cpf_cnpj:
+          type: string
+        razao_social:
+          type: string
+        inscricao_municipal:
+          type: string
+          nullable: true
+        inscricao_estadual:
+          type: string
+          nullable: true
+        regime_tributario:
+          type: integer
+        codigo_municipio_ibge:
+          type: string
+        uf:
+          type: string
+        criado_em:
+          type: string
+          format: date-time
+    EmpresaMembership:
+      type: object
+      properties:
+        empresa:
+          $ref: '#/components/schemas/EmpresaPublic'
+        papel:
+          type: string
+    MeResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserPublic'
+        empresas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmpresaMembership'
+        empresa_ativa:
+          $ref: '#/components/schemas/EmpresaPublic'
+          nullable: true
+        papel:
+          type: string
+          nullable: true
+    EmpresaForm:
+      type: object
+      properties:
+        cpf_cnpj:
+          type: string
+        razao_social:
+          type: string
+        inscricao_municipal:
+          type: string
+        inscricao_estadual:
+          type: string
+        regime_tributario:
+          type: integer
+        codigo_municipio_ibge:
+          type: string
+        uf:
+          type: string
+    ClienteForm:
+      type: object
+      required: [cpf_cnpj, razao_social]
+      properties:
+        cpf_cnpj:
+          type: string
+        razao_social:
+          type: string
+        inscricao_municipal:
+          type: string
+        inscricao_estadual:
+          type: string
+        logradouro:
+          type: string
+        numero:
+          type: string
+        bairro:
+          type: string
+        codigo_municipio_ibge:
+          type: string
+        uf:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+    ClienteDto:
+      allOf:
+        - $ref: '#/components/schemas/ClienteForm'
+        - type: object
+          properties:
+            id:
+              type: integer
+            empresa_id:
+              type: integer
+    CertificadoForm:
+      type: object
+      required: [tipo, data_validade]
+      properties:
+        tipo:
+          type: string
+        caminho_arquivo:
+          type: string
+        senha:
+          type: string
+          description: Plain password on create/update only
+        data_validade:
+          type: string
+          format: date-time
+    CertificadoDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        empresa_id:
+          type: integer
+        tipo:
+          type: string
+        caminho_arquivo:
+          type: string
+        data_validade:
+          type: string
+          format: date-time
+        criado_em:
+          type: string
+          format: date-time
+    LoteForm:
+      type: object
+      required: [numero_lote, ambiente, status_lote]
+      properties:
+        numero_lote:
+          type: integer
+        protocolo_recebimento:
+          type: string
+        ambiente:
+          type: integer
+        status_lote:
+          type: string
+        data_recebimento:
+          type: string
+          format: date-time
+    LoteDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        empresa_id:
+          type: integer
+        numero_lote:
+          type: integer
+        protocolo_recebimento:
+          type: string
+        ambiente:
+          type: integer
+        status_lote:
+          type: string
+        data_recebimento:
+          type: string
+          format: date-time
+    DocumentoForm:
+      type: object
+      required:
+        - modelo
+        - serie
+        - numero_documento
+        - ambiente
+        - tipo_emissao
+        - status
+        - data_emissao
+        - codigo_municipio_emissao
+        - valor_total_servicos_produtos
+        - valor_liquido
+      properties:
+        cliente_id:
+          type: integer
+          nullable: true
+        lote_id:
+          type: integer
+          nullable: true
+        modelo:
+          type: string
+        serie:
+          type: string
+        numero_documento:
+          type: integer
+        chave_acesso:
+          type: string
+        codigo_verificacao:
+          type: string
+        ambiente:
+          type: integer
+        tipo_emissao:
+          type: integer
+        status:
+          type: string
+        data_emissao:
+          type: string
+          format: date-time
+        data_competencia:
+          type: string
+          format: date
+        codigo_municipio_emissao:
+          type: string
+        protocolo_autorizacao:
+          type: string
+        valor_total_servicos_produtos:
+          type: number
+        valor_liquido:
+          type: number
+        xml_assinado:
+          type: string
+        xml_processado:
+          type: string
+    DocumentoListDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        empresa_id:
+          type: integer
+        cliente_id:
+          type: integer
+        lote_id:
+          type: integer
+        modelo:
+          type: string
+        serie:
+          type: string
+        numero_documento:
+          type: integer
+        status:
+          type: string
+        data_emissao:
+          type: string
+          format: date-time
+        valor_total_servicos_produtos:
+          type: number
+        valor_liquido:
+          type: number
+    DocumentoDto:
+      allOf:
+        - $ref: '#/components/schemas/DocumentoListDto'
+        - type: object
+          properties:
+            xml_assinado:
+              type: string
+            xml_processado:
+              type: string
+    TransmitirForm:
+      type: object
+      properties:
+        certificado_id:
+          type: integer
+          nullable: true
+    TransmitirDocumentoResponse:
+      type: object
+      properties:
+        sucesso:
+          type: boolean
+        http_status:
+          type: integer
+        id_dps:
+          type: string
+        chave_acesso:
+          type: string
+        nfse_xml:
+          type: string
+        documento:
+          $ref: '#/components/schemas/DocumentoDto'
+    ItemForm:
+      type: object
+      required: [numero_item, descricao, quantidade, valor_unitario, valor_total_bruto]
+      properties:
+        numero_item:
+          type: integer
+        descricao:
+          type: string
+        codigo_ncm:
+          type: string
+        codigo_tributacao_nacional:
+          type: string
+        quantidade:
+          type: number
+        valor_unitario:
+          type: number
+        valor_total_bruto:
+          type: number
+        valor_desconto:
+          type: number
+    ItemDto:
+      allOf:
+        - $ref: '#/components/schemas/ItemForm'
+        - type: object
+          properties:
+            id:
+              type: integer
+            documento_fiscal_id:
+              type: integer
+    TributoForm:
+      type: object
+      required: [tipo_imposto]
+      properties:
+        tipo_imposto:
+          type: string
+        cst_csosn:
+          type: string
+        base_calculo:
+          type: number
+        aliquota:
+          type: number
+        valor_imposto:
+          type: number
+        iss_retido:
+          type: integer
+        classificacao_trib_ibscbs:
+          type: string
+        aliquota_ibs:
+          type: number
+        valor_ibs:
+          type: number
+        aliquota_cbs:
+          type: number
+        valor_cbs:
+          type: number
+    TributoDto:
+      allOf:
+        - $ref: '#/components/schemas/TributoForm'
+        - type: object
+          properties:
+            id:
+              type: integer
+            item_id:
+              type: integer
+    EventoForm:
+      type: object
+      required: [tipo_evento, sequencial_evento, data_hora_evento, ambiente]
+      properties:
+        tipo_evento:
+          type: string
+        sequencial_evento:
+          type: integer
+        protocolo_evento:
+          type: string
+        descricao_motivo:
+          type: string
+        data_hora_evento:
+          type: string
+          format: date-time
+        ambiente:
+          type: integer
+        xml_evento:
+          type: string
+    EventoDto:
+      allOf:
+        - $ref: '#/components/schemas/EventoForm'
+        - type: object
+          properties:
+            id:
+              type: integer
+            documento_fiscal_id:
+              type: integer
+    LogForm:
+      type: object
+      required: [codigo_erro, mensagem_retorno, data_registro]
+      properties:
+        documento_fiscal_id:
+          type: integer
+        lote_id:
+          type: integer
+        codigo_erro:
+          type: string
+        mensagem_retorno:
+          type: string
+        correcao_sugerida:
+          type: string
+        data_registro:
+          type: string
+          format: date-time
+    LogRetornoDto:
+      allOf:
+        - $ref: '#/components/schemas/LogForm'
+        - type: object
+          properties:
+            id:
+              type: integer

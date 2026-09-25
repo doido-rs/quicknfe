@@ -3,6 +3,8 @@
 A web application built with the [Doido](https://github.com/) framework —
 Rails-inspired, Rust-powered (axum + sea-orm).
 
+**Documentation:** [../docs/README.md](../docs/README.md) · **Swagger UI:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs) (with server running)
+
 ## Requirements
 
 - Rust — the pinned version is in `mise.toml` (run `mise install`)

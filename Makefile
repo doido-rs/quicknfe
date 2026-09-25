@@ -12,7 +12,7 @@ BUN           ?= bun
 COMPOSE       := docker compose
 
 .PHONY: help setup install up down db-create db-migrate db-seed db-setup \
-	dev dev-backend dev-frontend build \
+	dev dev-backend dev-frontend build docs \
 	lint lint-frontend lint-backend fix fix-frontend fix-backend lint-fix \
 	test test-frontend test-backend test-integration test-all ci \
 	docker-build deploy upload push
@@ -55,6 +55,9 @@ dev-backend: ## API Doido em http://localhost:3000
 
 dev-frontend: ## Vite em http://localhost:5173 (proxy /api → backend)
 	cd $(FRONTEND_DIR) && $(BUN) run dev
+
+docs: ## Abre documentação (Swagger requer backend :3000)
+	@printf "\nDocs index: docs/README.md\nSwagger UI: http://localhost:3000/api-docs\nOpenAPI: docs/api/openapi.yaml\n\n"
 
 build: ## Build produção (Rust release + frontend estático)
 	cd $(BACKEND_DIR) && cargo build --release
