@@ -7,6 +7,8 @@ SPA React + Vite para gestão multi-empresa via API do backend Doido.
 - [Bun](https://bun.sh) 1.1+
 - Backend em `http://localhost:3000` (ver [backend/README.md](../backend/README.md))
 
+Atalhos na raiz do repo: `make setup`, `make dev`, `make lint`, `make fix`, `make test` — ver [Makefile](../Makefile).
+
 ## Desenvolvimento
 
 ```bash

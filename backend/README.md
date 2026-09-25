@@ -10,6 +10,17 @@ Rails-inspired, Rust-powered (axum + sea-orm).
 
 ## Getting started
 
+Na raiz do repositório, o [Makefile](../Makefile) agrupa setup local, lint, testes e deploy:
+
+```bash
+make setup    # Docker MySQL + bun install + migrate + seed
+make dev      # backend :3000 + frontend :5173
+make lint     # oxlint + rustfmt/clippy
+make fix      # auto-fix lint
+make test-all
+make deploy   # Kamal (config/deploy.yml)
+```
+
 From the project root, use the globally installed `doido` CLI or the local Cargo
 alias (`cargo doido` is equivalent to `cargo run --bin quicknfe`):
 
