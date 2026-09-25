@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { isApiError } from '@/api/client'
 import { useAuth } from '@/auth/AuthContext'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AuthPageShell } from '@/components/AuthPageShell'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -28,7 +29,7 @@ export function TenantPage() {
   }
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-background p-4">
+    <AuthPageShell>
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Selecione a empresa</CardTitle>
@@ -65,6 +66,6 @@ export function TenantPage() {
           </Button>
         </CardContent>
       </Card>
-    </main>
+    </AuthPageShell>
   )
 }

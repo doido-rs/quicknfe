@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { AuthPageShell } from '@/components/AuthPageShell'
 import { Label } from '@/components/ui/label'
 
 export function RegisterPage() {
@@ -27,7 +28,7 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-background p-4">
+    <AuthPageShell>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Criar conta</CardTitle>
@@ -75,6 +76,6 @@ export function RegisterPage() {
           </Link>
         </CardFooter>
       </Card>
-    </main>
+    </AuthPageShell>
   )
 }
