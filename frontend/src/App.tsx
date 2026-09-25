@@ -4,8 +4,6 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ResourcePage } from './pages/ResourcePage'
 import { TenantPage } from './pages/TenantPage'
-import './App.css'
-
 export default function App() {
   return (
     <BrowserRouter>

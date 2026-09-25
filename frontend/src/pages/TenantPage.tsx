@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { isApiError } from '../api/client'
-import { useAuth } from '../auth/AuthContext'
+import { isApiError } from '@/api/client'
+import { useAuth } from '@/auth/AuthContext'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function TenantPage() {
   const { me, isLoading, selectEmpresa, signOut } = useAuth()
@@ -25,28 +28,43 @@ export function TenantPage() {
   }
 
   return (
-    <main className="auth-page">
-      <h1>Selecione a empresa</h1>
-      {isLoading && <p>Carregando…</p>}
-      {me && me.empresas.length === 0 && (
-        <p>
-          Sua conta ainda não está vinculada a nenhuma empresa. Peça ao administrador
-          para incluí-lo em <code>empresas_usuarios</code>.
-        </p>
-      )}
-      <ul className="tenant-list">
-        {me?.empresas.map(({ empresa, papel }) => (
-          <li key={empresa.id}>
-            <button type="button" onClick={() => choose(empresa.id)}>
-              {empresa.razao_social} ({papel})
-            </button>
-          </li>
-        ))}
-      </ul>
-      {error && <p className="error">{error}</p>}
-      <button type="button" onClick={() => signOut()}>
-        Sair
-      </button>
+    <main className="flex min-h-svh items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <CardTitle>Selecione a empresa</CardTitle>
+          <CardDescription>Escolha o tenant ativo para esta sessão.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+          {me && me.empresas.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Sua conta ainda não está vinculada a nenhuma empresa. Peça ao administrador
+              para incluí-lo em <code className="rounded bg-muted px-1">empresas_usuarios</code>.
+            </p>
+          )}
+          <div className="flex flex-col gap-2">
+            {me?.empresas.map(({ empresa, papel }) => (
+              <Button
+                key={empresa.id}
+                type="button"
+                variant="outline"
+                className="h-auto justify-start py-3 text-left"
+                onClick={() => choose(empresa.id)}
+              >
+                {empresa.razao_social} ({papel})
+              </Button>
+            ))}
+          </div>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <Button type="button" variant="ghost" onClick={() => signOut()}>
+            Sair
+          </Button>
+        </CardContent>
+      </Card>
     </main>
   )
 }

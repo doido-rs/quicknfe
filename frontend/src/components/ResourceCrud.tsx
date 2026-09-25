@@ -1,8 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type FormEvent } from 'react'
-import { resourceApi, singletonResourceApi } from '../api/client'
-import { buildBody, emptyForm, rowLabel } from '../lib/resourceForm'
-import type { ResourceDef } from '../resources/definitions'
+import { resourceApi, singletonResourceApi } from '@/api/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { buildBody, emptyForm, rowLabel } from '@/lib/resourceForm'
+import type { ResourceDef } from '@/resources/definitions'
 
 export function ResourceCrud({ def }: { def: ResourceDef }) {
   const isSingleton = def.key === 'empresa'
@@ -82,7 +95,12 @@ export function ResourceCrud({ def }: { def: ResourceDef }) {
   }
 
   if ((isLoading || singletonLoading) && !singletonRow) {
-    return <p>Carregando…</p>
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    )
   }
 
   const submitLabel = isSingleton
@@ -93,75 +111,97 @@ export function ResourceCrud({ def }: { def: ResourceDef }) {
         ? 'Criar'
         : 'Selecione um registro para editar'
 
+  const showSubmit = isSingleton || editing != null || allowCreate
+
   return (
-    <section className="resource-crud">
-      <h2>{def.title}</h2>
-      <form onSubmit={onSubmit} className="form-grid">
-        {def.fields.map((field) => (
-          <label key={field.key}>
-            {field.label}
-            <input
-              required={field.required && (isSingleton || editing != null || allowCreate)}
-              type={
-                field.type === 'number'
-                  ? 'number'
-                  : field.type === 'date'
-                    ? 'datetime-local'
-                    : 'text'
-              }
-              value={form[field.key] ?? ''}
-              onChange={(ev) =>
-                setForm((prev) => ({ ...prev, [field.key]: ev.target.value }))
-              }
-            />
-          </label>
-        ))}
-        {(isSingleton || editing || allowCreate) && (
-          <button type="submit" disabled={saveMutation.isPending}>
-            {submitLabel}
-          </button>
-        )}
-      </form>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{def.title}</CardTitle>
+          {!showSubmit && !isSingleton && (
+            <CardDescription>Selecione um registro para editar</CardDescription>
+          )}
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
+            {def.fields.map((field) => (
+              <div key={field.key} className="grid gap-2">
+                <Label htmlFor={`field-${field.key}`}>{field.label}</Label>
+                <Input
+                  id={`field-${field.key}`}
+                  required={field.required && (isSingleton || editing != null || allowCreate)}
+                  type={
+                    field.type === 'number'
+                      ? 'number'
+                      : field.type === 'date'
+                        ? 'datetime-local'
+                        : 'text'
+                  }
+                  value={form[field.key] ?? ''}
+                  onChange={(ev) =>
+                    setForm((prev) => ({ ...prev, [field.key]: ev.target.value }))
+                  }
+                />
+              </div>
+            ))}
+            {showSubmit && (
+              <div className="md:col-span-2">
+                <Button type="submit" disabled={saveMutation.isPending}>
+                  {submitLabel}
+                </Button>
+              </div>
+            )}
+          </form>
+        </CardContent>
+      </Card>
 
       {!isSingleton && (
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Resumo</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={String(row.id)}>
-                <td>{String(row.id)}</td>
-                <td>{rowLabel(row, def.fields)}</td>
-                <td>
-                  <button type="button" onClick={() => startEdit(row)}>
-                    Editar
-                  </button>
-                  {allowCreate && (
-                    <button
-                      type="button"
-                      onClick={() => deleteMutation.mutate(Number(row.id))}
-                    >
-                      Excluir
-                    </button>
-                  )}
-                  {def.nested && (
-                    <button
-                      type="button"
-                      onClick={() => setNestedParent(Number(row.id))}
-                    >
-                      {def.nested.label}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card>
+          <CardContent className="pt-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Resumo</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow key={String(row.id)}>
+                    <TableCell>{String(row.id)}</TableCell>
+                    <TableCell>{rowLabel(row, def.fields)}</TableCell>
+                    <TableCell className="flex flex-wrap justify-end gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => startEdit(row)}>
+                        Editar
+                      </Button>
+                      {allowCreate && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate(Number(row.id))}
+                        >
+                          Excluir
+                        </Button>
+                      )}
+                      {def.nested && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setNestedParent(Number(row.id))}
+                        >
+                          {def.nested.label}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
       {nestedParent != null && def.nested && (
@@ -171,7 +211,7 @@ export function ResourceCrud({ def }: { def: ResourceDef }) {
           onClose={() => setNestedParent(null)}
         />
       )}
-    </section>
+    </div>
   )
 }
 
@@ -203,35 +243,44 @@ function NestedCrud({
   })
 
   return (
-    <div className="nested-panel">
-      <h3>
-        {nested.label} (doc #{parentId})
-        <button type="button" onClick={onClose}>
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <CardTitle className="text-base">
+          {nested.label} (doc #{parentId})
+        </CardTitle>
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
           Fechar
-        </button>
-      </h3>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          createMutation.mutate()
-        }}
-      >
-        {nested.fields.map((f) => (
-          <label key={f.key}>
-            {f.label}
-            <input
-              value={form[f.key] ?? ''}
-              onChange={(ev) => setForm((p) => ({ ...p, [f.key]: ev.target.value }))}
-            />
-          </label>
-        ))}
-        <button type="submit">Adicionar item</button>
-      </form>
-      <ul>
-        {rows.map((r) => (
-          <li key={String(r.id)}>{rowLabel(r, nested.fields)}</li>
-        ))}
-      </ul>
-    </div>
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form
+          className="grid gap-4 md:grid-cols-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            createMutation.mutate()
+          }}
+        >
+          {nested.fields.map((f) => (
+            <div key={f.key} className="grid gap-2">
+              <Label htmlFor={`nested-${f.key}`}>{f.label}</Label>
+              <Input
+                id={`nested-${f.key}`}
+                type={f.type === 'number' ? 'number' : 'text'}
+                value={form[f.key] ?? ''}
+                onChange={(ev) => setForm((p) => ({ ...p, [f.key]: ev.target.value }))}
+              />
+            </div>
+          ))}
+          <div className="md:col-span-2">
+            <Button type="submit">Adicionar item</Button>
+          </div>
+        </form>
+        <ul className="list-disc space-y-1 pl-5 text-sm">
+          {rows.map((r) => (
+            <li key={String(r.id)}>{rowLabel(r, nested.fields)}</li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   )
 }

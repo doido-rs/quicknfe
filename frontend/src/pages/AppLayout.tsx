@@ -1,9 +1,11 @@
-import { Navigate, NavLink, Outlet } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
-import { resources } from '../resources/definitions'
+import { Navigate, Outlet } from 'react-router-dom'
+import { useAuth } from '@/auth/AuthContext'
+import { AppSidebar } from '@/components/layout/AppSidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export function AppLayout() {
-  const { me, isLoading, signOut } = useAuth()
+  const { me, isLoading } = useAuth()
 
   if (!isLoading && !me) {
     return <Navigate to="/login" replace />
@@ -14,26 +16,19 @@ export function AppLayout() {
   }
 
   return (
-    <div className="app-shell">
-      <header>
-        <strong>QuickNFe</strong>
-        {me?.empresa_ativa && (
-          <span className="tenant-badge">{me.empresa_ativa.razao_social}</span>
-        )}
-        <button type="button" onClick={() => signOut()}>
-          Sair
-        </button>
-      </header>
-      <nav>
-        {resources.map((r) => (
-          <NavLink key={r.key} to={`/app/${r.key}`}>
-            {r.title}
-          </NavLink>
-        ))}
-      </nav>
-      <main>
-        <Outlet />
-      </main>
-    </div>
+    <TooltipProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+            <SidebarTrigger />
+            <span className="font-semibold">QuickNFe</span>
+          </header>
+          <main className="flex-1 p-4 md:p-6">
+            <Outlet />
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }

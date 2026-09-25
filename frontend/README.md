@@ -2,6 +2,8 @@
 
 SPA React + Vite para gestão multi-empresa via API do backend Doido.
 
+**UI:** [Tailwind CSS v4](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com) (componentes em `src/components/ui/`). Layout autenticado com **sidebar** (`AppSidebar` + `SidebarProvider`).
+
 ## Requisitos
 
 - [Bun](https://bun.sh) 1.1+
@@ -21,12 +23,20 @@ Abra [http://localhost:5173](http://localhost:5173). O Vite faz proxy de `/api`,
 
 Variável opcional: `VITE_API_URL` — deixe vazio para usar o proxy.
 
+### Adicionar componentes shadcn
+
+```bash
+bunx shadcn@latest add dialog
+```
+
+Configuração em [`components.json`](components.json). Imports usam alias `@/` → `src/`.
+
 ## Credenciais demo (seed)
 
 - E-mail: `admin@quicknfe.local`
 - Senha: `QuickNFe2026!`
 
-Fluxo: login → escolher empresa → editar recursos no menu.
+Fluxo: login → escolher empresa → editar recursos no menu lateral.
 
 ## Testes e coverage
 
@@ -35,7 +45,7 @@ bun run test
 bun run test:coverage
 ```
 
-Meta de coverage global: **80%** (linhas, funções, branches, statements).
+Meta de coverage global: **80%** (linhas, funções, branches, statements). Componentes shadcn em `src/components/ui/` ficam fora do escopo de cobertura.
 
 ## Build
 
