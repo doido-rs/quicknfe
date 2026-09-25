@@ -12,8 +12,11 @@ dist
 dist-ssr
 *.local
 
-# Vitest / v8 coverage (npm run test:coverage)
+# Vitest / v8 coverage (bun run test:coverage)
 coverage/
+
+# npm (use Bun + bun.lock)
+package-lock.json
 
 # Editor directories and files
 .vscode/*

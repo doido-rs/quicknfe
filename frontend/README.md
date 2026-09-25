@@ -4,15 +4,15 @@ SPA React + Vite para gestão multi-empresa via API do backend Doido.
 
 ## Requisitos
 
-- Node.js 20+
+- [Bun](https://bun.sh) 1.1+
 - Backend em `http://localhost:3000` (ver [backend/README.md](../backend/README.md))
 
 ## Desenvolvimento
 
 ```bash
 cd frontend
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Abra [http://localhost:5173](http://localhost:5173). O Vite faz proxy de `/api`, `/users` e `/tenant` para o backend.
@@ -29,8 +29,8 @@ Fluxo: login → escolher empresa → editar recursos no menu.
 ## Testes e coverage
 
 ```bash
-npm run test
-npm run test:coverage
+bun run test
+bun run test:coverage
 ```
 
 Meta de coverage global: **80%** (linhas, funções, branches, statements).
@@ -38,6 +38,6 @@ Meta de coverage global: **80%** (linhas, funções, branches, statements).
 ## Build
 
 ```bash
-npm run build
-npm run preview
+bun run build
+bun run preview
 ```

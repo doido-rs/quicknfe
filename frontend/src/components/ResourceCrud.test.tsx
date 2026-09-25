@@ -123,15 +123,18 @@ describe('ResourceCrud', () => {
   })
 
   it('creates nested item', async () => {
+    let itens: Record<string, unknown>[] = []
     stubFetch((url, method) => {
       if (method === 'GET' && url.endsWith('/api/documentos')) {
         return jsonResponse([{ id: 9, modelo: '55', serie: '1', numero_documento: 1, status: 'novo' }])
       }
       if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
-        return jsonResponse([])
+        return jsonResponse(itens)
       }
       if (method === 'POST' && url.includes('/api/documentos/9/itens')) {
-        return jsonResponse({ id: 2, numero_item: 2, descricao: 'Novo item' })
+        const created = { id: 2, numero_item: 2, descricao: 'Novo item' }
+        itens = [created]
+        return jsonResponse(created)
       }
       return jsonResponse('missing', 404)
     })

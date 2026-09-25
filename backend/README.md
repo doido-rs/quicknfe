@@ -91,7 +91,7 @@ Ver [frontend/README.md](../frontend/README.md). Em resumo:
 ```bash
 docker compose up mysql -d   # na raiz do repositório
 cd backend && cargo doido db migrate && cargo doido db seed && cargo doido server
-cd frontend && npm install && npm run dev
+cd frontend && bun install && bun run dev
 ```
 
 Credenciais seed: `admin@quicknfe.local` / `QuickNFe2026!`.
