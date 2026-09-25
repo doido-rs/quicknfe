@@ -4,3 +4,11 @@ config/master.key
 config/credentials.yml.enc
 *.db
 /log
+
+# Rust / cargo coverage reports (llvm-cov, tarpaulin, grcov, etc.)
+/coverage/
+lcov.info
+tarpaulin-report.html
+cobertura.xml
+*.profraw
+*.profdata
