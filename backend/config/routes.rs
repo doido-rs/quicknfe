@@ -10,7 +10,7 @@ use doido::controller::axum;
 // boot when storage initialises successfully.
 
 pub fn router() -> axum::Router {
-    doido::auth::routes! {
+    let api = doido::auth::routes! {
         get!("/", HelloController::index);
         auth_routes!(User);
         post!("/tenant/empresa", TenantController::switch);
@@ -69,5 +69,14 @@ pub fn router() -> axum::Router {
         get!("/api/logs-retorno/{id}", ApiLogsController::show);
         patch!("/api/logs-retorno/{id}", ApiLogsController::update);
         delete!("/api/logs-retorno/{id}", ApiLogsController::destroy);
+    };
+
+    if crate::mcp::enabled() {
+        crate::mcp::McpConfig::init();
+        let api_for_mcp = api.clone();
+        api.merge(crate::oauth::router(api_for_mcp.clone()))
+            .merge(crate::mcp::router(api_for_mcp))
+    } else {
+        api
     }
 }

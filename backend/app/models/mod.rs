@@ -21,4 +21,8 @@ pub mod storage_attachment;
 pub mod storage_blob;
 pub mod storage_variant_record;
 pub mod user;
+pub mod oauth_access_token;
+pub mod oauth_authorization_code;
+pub mod oauth_client;
+pub mod oauth_mcp_session;
 // @generated-models

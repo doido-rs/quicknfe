@@ -28,6 +28,12 @@ mod helpers;
 #[path = "../app/generators/mod.rs"]
 mod generators;
 
+#[path = "../app/oauth/mod.rs"]
+mod oauth;
+
+#[path = "../app/mcp/mod.rs"]
+mod mcp;
+
 #[path = "../config/routes.rs"]
 mod routes;
 

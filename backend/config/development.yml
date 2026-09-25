@@ -60,3 +60,7 @@ middleware:
     allowed_headers:
       - Content-Type
       - Accept
+      - Authorization
+mcp:
+  enabled: true
+  public_url: "http://localhost:3000"

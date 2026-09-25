@@ -49,3 +49,5 @@ middleware:
     allowed_headers:
       - Content-Type
       - Accept
+      - Authorization
+# MCP off in test unless MCP_ENABLED=true (see mcp_oauth_test)

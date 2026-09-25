@@ -107,6 +107,20 @@ cd frontend && bun install && bun run dev
 
 Credenciais seed: `admin@quicknfe.local` / `QuickNFe2026!`.
 
+## MCP (HTTP + OAuth)
+
+Remote MCP clients can call QuickNFe through **Streamable HTTP** at `/mcp`, with OAuth 2.1 (PKCE + browser login) on the same server.
+
+1. Run migrations (includes `oauth_*` tables): `cargo doido db migrate`
+2. Set in `.env` (see `.env.example`): `MCP_OAUTH_SIGNING_SECRET`, optional `MCP_PUBLIC_URL=http://localhost:3000`
+3. MCP is on by default when `DOIDO_ENV=development`; disable with `MCP_ENABLED=false`
+4. Discovery: `GET /.well-known/oauth-protected-resource` and `GET /.well-known/oauth-authorization-server`
+5. Authorize in the browser: `GET /oauth/authorize?...` (after registering a client via `POST /oauth/register` or use seed client `quicknfe_mcp_dev`)
+6. Use the access token as `Authorization: Bearer …` on `/mcp`
+7. Call `quicknfe_switch_empresa` before tenant-scoped tools; all REST routes are exposed as `quicknfe_*` tools plus `quicknfe_request`
+
+Integration tests: `DOIDO_ENV=test cargo test --test mcp_oauth_test -- --test-threads=1`
+
 ## Docker
 
 ```bash

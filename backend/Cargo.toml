@@ -33,6 +33,16 @@ chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "gzip"] }
 flate2 = "1"
 base64 = "0.22"
+rmcp = { version = "2.2", features = ["server", "macros", "transport-streamable-http-server"] }
+jsonwebtoken = "9"
+sha2 = "0.10"
+rand = "0.8"
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+schemars = "0.8"
+urlencoding = "2"
+tower = { version = "0.5", features = ["util"] }
+tokio-util = "0.7"
 
 [dev-dependencies]
 # Used by generated scaffold controller request tests (Router::oneshot).

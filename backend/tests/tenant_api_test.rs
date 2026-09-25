@@ -12,6 +12,10 @@ mod models;
 mod services;
 #[path = "../app/helpers/mod.rs"]
 mod helpers;
+#[path = "../app/oauth/mod.rs"]
+mod oauth;
+#[path = "../app/mcp/mod.rs"]
+mod mcp;
 #[path = "../config/routes.rs"]
 mod routes;
 
