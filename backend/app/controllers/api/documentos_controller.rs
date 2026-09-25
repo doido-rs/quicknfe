@@ -7,7 +7,7 @@ use serde::Deserialize;
 use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant, to_response, ApiError};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::dto::{DocumentoDto, DocumentoListDto};
 use crate::services::tenant_scope;
 
@@ -87,7 +87,7 @@ impl ApiDocumentosController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(db(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, id).await));
         ctx.json(DocumentoDto::from(row))
     }
 
@@ -106,7 +106,7 @@ impl ApiDocumentosController {
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(db(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, id).await));
         let form: DocumentoForm = crate::api!(json_body(ctx).await);
         crate::api!(to_response(validate_refs(ctx.db(), access.empresa.id, &form).await));
         let mut record: DocActive = existing.into();
@@ -118,7 +118,7 @@ impl ApiDocumentosController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(db(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, id).await));
         crate::api!(db(DocEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

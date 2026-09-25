@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::models::tributo_item::{
     ActiveModel as TributoActive, Column as TributoColumn, Entity as TributoEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
 use crate::services::dto::TributoDto;
 use crate::services::tenant_scope;
 
@@ -32,7 +32,7 @@ impl ApiTributosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let item_id = crate::api!(id_param(&ctx, "item_id"));
-        crate::api!(db(tenant_scope::item_for_tenant(ctx.db(), access.empresa.id, item_id).await));
+        crate::api!(scoped(tenant_scope::item_for_tenant(ctx.db(), access.empresa.id, item_id).await));
         let rows = crate::api!(db(
             TributoEntity::find()
                 .filter(TributoColumn::ItemId.eq(item_id))
@@ -55,7 +55,7 @@ impl ApiTributosController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let item_id = crate::api!(id_param(&ctx, "item_id"));
-        crate::api!(db(tenant_scope::item_for_tenant(ctx.db(), access.empresa.id, item_id).await));
+        crate::api!(scoped(tenant_scope::item_for_tenant(ctx.db(), access.empresa.id, item_id).await));
         let form: TributoForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             TributoActive {

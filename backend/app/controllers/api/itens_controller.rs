@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::models::item_documento_fiscal::{
     ActiveModel as ItemActive, Column as ItemColumn, Entity as ItemEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
 use crate::services::dto::ItemDto;
 use crate::services::tenant_scope;
 
@@ -29,7 +29,7 @@ impl ApiItensController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(db(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
+        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
         let rows = crate::api!(db(
             ItemEntity::find()
                 .filter(ItemColumn::DocumentoFiscalId.eq(doc_id))
@@ -52,7 +52,7 @@ impl ApiItensController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(db(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
+        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
         let form: ItemForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             ItemActive {

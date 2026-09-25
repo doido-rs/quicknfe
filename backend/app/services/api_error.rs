@@ -43,6 +43,11 @@ pub fn db<T, E: std::fmt::Display>(result: Result<T, E>) -> ApiResponse<T> {
     to_response(result.map_err(|e| ApiError::Internal(e.to_string())))
 }
 
+/// Erros de escopo tenant (`ApiError`) já mapeiam status HTTP corretos.
+pub fn scoped<T>(result: Result<T, ApiError>) -> ApiResponse<T> {
+    to_response(result)
+}
+
 impl std::fmt::Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

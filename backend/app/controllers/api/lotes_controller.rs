@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::models::lote_transmissao::{
     ActiveModel as LoteActive, Column as LoteColumn, Entity as LoteEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
 use crate::services::dto::LoteDto;
 use crate::services::tenant_scope;
 
@@ -37,7 +37,7 @@ impl ApiLotesController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(db(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
         ctx.json(LoteDto::from(row))
     }
 
@@ -63,7 +63,7 @@ impl ApiLotesController {
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(db(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
         let form: LoteForm = crate::api!(json_body(ctx).await);
         let mut record: LoteActive = existing.into();
         record.numero_lote = Set(form.numero_lote);
@@ -78,7 +78,7 @@ impl ApiLotesController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(db(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
         crate::api!(db(LoteEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

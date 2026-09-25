@@ -285,26 +285,6 @@ async fn login_me_and_tenant_cliente_flow() {
         .await
         .unwrap();
     assert!(!rows.is_empty());
-}
-
-#[tokio::test]
-async fn tenant_isolation_on_cliente_patch() {
-    let _guard = setup_runtime().await;
-    let app = test_router();
-    let fx = seed_two_tenant_fixture().await;
-    let cookie = sign_in(&app, &fx.user_email, &fx.password).await;
-    let (_, _, switch_cookie) = send_json(
-        &app,
-        "POST",
-        "/tenant/empresa",
-        &format!(r#"{{"empresa_id":{}}}"#, fx.empresa_id),
-        Some(&cookie),
-    )
-    .await;
-    let session = switch_cookie
-        .as_ref()
-        .map(|c| session_cookie(c))
-        .unwrap_or(cookie);
 
     let (status, _, _) = send_json(
         &app,

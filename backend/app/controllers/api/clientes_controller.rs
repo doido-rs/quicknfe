@@ -3,7 +3,7 @@ use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFil
 use serde::Deserialize;
 
 use crate::models::cliente::{ActiveModel as ClienteActive, Column as ClienteColumn, Entity as ClienteEntity};
-use crate::services::api_error::{db, id_param, json_body, require_tenant};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
 use crate::services::dto::ClienteDto;
 use crate::services::tenant_scope;
 
@@ -44,7 +44,7 @@ impl ApiClientesController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(db(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
         ctx.json(ClienteDto::from(row))
     }
 
@@ -76,7 +76,7 @@ impl ApiClientesController {
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(db(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
         let form: ClienteForm = crate::api!(json_body(ctx).await);
         let mut record: ClienteActive = existing.into();
         record.cpf_cnpj = Set(form.cpf_cnpj);
@@ -97,7 +97,7 @@ impl ApiClientesController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(db(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
         crate::api!(db(ClienteEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

@@ -4,7 +4,7 @@ use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrai
 use serde::Deserialize;
 
 use crate::models::log_mensagem_retorno::{ActiveModel as LogActive, Entity as LogEntity};
-use crate::services::api_error::{db, id_param, json_body, require_tenant, to_response, ApiError};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::dto::LogRetornoDto;
 use crate::services::tenant_scope;
 
@@ -87,14 +87,14 @@ impl ApiLogsController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(db(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
         ctx.json(LogRetornoDto::from(row))
     }
 
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(db(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
         let form: LogForm = crate::api!(json_body(ctx).await);
         crate::api!(to_response(validate_log_refs(ctx.db(), access.empresa.id, &form).await));
         let mut record: LogActive = existing.into();
@@ -111,7 +111,7 @@ impl ApiLogsController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(db(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
         crate::api!(db(LogEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

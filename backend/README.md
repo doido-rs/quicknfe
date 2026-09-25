@@ -75,8 +75,26 @@ are git-ignored by default.
 ## Testing
 
 ```bash
+# Unitários do crate
 cargo test
+
+# API multi-tenant (MySQL de teste — crie/migre com DOIDO_ENV=test)
+DOIDO_ENV=test cargo doido db create
+DOIDO_ENV=test cargo doido db migrate
+DOIDO_ENV=test cargo test --test tenant_api_test -- --test-threads=1
 ```
+
+## Frontend (React + Vite)
+
+Ver [frontend/README.md](../frontend/README.md). Em resumo:
+
+```bash
+docker compose up mysql -d   # na raiz do repositório
+cd backend && cargo doido db migrate && cargo doido db seed && cargo doido server
+cd frontend && npm install && npm run dev
+```
+
+Credenciais seed: `admin@quicknfe.local` / `QuickNFe2026!`.
 
 ## Docker
 

@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::models::evento_documento_fiscal::{
     ActiveModel as EventoActive, Column as EventoColumn, Entity as EventoEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
 use crate::services::dto::EventoDto;
 use crate::services::tenant_scope;
 
@@ -28,7 +28,7 @@ impl ApiEventosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(db(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
+        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
         let rows = crate::api!(db(
             EventoEntity::find()
                 .filter(EventoColumn::DocumentoFiscalId.eq(doc_id))
@@ -51,7 +51,7 @@ impl ApiEventosController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(db(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
+        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
         let form: EventoForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             EventoActive {
