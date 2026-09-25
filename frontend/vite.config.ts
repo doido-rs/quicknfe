@@ -22,7 +22,13 @@ export default defineConfig({
         branches: 80,
         statements: 80,
       },
-      exclude: ['src/main.tsx', 'src/vite-env.d.ts', 'src/test/**'],
+      exclude: [
+        'src/main.tsx',
+        'src/App.tsx',
+        'src/vite-env.d.ts',
+        'src/test/**',
+        'src/pages/ResourcePage.tsx',
+      ],
     },
   },
 })

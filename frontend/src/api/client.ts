@@ -1,13 +1,22 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message)
-    this.name = 'ApiError'
-  }
+export interface ApiError extends Error {
+  status: number
+}
+
+export function isApiError(err: unknown): err is ApiError {
+  return (
+    err instanceof Error &&
+    'status' in err &&
+    typeof (err as ApiError).status === 'number'
+  )
+}
+
+export function createApiError(status: number, message: string): ApiError {
+  const err = new Error(message) as ApiError
+  err.name = 'ApiError'
+  err.status = status
+  return err
 }
 
 async function parseError(res: Response): Promise<string> {
@@ -38,7 +47,7 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    throw new ApiError(res.status, await parseError(res))
+    throw createApiError(res.status, await parseError(res))
   }
 
   return (await res.json()) as T
@@ -80,5 +89,14 @@ export function resourceApi<T>(basePath: string) {
       }),
     remove: (id: number) =>
       apiFetch<void>(`${basePath}/${id}`, { method: 'DELETE' }),
+  }
+}
+
+/** Recurso singleton (GET/PATCH no path base, sem id). */
+export function singletonResourceApi<T>(basePath: string) {
+  return {
+    get: () => apiFetch<T>(basePath),
+    update: (body: unknown) =>
+      apiFetch<T>(basePath, { method: 'PATCH', body: JSON.stringify(body) }),
   }
 }

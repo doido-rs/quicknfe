@@ -13,6 +13,8 @@ export interface ResourceDef {
   path: string
   idField?: string
   fields: FieldDef[]
+  /** Sem POST (ex.: logs de retorno). */
+  allowCreate?: boolean
   nested?: {
     label: string
     path: (parentId: number) => string
@@ -97,6 +99,7 @@ export const resources: ResourceDef[] = [
     key: 'logs-retorno',
     title: 'Logs retorno',
     path: '/api/logs-retorno',
+    allowCreate: false,
     fields: [
       { key: 'codigo_erro', label: 'Código erro', required: true },
       { key: 'mensagem_retorno', label: 'Mensagem', required: true },

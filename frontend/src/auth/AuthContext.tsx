@@ -3,11 +3,10 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useState,
   type ReactNode,
 } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiFetch, authApi, tenantApi } from '../api/client'
+import { apiFetch, authApi, isApiError, tenantApi } from '../api/client'
 import type { MeResponse } from '../api/types'
 
 interface AuthContextValue {
@@ -24,17 +23,24 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
-  const [bootstrapped, setBootstrapped] = useState(false)
 
   const { data: me, isLoading, refetch } = useQuery({
     queryKey: ['me'],
-    queryFn: () => apiFetch<MeResponse>('/api/me'),
+    queryFn: async () => {
+      try {
+        return await apiFetch<MeResponse>('/api/me')
+      } catch (err) {
+        if (isApiError(err) && err.status === 401) {
+          return undefined
+        }
+        throw err
+      }
+    },
     retry: false,
   })
 
   const refresh = useCallback(async () => {
     await refetch()
-    setBootstrapped(true)
   }, [refetch])
 
   const signIn = useCallback(
@@ -55,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await authApi.signOut()
-    queryClient.setQueryData(['me'], undefined)
+    queryClient.removeQueries({ queryKey: ['me'] })
   }, [queryClient])
 
   const selectEmpresa = useCallback(
@@ -69,14 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       me,
-      isLoading: isLoading || !bootstrapped,
+      isLoading,
       refresh,
       signIn,
       signUp,
       signOut,
       selectEmpresa,
     }),
-    [me, isLoading, bootstrapped, refresh, signIn, signUp, signOut, selectEmpresa],
+    [me, isLoading, refresh, signIn, signUp, signOut, selectEmpresa],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
