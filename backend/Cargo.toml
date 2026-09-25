@@ -30,6 +30,9 @@ sqlx = { version = "0.8", features = ["runtime-tokio", "mysql"] }
 tokio = { version = "1", features = ["full"] }
 dotenvy = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "gzip"] }
+flate2 = "1"
+base64 = "0.22"
 
 [dev-dependencies]
 # Used by generated scaffold controller request tests (Router::oneshot).

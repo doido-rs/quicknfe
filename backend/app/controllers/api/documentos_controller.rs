@@ -8,8 +8,14 @@ use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity,
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
-use crate::services::dto::{DocumentoDto, DocumentoListDto};
+use crate::services::dto::{DocumentoDto, DocumentoListDto, TransmitirDocumentoResponse};
+use crate::services::nfse::{transmitir_documento, TransmitirParams};
 use crate::services::tenant_scope;
+
+#[derive(Debug, Default, Deserialize)]
+pub struct TransmitirForm {
+    pub certificado_id: Option<i64>,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct DocumentoForm {
@@ -121,5 +127,37 @@ impl ApiDocumentosController {
         crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, id).await));
         crate::api!(db(DocEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
+    }
+
+    /// Envia a DPS já assinada (`xml_assinado`) para a API SEFIN Nacional (mTLS + JSON).
+    pub async fn transmitir(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        let form: TransmitirForm = match ctx.body_json().await {
+            Ok(f) => f,
+            Err(_) => TransmitirForm::default(),
+        };
+        let outcome = crate::api!(to_response(
+            transmitir_documento(
+                ctx.db(),
+                TransmitirParams {
+                    empresa_id: access.empresa.id,
+                    documento_id: id,
+                    certificado_id: form.certificado_id,
+                },
+            )
+            .await,
+        ));
+        let r = outcome.resultado;
+        ctx.json(TransmitirDocumentoResponse {
+            sucesso: r.sucesso,
+            http_status: r.http_status,
+            id_dps: r.id_dps,
+            chave_acesso: r.chave_acesso,
+            nfse_xml: r.nfse_xml,
+            alertas: r.alertas,
+            erros: r.erros,
+            documento: DocumentoDto::from(outcome.documento),
+        })
     }
 }

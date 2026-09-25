@@ -350,3 +350,22 @@ impl From<LogRetorno> for LogRetornoDto {
 pub fn encode_certificado_senha(plain: &str) -> String {
     format!("enc:v1:{plain}")
 }
+
+pub fn decode_certificado_senha(stored: &str) -> String {
+    stored
+        .strip_prefix("enc:v1:")
+        .unwrap_or(stored)
+        .to_string()
+}
+
+#[derive(Serialize)]
+pub struct TransmitirDocumentoResponse {
+    pub sucesso: bool,
+    pub http_status: u16,
+    pub id_dps: Option<String>,
+    pub chave_acesso: Option<String>,
+    pub nfse_xml: Option<String>,
+    pub alertas: Vec<super::nfse::MensagemProcessamento>,
+    pub erros: Vec<super::nfse::MensagemProcessamento>,
+    pub documento: DocumentoDto,
+}
