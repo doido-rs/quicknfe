@@ -36,6 +36,9 @@ up: ## Sobe MySQL (+ Mailpit) em background
 down: ## Para containers do compose
 	$(COMPOSE) down
 
+down-volumes: ## Para containers do compose
+	$(COMPOSE) down --volumes
+
 db-create: ## Cria banco development
 	cd $(BACKEND_DIR) && cargo doido db create
 

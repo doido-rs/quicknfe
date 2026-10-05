@@ -51,7 +51,7 @@ pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
     let now: DateTimeUtc = chrono::Utc::now();
     let user = UserActive {
         email: Set(SEED_USER_EMAIL.into()),
-        password_digest: Set(hash_password("QuickNFe2026!")?),
+        password_digest: Set(hash_password("Admin@1234")?),
         created_at: Set(now),
         updated_at: Set(now),
         ..Default::default()
