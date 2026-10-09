@@ -22,6 +22,7 @@ make db-create
 make db-migrate
 make db-seed
 make db-setup   # create + migrate
+make db-console # MySQL CLI (quicknfe_development)
 ```
 
 ## Development servers

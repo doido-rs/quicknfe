@@ -11,7 +11,7 @@ DOCKER_IMAGE  ?= quicknfe
 BUN           ?= bun
 COMPOSE       := docker compose
 
-.PHONY: help setup install up down db-create db-migrate db-seed db-setup \
+.PHONY: help setup install up down db-create db-migrate db-seed db-setup db-console \
 	dev dev-backend dev-frontend build docs \
 	lint lint-frontend lint-backend fix fix-frontend fix-backend lint-fix \
 	test test-frontend test-backend test-integration test-all ci \
@@ -49,6 +49,9 @@ db-seed: ## Seeds development
 	cd $(BACKEND_DIR) && cargo doido db seed
 
 db-setup: db-create db-migrate ## create + migrate (dev)
+
+db-console: ## Console MySQL interativo (development; requer `make up`)
+	$(COMPOSE) exec mysql mysql -uroot -ppassword quicknfe_development
 
 dev: up db-setup ## Backend :3000 + frontend :5173 (processos paralelos)
 	$(MAKE) -j2 dev-backend dev-frontend
