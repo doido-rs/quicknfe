@@ -1,6 +1,6 @@
 # QuickNFe — comandos locais, qualidade e deploy (Kamal)
 #
-# Pré-requisitos: Bun, Rust/cargo, doido CLI, Docker (MySQL local), Kamal (deploy)
+# Pré-requisitos: Bun, Rust/cargo, cargo-watch, doido CLI, Docker (MySQL local), Kamal (deploy)
 
 .DEFAULT_GOAL := help
 
@@ -53,11 +53,11 @@ db-setup: db-create db-migrate ## create + migrate (dev)
 db-console: ## Console MySQL interativo (development; requer `make up`)
 	$(COMPOSE) exec mysql mysql -uroot -ppassword quicknfe_development
 
-dev: up db-setup ## Backend :3000 + frontend :5173 (processos paralelos)
+dev: up db-setup ## Backend :3000 + frontend :5173 (hot reload em ambos)
 	$(MAKE) -j2 dev-backend dev-frontend
 
-dev-backend: ## API Doido em http://localhost:3000
-	cd $(BACKEND_DIR) && cargo doido server
+dev-backend: ## API Doido em http://localhost:3000 (cargo-watch)
+	cd $(BACKEND_DIR) && cargo watch -q -w src -w app -w config -w db -x 'doido server'
 
 dev-frontend: ## Vite em http://localhost:5173 (proxy /api → backend)
 	cd $(FRONTEND_DIR) && $(BUN) run dev
