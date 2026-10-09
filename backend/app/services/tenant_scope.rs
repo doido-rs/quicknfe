@@ -6,6 +6,7 @@ use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEnt
 use crate::models::cliente::{Column as ClienteColumn, Entity as ClienteEntity};
 use crate::models::documento_fiscal::{Column as DocColumn, Entity as DocEntity};
 use crate::models::evento_documento_fiscal::{Column as EventoColumn, Entity as EventoEntity};
+use crate::models::intermediario::{Column as IntermediarioColumn, Entity as IntermediarioEntity};
 use crate::models::item_documento_fiscal::{Column as ItemColumn, Entity as ItemEntity};
 use crate::models::log_mensagem_retorno::Entity as LogEntity;
 use crate::models::lote_transmissao::{Column as LoteColumn, Entity as LoteEntity};
@@ -20,6 +21,19 @@ pub async fn cliente_for_tenant(
 ) -> Result<crate::models::cliente::Model, ApiError> {
     ClienteEntity::find_by_id(id)
         .filter(ClienteColumn::EmpresaId.eq(empresa_id))
+        .one(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?
+        .ok_or(ApiError::NotFound)
+}
+
+pub async fn intermediario_for_tenant(
+    db: &DatabaseConnection,
+    empresa_id: i64,
+    id: i64,
+) -> Result<crate::models::intermediario::Model, ApiError> {
+    IntermediarioEntity::find_by_id(id)
+        .filter(IntermediarioColumn::EmpresaId.eq(empresa_id))
         .one(db)
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?
@@ -158,4 +172,14 @@ pub async fn ensure_lote_belongs(
     lote_id: i64,
 ) -> Result<(), ApiError> {
     lote_for_tenant(db, empresa_id, lote_id).await.map(|_| ())
+}
+
+pub async fn ensure_intermediario_belongs(
+    db: &DatabaseConnection,
+    empresa_id: i64,
+    intermediario_id: i64,
+) -> Result<(), ApiError> {
+    intermediario_for_tenant(db, empresa_id, intermediario_id)
+        .await
+        .map(|_| ())
 }

@@ -7,7 +7,7 @@ export function ResourcePage() {
   const def = resources.find((r) => r.key === resourceKey)
 
   if (!def) {
-    return <Navigate to="/app/empresa" replace />
+    return <Navigate to="/app/documentos" replace />
   }
 
   return <ResourceCrud def={def} />

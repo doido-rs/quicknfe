@@ -14,6 +14,7 @@ pub struct Model {
     #[sea_orm(unique_key = "unq_empresa_doc")]
     pub empresa_id: i64,
     pub cliente_id: Option<i64>,
+    pub intermediario_id: Option<i64>,
     pub lote_id: Option<i64>,
     #[sea_orm(unique_key = "unq_empresa_doc")]
     pub modelo: String,
@@ -61,6 +62,14 @@ pub enum Relation {
     Empresas,
     #[sea_orm(has_many = "super::eventos_documento_fiscal::Entity")]
     EventosDocumentoFiscal,
+    #[sea_orm(
+        belongs_to = "super::intermediarios::Entity",
+        from = "Column::IntermediarioId",
+        to = "super::intermediarios::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Intermediarios,
     #[sea_orm(has_many = "super::itens_documento_fiscal::Entity")]
     ItensDocumentoFiscal,
     #[sea_orm(has_many = "super::logs_mensagens_retorno::Entity")]
@@ -90,6 +99,12 @@ impl Related<super::empresas::Entity> for Entity {
 impl Related<super::eventos_documento_fiscal::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::EventosDocumentoFiscal.def()
+    }
+}
+
+impl Related<super::intermediarios::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Intermediarios.def()
     }
 }
 

@@ -13,7 +13,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/tenant" element={<TenantPage />} />
         <Route path="/app" element={<AppLayout />}>
-          <Route index element={<Navigate to="empresa" replace />} />
+          <Route index element={<Navigate to="documentos" replace />} />
           <Route path=":resourceKey" element={<ResourcePage />} />
         </Route>
       </Routes>

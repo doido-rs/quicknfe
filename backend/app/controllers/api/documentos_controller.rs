@@ -20,6 +20,7 @@ pub struct TransmitirForm {
 #[derive(Debug, Deserialize)]
 pub struct DocumentoForm {
     pub cliente_id: Option<i64>,
+    pub intermediario_id: Option<i64>,
     pub lote_id: Option<i64>,
     pub modelo: String,
     pub serie: String,
@@ -47,6 +48,9 @@ async fn validate_refs(
     if let Some(cid) = form.cliente_id {
         tenant_scope::ensure_cliente_belongs(db, empresa_id, cid).await?;
     }
+    if let Some(iid) = form.intermediario_id {
+        tenant_scope::ensure_intermediario_belongs(db, empresa_id, iid).await?;
+    }
     if let Some(lid) = form.lote_id {
         tenant_scope::ensure_lote_belongs(db, empresa_id, lid).await?;
     }
@@ -56,6 +60,7 @@ async fn validate_refs(
 fn apply_form(record: &mut DocActive, form: &DocumentoForm, empresa_id: i64) {
     record.empresa_id = Set(empresa_id);
     record.cliente_id = Set(form.cliente_id);
+    record.intermediario_id = Set(form.intermediario_id);
     record.lote_id = Set(form.lote_id);
     record.modelo = Set(form.modelo.clone());
     record.serie = Set(form.serie.clone());

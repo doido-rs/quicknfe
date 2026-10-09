@@ -31,7 +31,7 @@ describe('AppLayout', () => {
       { route: '/app' },
     )
 
-    expect(await screen.findByRole('link', { name: /Clientes/i })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /Notas fiscais/i })).toBeInTheDocument()
   })
 
   it('redirects to tenant when no empresa ativa', async () => {
@@ -77,7 +77,7 @@ describe('AppLayout', () => {
       { route: '/app' },
     )
 
-    await screen.findByRole('link', { name: /Clientes/i })
+    await screen.findByRole('link', { name: /Notas fiscais/i })
     await userEvent.click(screen.getByRole('button', { name: /^sair$/i }))
 
     await waitFor(() => {

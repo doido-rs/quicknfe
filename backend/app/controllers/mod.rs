@@ -4,7 +4,8 @@ mod tenant_controller;
 
 pub use api::{
     ApiCertificadosController, ApiClientesController, ApiDocumentosController, ApiEmpresaController,
-    ApiEventosController, ApiItensController, ApiLogsController, ApiLotesController,
+    ApiEventosController, ApiIntermediariosController, ApiItensController, ApiLogsController,
+    ApiLotesController,
     ApiSessionController, ApiTributosController,
 };
 pub use hello_controller::HelloController;

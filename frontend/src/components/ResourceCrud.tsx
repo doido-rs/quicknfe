@@ -104,7 +104,7 @@ export function ResourceCrud({ def }: { def: ResourceDef }) {
   }
 
   const submitLabel = isSingleton
-    ? 'Salvar empresa'
+    ? 'Salvar prestador'
     : editing
       ? 'Salvar'
       : allowCreate

@@ -7,6 +7,7 @@ use crate::models::cliente::Model as Cliente;
 use crate::models::documento_fiscal::Model as Documento;
 use crate::models::empresa::Model as Empresa;
 use crate::models::evento_documento_fiscal::Model as Evento;
+use crate::models::intermediario::Model as Intermediario;
 use crate::models::item_documento_fiscal::Model as Item;
 use crate::models::log_mensagem_retorno::Model as LogRetorno;
 use crate::models::lote_transmissao::Model as Lote;
@@ -113,6 +114,31 @@ impl From<Cliente> for ClienteDto {
 }
 
 #[derive(Serialize)]
+pub struct IntermediarioDto {
+    pub id: i64,
+    pub empresa_id: i64,
+    pub cpf_cnpj: String,
+    pub razao_social: String,
+    pub inscricao_municipal: Option<String>,
+    pub email: Option<String>,
+    pub telefone: Option<String>,
+}
+
+impl From<Intermediario> for IntermediarioDto {
+    fn from(i: Intermediario) -> Self {
+        Self {
+            id: i.id,
+            empresa_id: i.empresa_id,
+            cpf_cnpj: i.cpf_cnpj,
+            razao_social: i.razao_social,
+            inscricao_municipal: i.inscricao_municipal,
+            email: i.email,
+            telefone: i.telefone,
+        }
+    }
+}
+
+#[derive(Serialize)]
 pub struct CertificadoDto {
     pub id: i64,
     pub empresa_id: i64,
@@ -165,6 +191,7 @@ pub struct DocumentoListDto {
     pub id: i64,
     pub empresa_id: i64,
     pub cliente_id: Option<i64>,
+    pub intermediario_id: Option<i64>,
     pub lote_id: Option<i64>,
     pub modelo: String,
     pub serie: String,
@@ -196,6 +223,7 @@ impl From<Documento> for DocumentoListDto {
             id: d.id,
             empresa_id: d.empresa_id,
             cliente_id: d.cliente_id,
+            intermediario_id: d.intermediario_id,
             lote_id: d.lote_id,
             modelo: d.modelo,
             serie: d.serie,

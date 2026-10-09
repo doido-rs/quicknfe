@@ -9,6 +9,7 @@ pub mod doido_jobs;
 pub mod empresas;
 pub mod empresas_usuarios;
 pub mod eventos_documento_fiscal;
+pub mod intermediarios;
 pub mod itens_documento_fiscal;
 pub mod logs_mensagens_retorno;
 pub mod lotes_transmissao;

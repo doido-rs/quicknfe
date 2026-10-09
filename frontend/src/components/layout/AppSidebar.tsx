@@ -1,6 +1,7 @@
 import {
   Building2,
   FileText,
+  Handshake,
   Layers,
   LayoutGrid,
   ScrollText,
@@ -25,11 +26,25 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { resources } from '@/resources/definitions'
+import { resources, type ResourceDef } from '@/resources/definitions'
+
+function resourcesByMenuSection(): { label: string; items: ResourceDef[] }[] {
+  const sections: { label: string; items: ResourceDef[] }[] = []
+  for (const r of resources) {
+    let section = sections.find((s) => s.label === r.menuSection)
+    if (!section) {
+      section = { label: r.menuSection, items: [] }
+      sections.push(section)
+    }
+    section.items.push(r)
+  }
+  return sections
+}
 
 const resourceIcons: Record<string, LucideIcon> = {
   empresa: Building2,
   clientes: Users,
+  intermediarios: Handshake,
   certificados: Shield,
   lotes: Layers,
   documentos: FileText,
@@ -58,28 +73,30 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Recursos</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {resources.map((r) => {
-                const path = `/app/${r.key}`
-                const isActive =
-                  location.pathname === path || location.pathname.startsWith(`${path}/`)
-                return (
-                  <SidebarMenuItem key={r.key}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={r.title}>
-                      <NavLink to={path}>
-                        <ResourceIcon resourceKey={r.key} />
-                        <span>{r.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {resourcesByMenuSection().map((section) => (
+          <SidebarGroup key={section.label}>
+            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((r) => {
+                  const path = `/app/${r.key}`
+                  const isActive =
+                    location.pathname === path || location.pathname.startsWith(`${path}/`)
+                  return (
+                    <SidebarMenuItem key={r.key}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={r.title}>
+                        <NavLink to={path}>
+                          <ResourceIcon resourceKey={r.key} />
+                          <span>{r.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-2">
         <Button type="button" variant="outline" className="w-full" onClick={() => signOut()}>

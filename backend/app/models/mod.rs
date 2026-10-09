@@ -12,6 +12,7 @@ pub mod documento_fiscal;
 pub mod empresa;
 pub mod empresa_usuario;
 pub mod evento_documento_fiscal;
+pub mod intermediario;
 pub mod item_documento_fiscal;
 pub mod log_mensagem_retorno;
 pub mod lote_transmissao;

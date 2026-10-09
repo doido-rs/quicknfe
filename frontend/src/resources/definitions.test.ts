@@ -7,6 +7,12 @@ describe('resources', () => {
     expect(keys).toContain('empresa')
     expect(keys).toContain('clientes')
     expect(keys).toContain('documentos')
+    expect(keys).toContain('intermediarios')
+  })
+
+  it('lists notas fiscais first in the menu', () => {
+    expect(resources[0]?.key).toBe('documentos')
+    expect(resources[0]?.title).toBe('Notas fiscais')
   })
 
   it('marks logs as read-only create', () => {

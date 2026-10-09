@@ -32,6 +32,8 @@ pub enum Relation {
     DocumentosFiscais,
     #[sea_orm(has_many = "super::empresas_usuarios::Entity")]
     EmpresasUsuarios,
+    #[sea_orm(has_many = "super::intermediarios::Entity")]
+    Intermediarios,
     #[sea_orm(has_many = "super::lotes_transmissao::Entity")]
     LotesTransmissao,
 }
@@ -57,6 +59,12 @@ impl Related<super::documentos_fiscais::Entity> for Entity {
 impl Related<super::empresas_usuarios::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::EmpresasUsuarios.def()
+    }
+}
+
+impl Related<super::intermediarios::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Intermediarios.def()
     }
 }
 

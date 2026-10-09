@@ -248,6 +248,82 @@ paths:
         '204':
           description: Deleted
 
+  /api/intermediarios:
+    get:
+      tags: [Intermediarios]
+      summary: List intermediarios
+      operationId: listIntermediarios
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IntermediarioDto'
+    post:
+      tags: [Intermediarios]
+      summary: Create intermediario
+      operationId: createIntermediario
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntermediarioForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntermediarioDto'
+
+  /api/intermediarios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Intermediarios]
+      summary: Get intermediario
+      operationId: getIntermediario
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntermediarioDto'
+    patch:
+      tags: [Intermediarios]
+      summary: Update intermediario
+      operationId: updateIntermediario
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntermediarioForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntermediarioDto'
+    delete:
+      tags: [Intermediarios]
+      summary: Delete intermediario
+      operationId: deleteIntermediario
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
   /api/certificados:
     get:
       tags: [Certificados]
@@ -1017,6 +1093,29 @@ components:
               type: integer
             empresa_id:
               type: integer
+    IntermediarioForm:
+      type: object
+      required: [cpf_cnpj, razao_social]
+      properties:
+        cpf_cnpj:
+          type: string
+        razao_social:
+          type: string
+        inscricao_municipal:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+    IntermediarioDto:
+      allOf:
+        - $ref: '#/components/schemas/IntermediarioForm'
+        - type: object
+          properties:
+            id:
+              type: integer
+            empresa_id:
+              type: integer
     CertificadoForm:
       type: object
       required: [tipo, data_validade]
@@ -1098,6 +1197,11 @@ components:
         cliente_id:
           type: integer
           nullable: true
+          description: Tomador de serviço (cadastro em /api/clientes)
+        intermediario_id:
+          type: integer
+          nullable: true
+          description: Intermediário para NF intermediária (/api/intermediarios)
         lote_id:
           type: integer
           nullable: true
@@ -1144,6 +1248,9 @@ components:
           type: integer
         cliente_id:
           type: integer
+        intermediario_id:
+          type: integer
+          nullable: true
         lote_id:
           type: integer
         modelo:

@@ -199,6 +199,47 @@ impl QuickNfeMcpServer {
             .await
     }
 
+    #[tool(description = "List intermediarios (notas fiscais intermediarias)")]
+    async fn quicknfe_intermediarios_list(&self) -> CallToolResult {
+        self.api("GET", "/api/intermediarios".into(), None).await
+    }
+
+    #[tool(description = "Get intermediario by id")]
+    async fn quicknfe_intermediarios_get(&self, Parameters(p): Parameters<IdParam>) -> CallToolResult {
+        self.api("GET", format!("/api/intermediarios/{}", p.id), None)
+            .await
+    }
+
+    #[tool(description = "Create intermediario")]
+    async fn quicknfe_intermediarios_create(
+        &self,
+        Parameters(p): Parameters<JsonBodyParam>,
+    ) -> CallToolResult {
+        self.api("POST", "/api/intermediarios".into(), Some(p.body)).await
+    }
+
+    #[tool(description = "Update intermediario")]
+    async fn quicknfe_intermediarios_update(
+        &self,
+        Parameters(p): Parameters<IdBodyParam>,
+    ) -> CallToolResult {
+        self.api(
+            "PATCH",
+            format!("/api/intermediarios/{}", p.id),
+            Some(p.body),
+        )
+        .await
+    }
+
+    #[tool(description = "Delete intermediario")]
+    async fn quicknfe_intermediarios_delete(
+        &self,
+        Parameters(p): Parameters<IdParam>,
+    ) -> CallToolResult {
+        self.api("DELETE", format!("/api/intermediarios/{}", p.id), None)
+            .await
+    }
+
     #[tool(description = "List certificados")]
     async fn quicknfe_certificados_list(&self) -> CallToolResult {
         self.api("GET", "/api/certificados".into(), None).await

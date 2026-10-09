@@ -9,6 +9,7 @@ pub use super::doido_jobs::Entity as DoidoJobs;
 pub use super::empresas::Entity as Empresas;
 pub use super::empresas_usuarios::Entity as EmpresasUsuarios;
 pub use super::eventos_documento_fiscal::Entity as EventosDocumentoFiscal;
+pub use super::intermediarios::Entity as Intermediarios;
 pub use super::itens_documento_fiscal::Entity as ItensDocumentoFiscal;
 pub use super::logs_mensagens_retorno::Entity as LogsMensagensRetorno;
 pub use super::lotes_transmissao::Entity as LotesTransmissao;
