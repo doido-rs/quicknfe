@@ -88,6 +88,9 @@ are git-ignored by default.
 ## Testing
 
 ```bash
+# Cobertura (≥80% em app/services + app/settings; ver .llvm-cov.toml)
+make test-coverage-backend
+
 # Unitários do crate
 cargo test
 

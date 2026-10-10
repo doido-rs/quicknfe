@@ -1106,9 +1106,9 @@ dependencies = [
 
 [[package]]
 name = "doido"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aa3fca11142c57150d80b61a9eb6bd6cdeb2d5866e36d5035a0647dadc74292"
+checksum = "378d83f20e2b66b18acea8e6dbc7143f8bfc83d8c1e5f81996669e22c7d65d9b"
 dependencies = [
  "clap",
  "doido-auth",
@@ -1128,9 +1128,9 @@ dependencies = [
 
 [[package]]
 name = "doido-auth"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f2d9c18b253585cffed0148009f2756c3f1d1fcdf613fa7fbf4a65245553bf3"
+checksum = "55ee030e05761e2f2653dc2be63647ddff0fea61a883ba6ee3191d92c4582af0"
 dependencies = [
  "async-trait",
  "axum",
@@ -1157,9 +1157,9 @@ dependencies = [
 
 [[package]]
 name = "doido-auth-macros"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e19c844fe924ae4fcf914daffbc196d0d2a9ab1e248bab9ac0c2c6c102c8dac5"
+checksum = "5cb864660ab573d7ee2b983fec568560b899568fe3eec1a0a07da6e51155f639"
 dependencies = [
  "doido-auth-route-dsl",
  "proc-macro2",
@@ -1169,9 +1169,9 @@ dependencies = [
 
 [[package]]
 name = "doido-auth-route-dsl"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40be9eeea82720d7dc9fb6e159649eccc81247b3013c9f8b1fb6225269753cc9"
+checksum = "abc647b6341ffdfc00820fd6d8dc1826b0c7bd78e97b96165b3051e36ded9d77"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1180,9 +1180,9 @@ dependencies = [
 
 [[package]]
 name = "doido-cable"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ebd975b0daf363f17f5d71ee6080ed0636d5699d358d67f9fca00606812afb2"
+checksum = "88cce36ecf249a6904e6f7423a7c633f1b255971133bc3e54ea31b402a1eebfe"
 dependencies = [
  "async-trait",
  "doido-cable-macros",
@@ -1198,9 +1198,9 @@ dependencies = [
 
 [[package]]
 name = "doido-cable-macros"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddbe87550fef19112741fdf3237febd265d9bde9f14aaaa8e4160ddae4fd0482"
+checksum = "7fb4e7b4b7682c8d1b860b57729335e36a5a7d4a0f65276f801be82407567329"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1209,9 +1209,9 @@ dependencies = [
 
 [[package]]
 name = "doido-cache"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9445ef1c5d6243bd5259ddd4b2cec653a62e29dac998bdd38c30f9ad9e8c8cf0"
+checksum = "f31f7797cc61ddefc68abba6b11ae6756740fb3c5346294812445e8f46b969ff"
 dependencies = [
  "async-trait",
  "doido-core",
@@ -1223,9 +1223,9 @@ dependencies = [
 
 [[package]]
 name = "doido-controller"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "281d7d67cf856e8d143a9824b2e0f1b7f75032626f7f62831e09a8caf264840e"
+checksum = "fa890bf9c904be25deaf6351437eaea10b456e33ebcb09460a6ba06e4030e3b0"
 dependencies = [
  "async-trait",
  "axum",
@@ -1253,9 +1253,9 @@ dependencies = [
 
 [[package]]
 name = "doido-controller-macros"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d3260e08fbf7dfad3dcff1c877e6a8fc9656a322765aaf685f4c66be45f78ec"
+checksum = "4cd9c88809927889399a3efe88d289af08cebaa08353b47f3ac1e88160d02103"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1264,9 +1264,9 @@ dependencies = [
 
 [[package]]
 name = "doido-core"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a60beeaa5bc4d0e1f006d54bc760f073e543772cba864baececc6189d2c8e402"
+checksum = "f01217bd201d0d8d847dd62a6a974028801a3d814dc7b514e465ddb822394ede"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1287,9 +1287,9 @@ dependencies = [
 
 [[package]]
 name = "doido-generators"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23cf42b9ed3b886f0012fde144e939f85e120946764a46fec81625c87f691dfc"
+checksum = "459d1f60d72eeb23beb97ef4fbc19c80f1919ff1798e9d494398ae2947a6f2e6"
 dependencies = [
  "chrono",
  "clap",
@@ -1303,9 +1303,9 @@ dependencies = [
 
 [[package]]
 name = "doido-jobs"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d0fd04ef5ad59e5419fc4459195aca1da0080e6e1cd5f00e4cdb171afb96f1c"
+checksum = "63cd17a8cbff3ff1aa0c15347bf451b6428920a0a3d6cd2dabab76f253c99dd9"
 dependencies = [
  "async-trait",
  "chrono",
@@ -1324,9 +1324,9 @@ dependencies = [
 
 [[package]]
 name = "doido-jobs-macros"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e72f31a9066dac7ab6ff8ab355d010b166b134f3d638f0acd295830a03b13a52"
+checksum = "d36d2ab152345533ebe0789a2f3309194e8fbfcca59316d69e28972bd36b4b6f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1335,9 +1335,9 @@ dependencies = [
 
 [[package]]
 name = "doido-mailer"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "743622e21549ff3fb063be72ffe46fe574188249fffe34cccf6aa1676356f2c0"
+checksum = "4bc3465d5e6777648350b6ed1fe8c72424d53e6e1c5b7661c8fa3a836c49dd9f"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -1357,9 +1357,9 @@ dependencies = [
 
 [[package]]
 name = "doido-mailer-macros"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6c1f86670c826dc949890e721d8b5502cd22faa89d7c863d0442b9af948c192"
+checksum = "869d41b312dfd24b8cb85762bd9ac1395012421a00fd5a61cb699de8d75d2147"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1368,9 +1368,9 @@ dependencies = [
 
 [[package]]
 name = "doido-model"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58287dc6bc442143c10bdb23c1f8736678dfb676876596ff4524f5d4ff0550f4"
+checksum = "b3c8dd7eba6c43000e0ff458cca1089433e47873b19548b2161c8c1477b97f61"
 dependencies = [
  "bcrypt",
  "clap",
@@ -1390,9 +1390,9 @@ dependencies = [
 
 [[package]]
 name = "doido-storage"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b61c553c6a82bf3ed0b4aef2fd762b092cda8274c4907e2424986d9c3670bbbc"
+checksum = "93c67f641f7b165f4525c200297979488100783f3a0f0bbd993d26af6e6475a7"
 dependencies = [
  "async-trait",
  "axum",
@@ -1414,9 +1414,9 @@ dependencies = [
 
 [[package]]
 name = "doido-view"
-version = "0.0.30"
+version = "0.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7120631334b8b3bb1e3954a3d88af9bb6ce23437d22e8aeeb7a34f3b1630235b"
+checksum = "f139dce8defa904233b9f908cadf9c6f07930bdbf3948802cbc1889f1b5f1ae0"
 dependencies = [
  "doido-cache",
  "doido-core",

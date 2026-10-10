@@ -14,7 +14,8 @@ COMPOSE       := docker compose
 .PHONY: help setup install up down db-create db-migrate db-seed db-setup db-console \
 	dev dev-backend dev-frontend dev-sefin-mock build docs \
 	lint lint-frontend lint-backend fix fix-frontend fix-backend lint-fix \
-	test test-frontend test-backend test-integration test-all ci \
+	test test-frontend test-backend test-integration test-all \
+	test-coverage test-coverage-frontend test-coverage-backend ci \
 	docker-build deploy upload push
 
 help: ## Lista alvos disponíveis
@@ -111,10 +112,20 @@ test-integration: ## tenant_api_test (MySQL quicknfe_test)
 
 test-all: test test-integration ## Unitários + integração API
 
-test-coverage: ## Vitest com threshold 80%
+COVERAGE_MIN ?= 80
+
+test-coverage: test-coverage-frontend test-coverage-backend ## Coverage ≥ $(COVERAGE_MIN)% (frontend + backend)
+
+test-coverage-frontend: ## Vitest com threshold $(COVERAGE_MIN)%
 	cd $(FRONTEND_DIR) && $(BUN) run test:coverage
 
-ci: lint test-all build ## Pipeline local (lint + testes + build)
+test-coverage-backend: ## cargo-llvm-cov no bin quicknfe (ver backend/.llvm-cov.toml)
+	@command -v cargo-llvm-cov >/dev/null 2>&1 || { \
+		echo "Instale: cargo install cargo-llvm-cov"; exit 1; \
+	}
+	cd $(BACKEND_DIR) && cargo llvm-cov test --bin quicknfe --summary-only
+
+ci: lint test-coverage build ## Pipeline local (lint + coverage + build)
 
 # --- Deploy / upload ---
 

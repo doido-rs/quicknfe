@@ -1,0 +1,19 @@
+[report]
+fail-under-lines = 80
+ignore-filename-regex = [
+    "db/migration/",
+    "app/models/_entities/",
+    "app/models/",
+    "app/controllers/",
+    "app/oauth/",
+    "app/mcp/",
+    "app/api_docs/",
+    "app/mailers/",
+    "app/jobs/",
+    "app/generators/",
+    "app/helpers/",
+    "app/auth/",
+    "config/routes",
+    "src/main\\.rs",
+    "tests/",
+]
