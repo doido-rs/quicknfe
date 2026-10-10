@@ -1,4 +1,5 @@
 use crate::services::api_error::ApiError;
+use crate::settings::{get as app_settings, normalize_base_url};
 
 /// Ambiente da NFS-e Nacional (`tpAmb`: 1 = Produção, 2 = Homologação / Produção Restrita).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,15 +26,21 @@ impl AmbienteNfse {
         }
     }
 
-    /// URL base oficial (sem barra final).
-    pub fn base_url(self) -> &'static str {
-        match self {
-            Self::Homologacao => "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
-            Self::Producao => "https://sefin.nfse.gov.br/SefinNacional",
-        }
+    /// URL base (sem barra final) — `settings.sefin` em `config/<env>.yml`.
+    pub fn base_url(self) -> String {
+        let sefin = &app_settings().sefin;
+        let raw = match self {
+            Self::Homologacao => &sefin.base_url_homologacao,
+            Self::Producao => &sefin.base_url_producao,
+        };
+        normalize_base_url(raw)
     }
 
     pub fn url_emissao_nfse(self) -> String {
         format!("{}/nfse", self.base_url())
+    }
+
+    pub fn url_consulta_dps(self, id_dps: &str) -> String {
+        format!("{}/dps/{}", self.base_url(), id_dps)
     }
 }

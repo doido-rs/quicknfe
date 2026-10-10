@@ -51,3 +51,7 @@ middleware:
       - Accept
       - Authorization
 # MCP off in test unless MCP_ENABLED=true (see mcp_oauth_test)
+settings:
+  sefin:
+    base_url_homologacao: '{{ get_env(name="SEFIN_BASE_URL", default="https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional") }}'
+    base_url_producao: "https://sefin.nfse.gov.br/SefinNacional"

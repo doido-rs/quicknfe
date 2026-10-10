@@ -12,7 +12,7 @@ BUN           ?= bun
 COMPOSE       := docker compose
 
 .PHONY: help setup install up down db-create db-migrate db-seed db-setup db-console \
-	dev dev-backend dev-frontend build docs \
+	dev dev-backend dev-frontend dev-sefin-mock build docs \
 	lint lint-frontend lint-backend fix fix-frontend fix-backend lint-fix \
 	test test-frontend test-backend test-integration test-all ci \
 	docker-build deploy upload push
@@ -61,6 +61,9 @@ dev-backend: ## API Doido em http://localhost:3000 (cargo-watch)
 
 dev-frontend: ## Vite em http://localhost:3001 (proxy /api → backend)
 	cd $(FRONTEND_DIR) && $(BUN) run dev
+
+dev-sefin-mock: ## Mock SEFIN NFS-e em http://127.0.0.1:8090
+	cd sefin-mock && cargo run
 
 docs: ## Abre documentação (Swagger requer backend :3000)
 	@printf "\nDocs index: docs/README.md\nSwagger UI: http://localhost:3000/api-docs\nOpenAPI: docs/api/openapi.yaml\n\n"

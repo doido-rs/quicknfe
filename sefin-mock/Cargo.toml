@@ -1,0 +1,34 @@
+[package]
+name = "sefin-mock"
+version = "0.1.0"
+edition = "2021"
+description = "Mock local da API SEFIN Nacional (NFS-e) para desenvolvimento"
+
+[lib]
+name = "sefin_mock"
+path = "src/lib.rs"
+doctest = false
+
+[[bin]]
+name = "sefin-mock"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.8", features = ["json"] }
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+flate2 = "1"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+tower-http = { version = "0.6", features = ["trace", "cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde_json = "1"

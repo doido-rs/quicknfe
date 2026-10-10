@@ -8,6 +8,9 @@ mod auth;
 mod controllers;
 #[path = "../app/models/mod.rs"]
 mod models;
+#[path = "../app/settings/mod.rs"]
+mod settings;
+
 #[path = "../app/services/mod.rs"]
 mod services;
 #[path = "../app/helpers/mod.rs"]

@@ -28,6 +28,13 @@ From `development.yml` / `test.yml`:
 
 Development allows `http://localhost:3001` with credentials for the SPA.
 
+### NFS-e / SEFIN
+
+Bloco `settings.sefin` em `config/<env>.yml`:
+
+- `base_url_homologacao` — em development/test pode usar `{{ get_env(name="SEFIN_BASE_URL", default="…") }}` para o [sefin-mock](../sefin-mock/README.md)
+- `base_url_producao` — URL oficial de produção
+
 ### MCP (development)
 
 When `MCP_ENABLED` is true (default in development):

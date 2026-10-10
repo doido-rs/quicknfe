@@ -1,6 +1,9 @@
 #[path = "../app/auth/mod.rs"]
 mod auth;
 
+#[path = "../app/settings/mod.rs"]
+mod settings;
+
 #[path = "../app/services/mod.rs"]
 mod services;
 
@@ -45,8 +48,7 @@ mod startup;
 #[tokio::main]
 async fn main() {
     startup::prepare();
-    // App-owned settings from the `settings:` block in `config/<env>.yml` — add
-    // `settings::Settings::init()` here or on `.before_run(...)` when you define one.
+    settings::init();
     // Delegates to the Doido CLI (server, console, db, worker, generate, …),
     // handing it this app's routes so `doido server` can boot the HTTP server.
     // The `jobs`/`mailers` modules above are compiled as part of this crate, so

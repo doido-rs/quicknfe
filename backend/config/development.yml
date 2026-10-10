@@ -64,3 +64,8 @@ middleware:
 mcp:
   enabled: true
   public_url: "http://localhost:3000"
+settings:
+  sefin:
+    # Homologação / produção restrita. Use SEFIN_BASE_URL no .env para apontar ao sefin-mock.
+    base_url_homologacao: '{{ get_env(name="SEFIN_BASE_URL", default="https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional") }}'
+    base_url_producao: "https://sefin.nfse.gov.br/SefinNacional"

@@ -42,6 +42,14 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  sefin-mock:
+    build:
+      context: ./sefin-mock
+    ports:
+      - "8090:8090"
+    environment:
+      SEFIN_MOCK_PORT: "8090"
+
 volumes:
   cargo-registry:
   cargo-git:
