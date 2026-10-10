@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useForm } from 'react-hook-form'
+import { useState } from 'react'
 import { isApiError } from '@/api/client'
 import { useAuth } from '@/auth/AuthContext'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -9,19 +10,26 @@ import { Input } from '@/components/ui/input'
 import { AuthPageShell } from '@/components/AuthPageShell'
 import { Label } from '@/components/ui/label'
 
+type RegisterForm = {
+  email: string
+  password: string
+}
+
 export function RegisterPage() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<RegisterForm>()
   const [error, setError] = useState<string | null>(null)
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault()
+  async function onSubmit(values: RegisterForm) {
     setError(null)
     try {
-      await signUp(email, password)
-      navigate('/tenant')
+      await signUp(values.email, values.password)
+      navigate({ to: '/tenant' })
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Falha no cadastro')
     }
@@ -34,17 +42,15 @@ export function RegisterPage() {
           <CardTitle>Criar conta</CardTitle>
           <CardDescription>Cadastre-se para acessar o QuickNFe.</CardDescription>
         </CardHeader>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="flex flex-col gap-4">
             <div className="grid gap-2">
               <Label htmlFor="register-email">E-mail</Label>
               <Input
                 id="register-email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
                 autoComplete="email"
+                {...register('email', { required: true })}
               />
             </div>
             <div className="grid gap-2">
@@ -52,11 +58,9 @@ export function RegisterPage() {
               <Input
                 id="register-password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
                 autoComplete="new-password"
+                minLength={8}
+                {...register('password', { required: true, minLength: 8 })}
               />
             </div>
             {error && (
@@ -64,7 +68,7 @@ export function RegisterPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               Cadastrar
             </Button>
           </CardContent>

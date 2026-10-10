@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet } from '@tanstack/react-router'
 import { useAuth } from '@/auth/AuthContext'
 import { AppSidebar } from '@/components/layout/AppSidebar'
 import { ThemeToggle } from '@/components/ThemeToggle'

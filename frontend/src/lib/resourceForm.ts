@@ -1,3 +1,4 @@
+import { useForm, type UseFormReturn } from 'react-hook-form'
 import type { FieldDef } from '../resources/definitions'
 
 export function emptyForm(fields: FieldDef[]): Record<string, string> {
@@ -15,11 +16,6 @@ export function formatFieldValue(value: unknown): string {
   return String(value)
 }
 
-export function rowLabel(row: Record<string, unknown>, fields: FieldDef[]): string {
-  const first = fields.find((f) => row[f.key] != null)
-  return first ? String(row[first.key]) : String(row.id ?? '')
-}
-
 export function buildBody(fields: FieldDef[], form: Record<string, string>) {
   return Object.fromEntries(
     fields.map((f) => {
@@ -33,4 +29,18 @@ export function buildBody(fields: FieldDef[], form: Record<string, string>) {
       return [f.key, raw]
     }),
   )
+}
+
+export function useResourceFieldForm(
+  fields: FieldDef[],
+  defaultValues?: Record<string, string>,
+): UseFormReturn<Record<string, string>> {
+  return useForm<Record<string, string>>({
+    defaultValues: defaultValues ?? emptyForm(fields),
+  })
+}
+
+export function rowLabel(row: Record<string, unknown>, fields: FieldDef[]): string {
+  const first = fields.find((f) => row[f.key] != null)
+  return first ? String(row[first.key]) : String(row.id ?? '')
 }

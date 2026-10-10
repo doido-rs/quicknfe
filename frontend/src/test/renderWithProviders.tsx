@@ -1,27 +1,50 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router'
 import { render, type RenderOptions } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import { MemoryRouter } from 'react-router-dom'
 import { AuthProvider } from '../auth/AuthContext'
+import { routeTree } from '../router/routeTree'
 import { ThemeProvider } from '../theme/ThemeContext'
 
-export function renderWithProviders(
-  ui: ReactElement,
-  options?: RenderOptions & { route?: string },
+export type RenderWithProvidersOptions = RenderOptions & { route?: string }
+
+function createTestRouter(initialPath: string) {
+  return createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: [initialPath] }),
+  })
+}
+
+export async function renderWithProviders(
+  uiOrOptions?: ReactElement | RenderWithProvidersOptions,
+  maybeOptions?: RenderWithProvidersOptions,
 ) {
+  const usingLegacyUi =
+    uiOrOptions != null && typeof uiOrOptions === 'object' && 'type' in uiOrOptions
+
+  const options: RenderWithProvidersOptions = usingLegacyUi
+    ? (maybeOptions ?? {})
+    : ((uiOrOptions as RenderWithProvidersOptions | undefined) ?? {})
+
+  const route = options.route ?? '/'
+
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  const route = options?.route ?? '/'
+
+  const router = createTestRouter(route)
+  await router.load()
+
+  const { route: _route, ...renderOptions } = options
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[route]}>
-        <ThemeProvider>
-          <AuthProvider>{ui}</AuthProvider>
-        </ThemeProvider>
-      </MemoryRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>,
-    options,
+    renderOptions,
   )
 }

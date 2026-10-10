@@ -1,22 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { resourceApi } from '@/api/client'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useResourceDef } from '@/hooks/useResourceDef'
+import { useResourceDef, useResourceRecordId } from '@/hooks/useResourceDef'
 import { formatFieldValue, rowLabel } from '@/lib/resourceForm'
-import { resourceEditPath, resourceListPath } from '@/lib/resourcePaths'
+import { resourceEditTo, resourceListTo } from '@/lib/resourcePaths'
 
 export function ResourceShowPage() {
   const def = useResourceDef()
-  const { id } = useParams<{ id: string }>()
+  const recordId = useResourceRecordId()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const recordId = Number(id)
   const api = resourceApi<Record<string, unknown>>(def.path)
   const allowDelete = def.allowDelete !== false
 
@@ -24,20 +23,20 @@ export function ResourceShowPage() {
 
   const { data: row, isLoading, isError } = useQuery({
     queryKey: [def.key, 'detail', recordId],
-    queryFn: () => api.get(recordId),
-    enabled: Number.isFinite(recordId),
+    queryFn: () => api.get(recordId!),
+    enabled: recordId != null,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.remove(recordId),
+    mutationFn: () => api.remove(recordId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
-      navigate(resourceListPath(def))
+      navigate(resourceListTo(def))
     },
   })
 
-  if (!Number.isFinite(recordId)) {
-    return <Navigate to={resourceListPath(def)} replace />
+  if (recordId == null) {
+    return <Navigate {...resourceListTo(def)} replace />
   }
 
   if (isLoading) {
@@ -45,7 +44,7 @@ export function ResourceShowPage() {
   }
 
   if (isError || !row) {
-    return <Navigate to={resourceListPath(def)} replace />
+    return <Navigate {...resourceListTo(def)} replace />
   }
 
   return (
@@ -53,7 +52,7 @@ export function ResourceShowPage() {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-            <Link to={resourceListPath(def)}>← Voltar à lista</Link>
+            <Link {...resourceListTo(def)}>← Voltar à lista</Link>
           </Button>
           <h1 className="text-2xl font-semibold tracking-tight">{def.title}</h1>
           <p className="text-sm text-muted-foreground">
@@ -62,7 +61,7 @@ export function ResourceShowPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
-            <Link to={resourceEditPath(def, recordId)}>Editar</Link>
+            <Link {...resourceEditTo(def, recordId)}>Editar</Link>
           </Button>
           {allowDelete && (
             <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
@@ -88,9 +87,7 @@ export function ResourceShowPage() {
         </CardContent>
       </Card>
 
-      {def.nested && (
-        <NestedResourcePanel parentId={recordId} nested={def.nested} />
-      )}
+      {def.nested && <NestedResourcePanel parentId={recordId} nested={def.nested} />}
 
       <DeleteConfirmDialog
         open={deleteOpen}

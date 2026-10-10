@@ -1,37 +1,39 @@
-import type { Dispatch, FormEvent, SetStateAction } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
+import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { ResourceRouteLink } from '@/lib/resourcePaths'
 import type { FieldDef } from '@/resources/definitions'
 
 export function ResourceFormFields({
   fields,
   form,
-  setForm,
   onSubmit,
   submitLabel,
-  pending,
-  cancelTo,
+  cancelLink,
   onCancel,
 }: {
   fields: FieldDef[]
-  form: Record<string, string>
-  setForm: Dispatch<SetStateAction<Record<string, string>>>
-  onSubmit: (e: FormEvent) => void
+  form: UseFormReturn<Record<string, string>>
+  onSubmit: (values: Record<string, string>) => void | Promise<void>
   submitLabel: string
-  pending?: boolean
-  cancelTo?: string
+  cancelLink?: ResourceRouteLink
   onCancel?: () => void
 }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = form
+
   return (
-    <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 md:grid-cols-2">
       {fields.map((field) => (
         <div key={field.key} className="grid gap-2">
           <Label htmlFor={`field-${field.key}`}>{field.label}</Label>
           <Input
             id={`field-${field.key}`}
-            required={field.required}
             type={
               field.type === 'number'
                 ? 'number'
@@ -39,18 +41,17 @@ export function ResourceFormFields({
                   ? 'datetime-local'
                   : 'text'
             }
-            value={form[field.key] ?? ''}
-            onChange={(ev) => setForm((prev) => ({ ...prev, [field.key]: ev.target.value }))}
+            {...register(field.key, { required: field.required })}
           />
         </div>
       ))}
       <div className="flex flex-wrap gap-2 md:col-span-2">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={isSubmitting}>
           {submitLabel}
         </Button>
-        {cancelTo ? (
+        {cancelLink ? (
           <Button type="button" variant="outline" asChild>
-            <Link to={cancelTo}>Cancelar</Link>
+            <Link {...cancelLink}>Cancelar</Link>
           </Button>
         ) : onCancel ? (
           <Button type="button" variant="outline" onClick={onCancel}>

@@ -1,13 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../test/renderWithProviders'
-import { ResourceLayout } from '../pages/ResourceLayout'
-import { ResourceListPage } from '../pages/resources/ResourceListPage'
-import { ResourceShowPage } from '../pages/resources/ResourceShowPage'
-import { ResourceNewPage } from '../pages/resources/ResourceNewPage'
-import { ResourceEditPage } from '../pages/resources/ResourceEditPage'
 
 function jsonResponse(data: unknown, status = 200) {
   return {
@@ -39,20 +33,6 @@ function stubFetch(handler: (url: string, method: string) => ReturnType<typeof j
   )
 }
 
-function renderResourceRoutes(initialRoute: string) {
-  return renderWithProviders(
-    <Routes>
-      <Route path="/app/:resourceKey" element={<ResourceLayout />}>
-        <Route index element={<ResourceListPage />} />
-        <Route path="new" element={<ResourceNewPage />} />
-        <Route path=":id" element={<ResourceShowPage />} />
-        <Route path=":id/edit" element={<ResourceEditPage />} />
-      </Route>
-    </Routes>,
-    { route: initialRoute },
-  )
-}
-
 afterEach(() => {
   vi.restoreAllMocks()
 })
@@ -66,7 +46,7 @@ describe('Resource pages', () => {
       return jsonResponse('missing', 404)
     })
 
-    renderResourceRoutes('/app/clientes')
+    await renderWithProviders({ route: '/app/clientes' })
     expect(await screen.findByText('123')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^novo$/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^ver$/i })).toBeInTheDocument()
@@ -83,7 +63,7 @@ describe('Resource pages', () => {
       return jsonResponse('missing', 404)
     })
 
-    renderResourceRoutes('/app/clientes/1')
+    await renderWithProviders({ route: '/app/clientes/1' })
     expect(await screen.findByText(/cliente a/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^editar$/i })).toBeInTheDocument()
   })
@@ -112,7 +92,7 @@ describe('Resource pages', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    renderResourceRoutes('/app/clientes')
+    await renderWithProviders({ route: '/app/clientes' })
     await screen.findByText('123')
 
     await userEvent.click(screen.getByRole('button', { name: /^excluir$/i }))
@@ -144,7 +124,7 @@ describe('Resource pages', () => {
       return jsonResponse('missing', 404)
     })
 
-    renderResourceRoutes('/app/documentos/9')
+    await renderWithProviders({ route: '/app/documentos/9' })
     expect(await screen.findByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
   })
 
@@ -158,7 +138,7 @@ describe('Resource pages', () => {
       return jsonResponse('missing', 404)
     })
 
-    renderResourceRoutes('/app/logs-retorno')
+    await renderWithProviders({ route: '/app/logs-retorno' })
     await screen.findByText('E1')
     expect(screen.queryByRole('link', { name: /^novo$/i })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^ver$/i })).toBeInTheDocument()

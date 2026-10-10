@@ -32,7 +32,7 @@ export default defineConfig({
       },
       exclude: [
         'src/main.tsx',
-        'src/App.tsx',
+        'src/router/routeTree.tsx',
         'src/vite-env.d.ts',
         'src/test/**',
         'src/pages/ResourcePage.tsx',

@@ -1,3 +1,4 @@
+import { Link, useRouterState } from '@tanstack/react-router'
 import {
   Building2,
   FileText,
@@ -9,7 +10,6 @@ import {
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { resourceListTo } from '@/lib/resourcePaths'
 import { resources, type ResourceDef } from '@/resources/definitions'
 
 function resourcesByMenuSection(): { label: string; items: ResourceDef[] }[] {
@@ -58,7 +59,7 @@ function ResourceIcon({ resourceKey }: { resourceKey: string }) {
 
 export function AppSidebar() {
   const { me, signOut } = useAuth()
-  const location = useLocation()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   return (
     <Sidebar collapsible="icon">
@@ -83,15 +84,15 @@ export function AppSidebar() {
               <SidebarMenu>
                 {section.items.map((r) => {
                   const path = `/app/${r.key}`
-                  const isActive =
-                    location.pathname === path || location.pathname.startsWith(`${path}/`)
+                  const isActive = pathname === path || pathname.startsWith(`${path}/`)
+                  const listTo = resourceListTo(r)
                   return (
                     <SidebarMenuItem key={r.key}>
                       <SidebarMenuButton asChild isActive={isActive} tooltip={r.title}>
-                        <NavLink to={path}>
+                        <Link {...listTo}>
                           <ResourceIcon resourceKey={r.key} />
                           <span>{r.title}</span>
-                        </NavLink>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )

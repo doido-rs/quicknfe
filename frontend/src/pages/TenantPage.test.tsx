@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as client from '../api/client'
 import { stubApiFetch } from '../test/mockFetch'
 import { renderWithProviders } from '../test/renderWithProviders'
-import { TenantPage } from './TenantPage'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -26,7 +25,7 @@ describe('TenantPage', () => {
       papel: null,
     })
 
-    renderWithProviders(<TenantPage />, { route: '/tenant' })
+    await renderWithProviders({ route: '/tenant' })
     expect(await screen.findByText(/Company X/i)).toBeInTheDocument()
   })
 
@@ -48,7 +47,7 @@ describe('TenantPage', () => {
     })
     const switchSpy = vi.spyOn(client.tenantApi, 'switchCompany').mockResolvedValue(undefined)
 
-    renderWithProviders(<TenantPage />, { route: '/tenant' })
+    await renderWithProviders({ route: '/tenant' })
     await screen.findByText(/Company X/i)
     await userEvent.click(screen.getByRole('button', { name: /Company X/i }))
 
@@ -75,7 +74,7 @@ describe('TenantPage', () => {
       client.createApiError(403, 'sem acesso'),
     )
 
-    renderWithProviders(<TenantPage />, { route: '/tenant' })
+    await renderWithProviders({ route: '/tenant' })
     await screen.findByText(/Company X/i)
     await userEvent.click(screen.getByRole('button', { name: /Company X/i }))
 
@@ -93,7 +92,7 @@ describe('TenantPage', () => {
     })
     const signOut = vi.spyOn(client.authApi, 'signOut').mockResolvedValue(undefined)
 
-    renderWithProviders(<TenantPage />, { route: '/tenant' })
+    await renderWithProviders({ route: '/tenant' })
     await userEvent.click(await screen.findByRole('button', { name: /^sair$/i }))
 
     await waitFor(() => {

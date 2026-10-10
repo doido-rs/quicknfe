@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate } from '@tanstack/react-router'
 import { isApiError } from '@/api/client'
 import { useAuth } from '@/auth/AuthContext'
 import { Alert, AlertDescription } from '@/components/ui/alert'

@@ -1,11 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
 import { resourceApi } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { buildBody, emptyForm, rowLabel } from '@/lib/resourceForm'
+import { buildBody, emptyForm, rowLabel, useResourceFieldForm } from '@/lib/resourceForm'
 import type { ResourceDef } from '@/resources/definitions'
 
 export function NestedResourcePanel({
@@ -18,7 +17,8 @@ export function NestedResourcePanel({
   const path = nested.path(parentId)
   const api = resourceApi<Record<string, unknown>>(path)
   const queryClient = useQueryClient()
-  const [form, setForm] = useState(() => emptyForm(nested.fields))
+  const form = useResourceFieldForm(nested.fields)
+  const { register, handleSubmit, reset } = form
 
   const { data: rows = [] } = useQuery({
     queryKey: [path, 'list'],
@@ -26,10 +26,10 @@ export function NestedResourcePanel({
   })
 
   const createMutation = useMutation({
-    mutationFn: () => api.create(buildBody(nested.fields, form)),
+    mutationFn: (values: Record<string, string>) => api.create(buildBody(nested.fields, values)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [path] })
-      setForm(emptyForm(nested.fields))
+      reset(emptyForm(nested.fields))
     },
   })
 
@@ -41,20 +41,15 @@ export function NestedResourcePanel({
       <CardContent className="space-y-4">
         <form
           className="grid gap-4 md:grid-cols-2"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            createMutation.mutate()
-          }}
+          onSubmit={handleSubmit((values) => createMutation.mutate(values))}
         >
           {nested.fields.map((f) => (
             <div key={f.key} className="grid gap-2">
               <Label htmlFor={`nested-${f.key}`}>{f.label}</Label>
               <Input
                 id={`nested-${f.key}`}
-                required={f.required}
                 type={f.type === 'number' ? 'number' : 'text'}
-                value={form[f.key] ?? ''}
-                onChange={(ev) => setForm((p) => ({ ...p, [f.key]: ev.target.value }))}
+                {...register(f.key, { required: f.required })}
               />
             </div>
           ))}

@@ -1,15 +1,14 @@
-import { Navigate, Outlet, useParams } from 'react-router-dom'
-import { resources, type ResourceDef } from '@/resources/definitions'
-
-export type ResourceOutletContext = { def: ResourceDef }
+import { Navigate, Outlet, useParams } from '@tanstack/react-router'
+import { defaultResourceListTo } from '@/lib/resourcePaths'
+import { resources } from '@/resources/definitions'
 
 export function ResourceLayout() {
-  const { resourceKey } = useParams<{ resourceKey: string }>()
+  const { resourceKey } = useParams({ strict: false })
   const def = resources.find((r) => r.key === resourceKey)
 
   if (!def) {
-    return <Navigate to="/app/documentos" replace />
+    return <Navigate {...defaultResourceListTo} replace />
   }
 
-  return <Outlet context={{ def } satisfies ResourceOutletContext} />
+  return <Outlet />
 }

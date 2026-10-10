@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { isApiError } from '@/api/client'
 import { useAuth } from '@/auth/AuthContext'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -9,11 +10,19 @@ import { Input } from '@/components/ui/input'
 import { AuthPageShell } from '@/components/AuthPageShell'
 import { Label } from '@/components/ui/label'
 
+type LoginForm = {
+  email: string
+  password: string
+}
+
 export function LoginPage() {
   const { signIn, me, isLoading } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<LoginForm>()
   const [error, setError] = useState<string | null>(null)
 
   if (!isLoading && me) {
@@ -22,12 +31,11 @@ export function LoginPage() {
     return <Navigate to="/app" replace />
   }
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault()
+  async function onSubmit(values: LoginForm) {
     setError(null)
     try {
-      await signIn(email, password)
-      navigate('/tenant')
+      await signIn(values.email, values.password)
+      navigate({ to: '/tenant' })
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Falha no login')
     }
@@ -40,17 +48,15 @@ export function LoginPage() {
           <CardTitle>QuickNFe — Entrar</CardTitle>
           <CardDescription>Acesse com seu e-mail e senha.</CardDescription>
         </CardHeader>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="flex flex-col gap-4">
             <div className="grid gap-2">
               <Label htmlFor="login-email">E-mail</Label>
               <Input
                 id="login-email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
                 autoComplete="email"
+                {...register('email', { required: true })}
               />
             </div>
             <div className="grid gap-2">
@@ -58,10 +64,8 @@ export function LoginPage() {
               <Input
                 id="login-password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
                 autoComplete="current-password"
+                {...register('password', { required: true })}
               />
             </div>
             {error && (
@@ -69,7 +73,7 @@ export function LoginPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               Entrar
             </Button>
           </CardContent>

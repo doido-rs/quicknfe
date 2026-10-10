@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import * as client from '../api/client'
 import { renderWithProviders } from '../test/renderWithProviders'
-import { LoginPage } from './LoginPage'
 
 describe('LoginPage', () => {
   it('submits credentials', async () => {
@@ -13,7 +12,7 @@ describe('LoginPage', () => {
     })
     vi.spyOn(client, 'apiFetch').mockRejectedValue(client.createApiError(401, 'n/a'))
 
-    renderWithProviders(<LoginPage />, { route: '/login' })
+    await renderWithProviders({ route: '/login' })
     await userEvent.type(screen.getByLabelText(/e-mail/i), 'a@b.com')
     await userEvent.type(screen.getByLabelText(/senha/i), 'secret123')
     await userEvent.click(screen.getByRole('button', { name: /entrar/i }))
@@ -29,7 +28,7 @@ describe('LoginPage', () => {
       client.createApiError(401, 'Credenciais inválidas'),
     )
 
-    renderWithProviders(<LoginPage />, { route: '/login' })
+    await renderWithProviders({ route: '/login' })
     await userEvent.type(screen.getByLabelText(/e-mail/i), 'a@b.com')
     await userEvent.type(screen.getByLabelText(/senha/i), 'wrong')
     await userEvent.click(screen.getByRole('button', { name: /entrar/i }))
