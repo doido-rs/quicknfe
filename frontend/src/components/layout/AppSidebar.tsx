@@ -5,13 +5,13 @@ import {
   Handshake,
   Layers,
   LayoutGrid,
+  LogOut,
   ScrollText,
   Shield,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/auth/AuthContext'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Sidebar,
@@ -25,6 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { resourceListTo } from '@/lib/resourcePaths'
 import { resources, type ResourceDef } from '@/resources/definitions'
@@ -59,22 +60,39 @@ function ResourceIcon({ resourceKey }: { resourceKey: string }) {
 
 export function AppSidebar() {
   const { me, signOut } = useAuth()
+  const { state, isMobile } = useSidebar()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const iconOnly = state === 'collapsed' && !isMobile
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex flex-col gap-1 group-data-[collapsible=icon]:items-center">
-          <span className="text-sm font-semibold tracking-tight">QuickNFe</span>
-          {me?.prestador_ativo && (
-            <Badge variant="secondary" className="w-fit max-w-full truncate font-normal">
-              {me.prestador_ativo.razao_social}
-            </Badge>
-          )}
-          {me?.company_ativa && (
-            <span className="text-xs text-muted-foreground truncate">{me.company_ativa.nome}</span>
-          )}
-        </div>
+      <SidebarHeader className="border-b border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              tooltip="QuickNFe"
+              className="pointer-events-none h-auto py-2 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:py-0"
+            >
+              <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <span className="text-xs font-bold tracking-tight">QN</span>
+              </div>
+              <div className="grid min-w-0 flex-1 gap-0.5 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate text-sm font-semibold tracking-tight">QuickNFe</span>
+                {me?.prestador_ativo && (
+                  <span className="truncate text-xs font-normal text-sidebar-foreground/80">
+                    {me.prestador_ativo.razao_social}
+                  </span>
+                )}
+                {me?.company_ativa && (
+                  <span className="truncate text-xs text-muted-foreground">
+                    {me.company_ativa.nome}
+                  </span>
+                )}
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         {resourcesByMenuSection().map((section) => (
@@ -103,8 +121,14 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-2">
-        <Button type="button" variant="outline" className="w-full" onClick={() => signOut()}>
-          Sair
+        <Button
+          type="button"
+          variant="outline"
+          className={iconOnly ? 'size-8 p-0' : 'w-full'}
+          onClick={() => signOut()}
+          title={iconOnly ? 'Sair' : undefined}
+        >
+          {iconOnly ? <LogOut className="size-4" /> : 'Sair'}
         </Button>
       </SidebarFooter>
       <SidebarRail />
