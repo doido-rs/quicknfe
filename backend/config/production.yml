@@ -41,5 +41,5 @@ auth:
     prefix: /users
 settings:
   sefin:
-    base_url_homologacao: "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional"
-    base_url_producao: "https://sefin.nfse.gov.br/SefinNacional"
+    ambiente: 1
+    base_url: "https://sefin.nfse.gov.br/SefinNacional"

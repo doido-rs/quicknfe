@@ -22,21 +22,28 @@ impl Default for Settings {
     }
 }
 
-/// URLs base da API SEFIN Nacional (sem barra final).
+/// Endpoint único da API SEFIN Nacional para esta instância (`tpAmb` 1 ou 2 + URL base).
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct SefinSettings {
-    pub base_url_homologacao: String,
-    pub base_url_producao: String,
+    /// `1` = produção, `2` = homologação / produção restrita.
+    pub ambiente: i32,
+    /// URL base (sem barra final) usada em todas as chamadas SEFIN deste deploy.
+    pub base_url: String,
 }
 
 impl Default for SefinSettings {
     fn default() -> Self {
         Self {
-            base_url_homologacao:
-                "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional".into(),
-            base_url_producao: "https://sefin.nfse.gov.br/SefinNacional".into(),
+            ambiente: 2,
+            base_url: "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional".into(),
         }
+    }
+}
+
+impl SefinSettings {
+    pub fn base_url_normalized(&self) -> String {
+        normalize_base_url(&self.base_url)
     }
 }
 

@@ -54,7 +54,7 @@ pub async fn enviar_dps_assinada(
 
     let dps_b64 = xml_para_dps_gzip_b64(xml_dps_assinado)?;
     let client = build_mtls_client(credenciais)?;
-    let url = ambiente.url_emissao_nfse();
+    let url = ambiente.url_emissao_nfse()?;
     let payload = NfsePostRequest {
         dps_xml_gzip_b64: &dps_b64,
     };

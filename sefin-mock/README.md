@@ -28,7 +28,7 @@ Com o mock rodando:
 No `.env` (development) ou no YAML:
 
 ```bash
-# .env — lido via settings.sefin.base_url_homologacao em config/development.yml
+# .env — lido via settings.sefin.base_url em config/development.yml (ambiente: 2)
 SEFIN_BASE_URL=http://127.0.0.1:8090/API/SefinNacional
 cd backend && cargo doido server
 ```
