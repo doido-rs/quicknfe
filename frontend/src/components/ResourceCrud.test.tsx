@@ -1,9 +1,13 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { resources } from '../resources/definitions'
+import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../test/renderWithProviders'
-import { ResourceCrud } from './ResourceCrud'
+import { ResourceLayout } from '../pages/ResourceLayout'
+import { ResourceListPage } from '../pages/resources/ResourceListPage'
+import { ResourceShowPage } from '../pages/resources/ResourceShowPage'
+import { ResourceNewPage } from '../pages/resources/ResourceNewPage'
+import { ResourceEditPage } from '../pages/resources/ResourceEditPage'
 
 function jsonResponse(data: unknown, status = 200) {
   return {
@@ -35,12 +39,26 @@ function stubFetch(handler: (url: string, method: string) => ReturnType<typeof j
   )
 }
 
+function renderResourceRoutes(initialRoute: string) {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/app/:resourceKey" element={<ResourceLayout />}>
+        <Route index element={<ResourceListPage />} />
+        <Route path="new" element={<ResourceNewPage />} />
+        <Route path=":id" element={<ResourceShowPage />} />
+        <Route path=":id/edit" element={<ResourceEditPage />} />
+      </Route>
+    </Routes>,
+    { route: initialRoute },
+  )
+}
+
 afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('ResourceCrud', () => {
-  it('renders clientes list', async () => {
+describe('Resource pages', () => {
+  it('lists clientes with Novo action', async () => {
     stubFetch((url, method) => {
       if (method === 'GET' && url.endsWith('/api/clientes')) {
         return jsonResponse([{ id: 1, cpf_cnpj: '123', razao_social: 'Cliente A' }])
@@ -48,64 +66,77 @@ describe('ResourceCrud', () => {
       return jsonResponse('missing', 404)
     })
 
-    const def = resources.find((r) => r.key === 'clientes')!
-    renderWithProviders(<ResourceCrud def={def} />)
-
+    renderResourceRoutes('/app/clientes')
     expect(await screen.findByText('123')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /criar/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^novo$/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^ver$/i })).toBeInTheDocument()
   })
 
-  it('renders prestadores list', async () => {
+  it('shows cliente detail', async () => {
     stubFetch((url, method) => {
-      if (method === 'GET' && url.endsWith('/api/prestadores')) {
-        return jsonResponse([
-          { id: 1, cpf_cnpj: '11222333000199', razao_social: 'Prestador Seed' },
-        ])
+      if (method === 'GET' && url.endsWith('/api/clientes/1')) {
+        return jsonResponse({ id: 1, cpf_cnpj: '123', razao_social: 'Cliente A' })
+      }
+      if (method === 'GET' && url.endsWith('/api/clientes')) {
+        return jsonResponse([])
       }
       return jsonResponse('missing', 404)
     })
 
-    const def = resources.find((r) => r.key === 'prestadores')!
-    renderWithProviders(<ResourceCrud def={def} />)
-
-    expect(await screen.findByText('11222333000199')).toBeInTheDocument()
+    renderResourceRoutes('/app/clientes/1')
+    expect(await screen.findByText(/cliente a/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^editar$/i })).toBeInTheDocument()
   })
 
-  it('edits and deletes a cliente', async () => {
-    stubFetch((url, method) => {
+  it('deletes cliente after confirmation', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const method = init?.method ?? 'GET'
+      if (url.includes('/api/me')) {
+        return jsonResponse({
+          user: { id: 1, email: 'u@test.com' },
+          companies: [],
+          company_ativa: { id: 1, nome: 'C' },
+          prestadores: [],
+          prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'E' },
+          papel: 'p',
+        })
+      }
       if (method === 'GET' && url.endsWith('/api/clientes')) {
         return jsonResponse([{ id: 1, cpf_cnpj: '123', razao_social: 'Antigo' }])
-      }
-      if (method === 'PATCH' && url.includes('/api/clientes/1')) {
-        return jsonResponse({ id: 1, cpf_cnpj: '123', razao_social: 'Novo' })
       }
       if (method === 'DELETE' && url.includes('/api/clientes/1')) {
         return jsonResponse(undefined, 204)
       }
       return jsonResponse('missing', 404)
     })
+    vi.stubGlobal('fetch', fetchMock)
 
-    const def = resources.find((r) => r.key === 'clientes')!
-    renderWithProviders(<ResourceCrud def={def} />)
+    renderResourceRoutes('/app/clientes')
     await screen.findByText('123')
 
-    await userEvent.click(screen.getByRole('button', { name: /editar/i }))
-    const nameInput = screen.getByLabelText(/razão social/i)
-    await userEvent.clear(nameInput)
-    await userEvent.type(nameInput, 'Novo')
-    await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^excluir$/i }))
+    const dialog = await screen.findByRole('alertdialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: /^excluir$/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /criar/i })).toBeInTheDocument()
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/clientes/1'),
+        expect.objectContaining({ method: 'DELETE' }),
+      )
     })
-
-    await userEvent.click(screen.getByRole('button', { name: /excluir/i }))
   })
 
-  it('opens nested itens for documentos', async () => {
+  it('opens nested itens on documento show', async () => {
     stubFetch((url, method) => {
-      if (method === 'GET' && url.endsWith('/api/documentos')) {
-        return jsonResponse([{ id: 9, modelo: '55', serie: '1', numero_documento: 1, status: 'novo' }])
+      if (method === 'GET' && url.endsWith('/api/documentos/9')) {
+        return jsonResponse({
+          id: 9,
+          modelo: '55',
+          serie: '1',
+          numero_documento: 1,
+          status: 'novo',
+        })
       }
       if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
         return jsonResponse([{ id: 1, numero_item: 1, descricao: 'Item 1' }])
@@ -113,43 +144,11 @@ describe('ResourceCrud', () => {
       return jsonResponse('missing', 404)
     })
 
-    const def = resources.find((r) => r.key === 'documentos')!
-    renderWithProviders(<ResourceCrud def={def} />)
-    await screen.findByText('55')
-
-    await userEvent.click(screen.getByRole('button', { name: /itens/i }))
+    renderResourceRoutes('/app/documentos/9')
     expect(await screen.findByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /fechar/i }))
   })
 
-  it('creates nested item', async () => {
-    let itens: Record<string, unknown>[] = []
-    stubFetch((url, method) => {
-      if (method === 'GET' && url.endsWith('/api/documentos')) {
-        return jsonResponse([{ id: 9, modelo: '55', serie: '1', numero_documento: 1, status: 'novo' }])
-      }
-      if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
-        return jsonResponse(itens)
-      }
-      if (method === 'POST' && url.includes('/api/documentos/9/itens')) {
-        const created = { id: 2, numero_item: 2, descricao: 'Novo item' }
-        itens = [created]
-        return jsonResponse(created)
-      }
-      return jsonResponse('missing', 404)
-    })
-
-    const def = resources.find((r) => r.key === 'documentos')!
-    renderWithProviders(<ResourceCrud def={def} />)
-    await screen.findByText('55')
-    await userEvent.click(screen.getByRole('button', { name: /itens/i }))
-    await userEvent.type(screen.getByLabelText(/nº item/i), '2')
-    await userEvent.type(screen.getByLabelText(/descrição/i), 'Novo item')
-    await userEvent.click(screen.getByRole('button', { name: /adicionar item/i }))
-    expect(await screen.findByText('2')).toBeInTheDocument()
-  })
-
-  it('hides create on read-only logs', async () => {
+  it('hides Novo on read-only logs list', async () => {
     stubFetch((url, method) => {
       if (method === 'GET' && url.endsWith('/api/logs-retorno')) {
         return jsonResponse([
@@ -159,10 +158,9 @@ describe('ResourceCrud', () => {
       return jsonResponse('missing', 404)
     })
 
-    const def = resources.find((r) => r.key === 'logs-retorno')!
-    renderWithProviders(<ResourceCrud def={def} />)
+    renderResourceRoutes('/app/logs-retorno')
     await screen.findByText('E1')
-    expect(screen.queryByRole('button', { name: /excluir/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /criar/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /^novo$/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^ver$/i })).toBeInTheDocument()
   })
 })

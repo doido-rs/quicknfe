@@ -17,6 +17,8 @@ export interface ResourceDef {
   fields: FieldDef[]
   /** Sem POST (ex.: logs de retorno). */
   allowCreate?: boolean
+  /** Sem DELETE na UI (padrão: permitido). */
+  allowDelete?: boolean
   nested?: {
     label: string
     path: (parentId: number) => string

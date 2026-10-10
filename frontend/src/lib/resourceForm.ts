@@ -4,6 +4,17 @@ export function emptyForm(fields: FieldDef[]): Record<string, string> {
   return Object.fromEntries(fields.map((f) => [f.key, '']))
 }
 
+export function rowToForm(row: Record<string, unknown>, fields: FieldDef[]): Record<string, string> {
+  return Object.fromEntries(
+    fields.map((f) => [f.key, row[f.key] != null ? String(row[f.key]) : '']),
+  )
+}
+
+export function formatFieldValue(value: unknown): string {
+  if (value == null || value === '') return '—'
+  return String(value)
+}
+
 export function rowLabel(row: Record<string, unknown>, fields: FieldDef[]): string {
   const first = fields.find((f) => row[f.key] != null)
   return first ? String(row[first.key]) : String(row.id ?? '')
