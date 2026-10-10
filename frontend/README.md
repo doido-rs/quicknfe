@@ -19,7 +19,7 @@ bun install
 bun run dev
 ```
 
-Abra [http://localhost:5173](http://localhost:5173). O Vite faz proxy de `/api`, `/users` e `/tenant` para o backend.
+Abra [http://localhost:3001](http://localhost:3001). O Vite faz proxy de `/api`, `/users` e `/tenant` para o backend.
 
 Variável opcional: `VITE_API_URL` — deixe vazio para usar o proxy.
 

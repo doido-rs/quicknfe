@@ -21,7 +21,7 @@ Run `make help` for the full list. Common flows:
 | `make setup` | Docker MySQL + Mailpit, `bun install`, `db create`, `migrate`, `seed` |
 | `make dev` | `dev-backend` + `dev-frontend` in parallel |
 | `make dev-backend` | API on **http://localhost:3000** (cargo-watch) |
-| `make dev-frontend` | Vite on **http://localhost:5173** (proxies `/api`, `/users`, `/tenant`) |
+| `make dev-frontend` | Vite on **http://localhost:3001** (proxies `/api`, `/users`, `/tenant`) |
 | `make lint` | oxlint + rustfmt/clippy |
 | `make fix` | Auto-fix lint where possible |
 | `make test` | Unit tests (frontend + backend crate) |

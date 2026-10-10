@@ -25,7 +25,7 @@ make dev
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:5173 |
+| Frontend | http://localhost:3001 |
 | Backend API | http://localhost:3000 |
 | Swagger UI | http://localhost:3000/api-docs |
 | Mailpit | http://localhost:8025 |

@@ -6,6 +6,7 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { AppLayout } from '@/pages/AppLayout'
+import { DashboardPage } from '@/pages/DashboardPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { PrestadorPage } from '@/pages/PrestadorPage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -15,7 +16,7 @@ import { ResourceEditPage } from '@/pages/resources/ResourceEditPage'
 import { ResourceListPage } from '@/pages/resources/ResourceListPage'
 import { ResourceNewPage } from '@/pages/resources/ResourceNewPage'
 import { ResourceShowPage } from '@/pages/resources/ResourceShowPage'
-import { defaultResourceListTo } from '@/lib/resourcePaths'
+import { appDashboardTo } from '@/lib/resourcePaths'
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -63,8 +64,14 @@ const appIndexRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect(defaultResourceListTo)
+    throw redirect(appDashboardTo)
   },
+})
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'dashboard',
+  component: DashboardPage,
 })
 
 const resourceLayoutRoute = createRoute({
@@ -105,6 +112,7 @@ export const routeTree = rootRoute.addChildren([
   tenantPrestadorRoute,
   appRoute.addChildren([
     appIndexRoute,
+    dashboardRoute,
     resourceLayoutRoute.addChildren([
       resourceListRoute,
       resourceNewRoute,

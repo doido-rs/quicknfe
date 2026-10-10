@@ -14,7 +14,7 @@ QuickNFe is a multi-tenant fiscal document management app: **Rust/Doido backend*
 
 ## Quick links
 
-- **Run locally:** `make setup && make dev` → API `:3000`, UI `:5173`
+- **Run locally:** `make setup && make dev` → API `:3000`, UI `:3001`
 - **Swagger:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
 - **Seed user:** `admin@quicknfe.local` / `QuickNFe2026!`
 - **Backend details:** [../backend/README.md](../backend/README.md)

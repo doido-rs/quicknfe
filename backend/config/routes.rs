@@ -1,5 +1,5 @@
 use crate::controllers::{
-    ApiCertificadosController, ApiClientesController, ApiDocumentosController,
+    ApiCertificadosController, ApiClientesController, ApiDashboardController, ApiDocumentosController,
     ApiEventosController, ApiIntermediariosController, ApiItensController, ApiLogsController,
     ApiPrestadoresController,
     ApiLotesController,
@@ -19,6 +19,7 @@ pub fn router() -> axum::Router {
         post!("/tenant/prestador", TenantController::switch_prestador);
 
         get!("/api/me", ApiSessionController::me);
+        get!("/api/dashboard", ApiDashboardController::show);
         get!("/api/prestadores", ApiPrestadoresController::index);
         post!("/api/prestadores", ApiPrestadoresController::create);
         get!("/api/prestadores/{id}", ApiPrestadoresController::show);

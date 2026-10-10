@@ -30,7 +30,7 @@ make db-console # MySQL CLI (quicknfe_development)
 ```bash
 make dev           # Both backend and frontend (hot reload)
 make dev-backend   # cargo watch → cargo doido server → :3000
-make dev-frontend  # bun run dev (Vite HMR) → :5173
+make dev-frontend  # bun run dev (Vite HMR) → :3001
 ```
 
 Frontend proxy (see `frontend/vite.config.ts`): `/api`, `/users`, `/tenant` → backend. Add `/api-docs` if you proxy Swagger through Vite.

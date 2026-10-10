@@ -4,6 +4,7 @@ import {
   FileText,
   Handshake,
   Layers,
+  LayoutDashboard,
   LayoutGrid,
   LogOut,
   ScrollText,
@@ -27,7 +28,7 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { resourceListTo } from '@/lib/resourcePaths'
+import { appDashboardTo, resourceListTo } from '@/lib/resourcePaths'
 import { resources, type ResourceDef } from '@/resources/definitions'
 
 function resourcesByMenuSection(): { label: string; items: ResourceDef[] }[] {
@@ -95,6 +96,25 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Visão geral</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/app/dashboard' || pathname === '/app'}
+                  tooltip="Dashboard"
+                >
+                  <Link {...appDashboardTo}>
+                    <LayoutDashboard />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
         {resourcesByMenuSection().map((section) => (
           <SidebarGroup key={section.label}>
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>

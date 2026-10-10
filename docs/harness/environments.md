@@ -26,7 +26,7 @@ From `development.yml` / `test.yml`:
 
 ### CORS
 
-Development allows `http://localhost:5173` with credentials for the SPA.
+Development allows `http://localhost:3001` with credentials for the SPA.
 
 ### MCP (development)
 

@@ -16,7 +16,7 @@ Na raiz do repositório, o [Makefile](../Makefile) agrupa setup local, lint, tes
 
 ```bash
 make setup    # Docker MySQL + bun install + migrate + seed
-make dev      # backend :3000 + frontend :5173
+make dev      # backend :3000 + frontend :3001
 make lint     # oxlint + rustfmt/clippy
 make fix      # auto-fix lint
 make test-all

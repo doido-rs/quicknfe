@@ -49,6 +49,10 @@ export function resourceEditPath(def: ResourceDef, id: number | string) {
   return `${resourceBasePath(def)}/${id}/edit`
 }
 
+export const appDashboardTo = {
+  to: '/app/dashboard' as const,
+}
+
 export const defaultResourceListTo = {
   to: '/app/$resourceKey' as const,
   params: { resourceKey: 'documentos' },

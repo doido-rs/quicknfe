@@ -3,7 +3,8 @@ mod hello_controller;
 mod tenant_controller;
 
 pub use api::{
-    ApiCertificadosController, ApiClientesController, ApiDocumentosController, ApiPrestadoresController,
+    ApiCertificadosController, ApiClientesController, ApiDashboardController, ApiDocumentosController,
+    ApiPrestadoresController,
     ApiEventosController, ApiIntermediariosController, ApiItensController, ApiLogsController,
     ApiLotesController,
     ApiSessionController, ApiTributosController,

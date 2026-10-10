@@ -7,7 +7,7 @@ flowchart TB
     MCPClient[MCP clients]
   end
 
-  subgraph frontend [Frontend :5173]
+  subgraph frontend [Frontend :3001]
     Vite[Vite + React]
   end
 
