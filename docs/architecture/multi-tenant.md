@@ -3,34 +3,38 @@
 ## Concepts
 
 - **User** — authenticates via Doido (`users` table).
-- **Empresa** — fiscal entity (CNPJ, IE, municipality, etc.).
-- **Membership** — `empresas_usuarios` links users to empresas with a `papel` (role).
+- **Company** — tenant organization (`companies` table); session stores active company id.
+- **Membership** — `companies_usuarios` links users to companies with a `papel` (role).
+- **Empresa (prestador)** — fiscal service provider (`empresas` table), belongs to a company via `company_id`. Many prestadores per company. Session stores active prestador id for API scoping.
 
 ## Session state
 
 After login, the encrypted session cookie holds:
 
 - User id (Doido auth)
-- **Active empresa id** (app key `empresa_id` in tenant module)
+- **Active company id** (`company_id`)
+- **Active prestador id** (`empresa_id` — `empresas.id`)
 
-`POST /tenant/empresa` with `{ "empresa_id": N }` validates membership then sets active tenant.
+`POST /tenant/company` with `{ "company_id": N }` validates membership and sets the tenant company (auto-selects prestador when the company has exactly one).
+
+`POST /tenant/prestador` with `{ "empresa_id": N }` sets the active prestador; the record must belong to the active company.
 
 ## API enforcement
 
 Tenant-scoped controllers call `require_tenant`, which:
 
 1. Requires authenticated user
-2. Requires active empresa in session
-3. Loads `TenantAccess { user, empresa, papel }`
+2. Requires active company and prestador in session
+3. Loads `TenantAccess { user, company, prestador, papel }`
 
-Queries filter by `empresa_id` or use `tenant_scope::*` helpers so cross-tenant access returns 404/403.
+Fiscal data is filtered by `prestador.id` (`empresa_id` on rows) via `tenant_scope::*` helpers.
 
 ## Frontend
 
-1. Login → `/tenant` if no `empresa_ativa` in `/api/me`
-2. Select empresa → redirect `/app`
-3. Sidebar shows resources; all API calls send cookies (`credentials: 'include'`)
+1. Login → `/tenant` if no `company_ativa` in `/api/me`
+2. Select company → `/tenant/prestador` if no `prestador_ativo`
+3. Select prestador → `/app`
 
 ## Testing
 
-[`backend/tests/tenant_api_test.rs`](../../backend/tests/tenant_api_test.rs) covers sign-in, tenant switch, and scoped cliente access.
+[`backend/tests/tenant_api_test.rs`](../../backend/tests/tenant_api_test.rs) covers sign-in, company/prestador switch, and scoped cliente access.

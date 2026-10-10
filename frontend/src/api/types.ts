@@ -3,20 +3,27 @@ export interface UserPublic {
   email: string
 }
 
+export interface CompanyPublic {
+  id: number
+  nome: string
+}
+
 export interface EmpresaPublic {
   id: number
   cpf_cnpj: string
   razao_social: string
 }
 
-export interface EmpresaMembership {
-  empresa: EmpresaPublic
+export interface CompanyMembership {
+  company: CompanyPublic
   papel: string
 }
 
 export interface MeResponse {
   user: UserPublic
-  empresas: EmpresaMembership[]
-  empresa_ativa: EmpresaPublic | null
+  companies: CompanyMembership[]
+  company_ativa: CompanyPublic | null
+  prestadores: EmpresaPublic[]
+  prestador_ativo: EmpresaPublic | null
   papel: string | null
 }

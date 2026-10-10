@@ -26,9 +26,13 @@ fn path_matches(template: &str, path: &str) -> bool {
 
 const ALLOWLIST: &[(&str, &str)] = &[
     ("GET", "/api/me"),
-    ("POST", "/tenant/empresa"),
-    ("GET", "/api/empresa"),
-    ("PATCH", "/api/empresa"),
+    ("POST", "/tenant/company"),
+    ("POST", "/tenant/prestador"),
+    ("GET", "/api/prestadores"),
+    ("POST", "/api/prestadores"),
+    ("GET", "/api/prestadores/{id}"),
+    ("PATCH", "/api/prestadores/{id}"),
+    ("DELETE", "/api/prestadores/{id}"),
     ("GET", "/api/clientes"),
     ("POST", "/api/clientes"),
     ("GET", "/api/clientes/{id}"),

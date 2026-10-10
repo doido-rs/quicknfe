@@ -4,7 +4,7 @@ import { resources } from './definitions'
 describe('resources', () => {
   it('includes core tenant resources', () => {
     const keys = resources.map((r) => r.key)
-    expect(keys).toContain('empresa')
+    expect(keys).toContain('prestadores')
     expect(keys).toContain('clientes')
     expect(keys).toContain('documentos')
     expect(keys).toContain('intermediarios')

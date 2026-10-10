@@ -12,8 +12,12 @@ export function AppLayout() {
     return <Navigate to="/login" replace />
   }
 
-  if (!isLoading && me && !me.empresa_ativa) {
+  if (!isLoading && me && !me.company_ativa) {
     return <Navigate to="/tenant" replace />
+  }
+
+  if (!isLoading && me && !me.prestador_ativo) {
+    return <Navigate to="/tenant/prestador" replace />
   }
 
   return (

@@ -4,10 +4,11 @@
 
 pub use super::certificados_digitais::Entity as CertificadosDigitais;
 pub use super::clientes::Entity as Clientes;
+pub use super::companies::Entity as Companies;
+pub use super::companies_usuarios::Entity as CompaniesUsuarios;
 pub use super::documentos_fiscais::Entity as DocumentosFiscais;
 pub use super::doido_jobs::Entity as DoidoJobs;
 pub use super::empresas::Entity as Empresas;
-pub use super::empresas_usuarios::Entity as EmpresasUsuarios;
 pub use super::eventos_documento_fiscal::Entity as EventosDocumentoFiscal;
 pub use super::intermediarios::Entity as Intermediarios;
 pub use super::itens_documento_fiscal::Entity as ItensDocumentoFiscal;

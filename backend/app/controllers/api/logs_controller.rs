@@ -51,14 +51,14 @@ impl ApiLogsController {
         let access = crate::api!(require_tenant(ctx).await);
         let docs = crate::api!(db(
             crate::models::documento_fiscal::Entity::find()
-                .filter(crate::models::documento_fiscal::Column::EmpresaId.eq(access.empresa.id))
+                .filter(crate::models::documento_fiscal::Column::EmpresaId.eq(access.prestador.id))
                 .all(ctx.db())
                 .await,
         ));
         let doc_ids: Vec<i64> = docs.iter().map(|d| d.id).collect();
         let lotes = crate::api!(db(
             crate::models::lote_transmissao::Entity::find()
-                .filter(crate::models::lote_transmissao::Column::EmpresaId.eq(access.empresa.id))
+                .filter(crate::models::lote_transmissao::Column::EmpresaId.eq(access.prestador.id))
                 .all(ctx.db())
                 .await,
         ));
@@ -87,16 +87,16 @@ impl ApiLogsController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.prestador.id, id).await));
         ctx.json(LogRetornoDto::from(row))
     }
 
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.prestador.id, id).await));
         let form: LogForm = crate::api!(json_body(ctx).await);
-        crate::api!(to_response(validate_log_refs(ctx.db(), access.empresa.id, &form).await));
+        crate::api!(to_response(validate_log_refs(ctx.db(), access.prestador.id, &form).await));
         let mut record: LogActive = existing.into();
         record.documento_fiscal_id = Set(form.documento_fiscal_id);
         record.lote_id = Set(form.lote_id);
@@ -111,7 +111,7 @@ impl ApiLogsController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::log_for_tenant(ctx.db(), access.prestador.id, id).await));
         crate::api!(db(LogEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

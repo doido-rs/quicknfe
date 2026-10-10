@@ -41,15 +41,15 @@ pub async fn sign_in_and_get_cookie(
     Ok(session_cookie_from_set_cookie(set_cookie))
 }
 
-pub async fn switch_empresa(
+pub async fn switch_company(
     api_router: &Router,
     session_cookie: &str,
-    empresa_id: i64,
+    company_id: i64,
 ) -> Result<String, String> {
-    let body = serde_json::json!({ "empresa_id": empresa_id }).to_string();
+    let body = serde_json::json!({ "company_id": company_id }).to_string();
     let req = Request::builder()
         .method("POST")
-        .uri("/tenant/empresa")
+        .uri("/tenant/company")
         .header(header::ACCEPT, "application/json")
         .header(header::CONTENT_TYPE, "application/json")
         .header(header::COOKIE, session_cookie)
@@ -61,7 +61,7 @@ pub async fn switch_empresa(
         .oneshot(req)
         .await
         .map_err(|e| e.to_string())?;
-    if resp.status() != StatusCode::OK {
+    if resp.status() != StatusCode::NO_CONTENT {
         return Err(format!("tenant switch failed: {}", resp.status()));
     }
     let set_cookie = resp
@@ -73,9 +73,41 @@ pub async fn switch_empresa(
     Ok(set_cookie)
 }
 
-pub async fn default_empresa_for_user(user_id: i64) -> Option<i64> {
+pub async fn switch_prestador(
+    api_router: &Router,
+    session_cookie: &str,
+    empresa_id: i64,
+) -> Result<String, String> {
+    let body = serde_json::json!({ "empresa_id": empresa_id }).to_string();
+    let req = Request::builder()
+        .method("POST")
+        .uri("/tenant/prestador")
+        .header(header::ACCEPT, "application/json")
+        .header(header::CONTENT_TYPE, "application/json")
+        .header(header::COOKIE, session_cookie)
+        .body(Body::from(body))
+        .map_err(|e| e.to_string())?;
+
+    let resp = api_router
+        .clone()
+        .oneshot(req)
+        .await
+        .map_err(|e| e.to_string())?;
+    if resp.status() != StatusCode::NO_CONTENT {
+        return Err(format!("prestador switch failed: {}", resp.status()));
+    }
+    let set_cookie = resp
+        .headers()
+        .get(header::SET_COOKIE)
+        .and_then(|v| v.to_str().ok())
+        .map(|c| session_cookie_from_set_cookie(c))
+        .unwrap_or_else(|| session_cookie.to_string());
+    Ok(set_cookie)
+}
+
+pub async fn default_company_for_user(user_id: i64) -> Option<i64> {
     use doido::model::sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-    use crate::models::empresa_usuario::{Column as MembroColumn, Entity as MembroEntity};
+    use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEntity};
 
     let db = doido::model::pool::pool();
     MembroEntity::find()
@@ -84,5 +116,5 @@ pub async fn default_empresa_for_user(user_id: i64) -> Option<i64> {
         .await
         .ok()
         .flatten()
-        .map(|m| m.empresa_id)
+        .map(|m| m.company_id)
 }

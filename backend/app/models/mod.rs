@@ -8,9 +8,10 @@ pub mod _entities;
 
 pub mod certificado_digital;
 pub mod cliente;
+pub mod company;
+pub mod company_usuario;
 pub mod documento_fiscal;
 pub mod empresa;
-pub mod empresa_usuario;
 pub mod evento_documento_fiscal;
 pub mod intermediario;
 pub mod item_documento_fiscal;

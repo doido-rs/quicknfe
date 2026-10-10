@@ -30,7 +30,7 @@ impl ApiClientesController {
         let access = crate::api!(require_tenant(ctx).await);
         let rows = crate::api!(db(
             ClienteEntity::find()
-                .filter(ClienteColumn::EmpresaId.eq(access.empresa.id))
+                .filter(ClienteColumn::EmpresaId.eq(access.prestador.id))
                 .all(ctx.db())
                 .await,
         ));
@@ -44,7 +44,7 @@ impl ApiClientesController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.prestador.id, id).await));
         ctx.json(ClienteDto::from(row))
     }
 
@@ -53,7 +53,7 @@ impl ApiClientesController {
         let form: ClienteForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             ClienteActive {
-                empresa_id: Set(access.empresa.id),
+                empresa_id: Set(access.prestador.id),
                 cpf_cnpj: Set(form.cpf_cnpj),
                 razao_social: Set(form.razao_social),
                 inscricao_municipal: Set(form.inscricao_municipal),
@@ -76,7 +76,7 @@ impl ApiClientesController {
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.prestador.id, id).await));
         let form: ClienteForm = crate::api!(json_body(ctx).await);
         let mut record: ClienteActive = existing.into();
         record.cpf_cnpj = Set(form.cpf_cnpj);
@@ -97,7 +97,7 @@ impl ApiClientesController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.prestador.id, id).await));
         crate::api!(db(ClienteEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

@@ -16,7 +16,8 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  selectEmpresa: (empresaId: number) => Promise<void>
+  selectCompany: (companyId: number) => Promise<void>
+  selectPrestador: (empresaId: number) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -64,9 +65,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.removeQueries({ queryKey: ['me'] })
   }, [queryClient])
 
-  const selectEmpresa = useCallback(
+  const selectCompany = useCallback(
+    async (companyId: number) => {
+      await tenantApi.switchCompany(companyId)
+      await queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
+    [queryClient],
+  )
+
+  const selectPrestador = useCallback(
     async (empresaId: number) => {
-      await tenantApi.switchEmpresa(empresaId)
+      await tenantApi.switchPrestador(empresaId)
       await queryClient.invalidateQueries({ queryKey: ['me'] })
     },
     [queryClient],
@@ -80,9 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
-      selectEmpresa,
+      selectCompany,
+      selectPrestador,
     }),
-    [me, isLoading, refresh, signIn, signUp, signOut, selectEmpresa],
+    [me, isLoading, refresh, signIn, signUp, signOut, selectCompany, selectPrestador],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

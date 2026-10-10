@@ -7,14 +7,14 @@ use doido::model::sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "empresas_usuarios")]
+#[sea_orm(table_name = "companies_usuarios")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
-    #[sea_orm(unique_key = "unq_empresas_usuarios_user_empresa")]
+    #[sea_orm(unique_key = "unq_companies_usuarios_user_company")]
     pub user_id: i64,
-    #[sea_orm(unique_key = "unq_empresas_usuarios_user_empresa")]
-    pub empresa_id: i64,
+    #[sea_orm(unique_key = "unq_companies_usuarios_user_company")]
+    pub company_id: i64,
     pub papel: String,
     pub criado_em: DateTimeUtc,
 }
@@ -22,13 +22,13 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::empresas::Entity",
-        from = "Column::EmpresaId",
-        to = "super::empresas::Column::Id",
+        belongs_to = "super::companies::Entity",
+        from = "Column::CompanyId",
+        to = "super::companies::Column::Id",
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    Empresas,
+    Companies,
     #[sea_orm(
         belongs_to = "super::users::Entity",
         from = "Column::UserId",
@@ -39,9 +39,9 @@ pub enum Relation {
     Users,
 }
 
-impl Related<super::empresas::Entity> for Entity {
+impl Related<super::companies::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Empresas.def()
+        Relation::Companies.def()
     }
 }
 

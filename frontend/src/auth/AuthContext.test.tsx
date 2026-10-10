@@ -28,8 +28,10 @@ describe('AuthContext', () => {
     stubApiFetch({
       '/api/me': {
         user: { id: 1, email: 'admin@test.com' },
-        empresas: [],
-        empresa_ativa: null,
+        companies: [],
+        company_ativa: null,
+        prestadores: [],
+        prestador_ativo: null,
         papel: null,
       },
     })
@@ -45,8 +47,10 @@ describe('AuthContext', () => {
     stubApiFetch({
       '/api/me': {
         user: { id: 1, email: 'admin@test.com' },
-        empresas: [],
-        empresa_ativa: null,
+        companies: [],
+        company_ativa: null,
+        prestadores: [],
+        prestador_ativo: null,
         papel: null,
       },
     })

@@ -3,6 +3,7 @@
 use doido::model::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEntity};
+use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity};
 use crate::models::cliente::{Column as ClienteColumn, Entity as ClienteEntity};
 use crate::models::documento_fiscal::{Column as DocColumn, Entity as DocEntity};
 use crate::models::evento_documento_fiscal::{Column as EventoColumn, Entity as EventoEntity};
@@ -13,6 +14,19 @@ use crate::models::lote_transmissao::{Column as LoteColumn, Entity as LoteEntity
 use crate::models::tributo_item::{Column as TributoColumn, Entity as TributoEntity};
 
 use super::api_error::ApiError;
+
+pub async fn prestador_for_company(
+    db: &DatabaseConnection,
+    company_id: i64,
+    prestador_id: i64,
+) -> Result<crate::models::empresa::Model, ApiError> {
+    EmpresaEntity::find_by_id(prestador_id)
+        .filter(EmpresaColumn::CompanyId.eq(company_id))
+        .one(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?
+        .ok_or(ApiError::NotFound)
+}
 
 pub async fn cliente_for_tenant(
     db: &DatabaseConnection,

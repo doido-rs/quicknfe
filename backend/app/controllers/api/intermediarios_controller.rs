@@ -26,7 +26,7 @@ impl ApiIntermediariosController {
         let access = crate::api!(require_tenant(ctx).await);
         let rows = crate::api!(db(
             IntermediarioEntity::find()
-                .filter(IntermediarioColumn::EmpresaId.eq(access.empresa.id))
+                .filter(IntermediarioColumn::EmpresaId.eq(access.prestador.id))
                 .all(ctx.db())
                 .await,
         ));
@@ -41,7 +41,7 @@ impl ApiIntermediariosController {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
         let row = crate::api!(scoped(
-            tenant_scope::intermediario_for_tenant(ctx.db(), access.empresa.id, id).await,
+            tenant_scope::intermediario_for_tenant(ctx.db(), access.prestador.id, id).await,
         ));
         ctx.json(IntermediarioDto::from(row))
     }
@@ -51,7 +51,7 @@ impl ApiIntermediariosController {
         let form: IntermediarioForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             IntermediarioActive {
-                empresa_id: Set(access.empresa.id),
+                empresa_id: Set(access.prestador.id),
                 cpf_cnpj: Set(form.cpf_cnpj),
                 razao_social: Set(form.razao_social),
                 inscricao_municipal: Set(form.inscricao_municipal),
@@ -69,7 +69,7 @@ impl ApiIntermediariosController {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
         let existing = crate::api!(scoped(
-            tenant_scope::intermediario_for_tenant(ctx.db(), access.empresa.id, id).await,
+            tenant_scope::intermediario_for_tenant(ctx.db(), access.prestador.id, id).await,
         ));
         let form: IntermediarioForm = crate::api!(json_body(ctx).await);
         let mut record: IntermediarioActive = existing.into();
@@ -86,7 +86,7 @@ impl ApiIntermediariosController {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
         crate::api!(scoped(
-            tenant_scope::intermediario_for_tenant(ctx.db(), access.empresa.id, id).await,
+            tenant_scope::intermediario_for_tenant(ctx.db(), access.prestador.id, id).await,
         ));
         crate::api!(db(IntermediarioEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)

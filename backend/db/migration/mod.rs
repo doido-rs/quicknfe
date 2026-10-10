@@ -8,6 +8,7 @@ mod m20260924121500_create_empresas_usuarios_table;
 mod m20260924_202217_create_empresas_usuarios_table;
 mod m20260925_120000_create_oauth_mcp_tables;
 mod m20261009180000_create_intermediarios;
+mod m20261009210000_companies_as_tenant;
 // @generated-migrations-mod — `doido generate model` inserts `mod` declarations above this line. Do not remove.
 
 pub struct Migrator;
@@ -26,6 +27,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260924_202217_create_empresas_usuarios_table::Migration),
             Box::new(m20260925_120000_create_oauth_mcp_tables::Migration),
             Box::new(m20261009180000_create_intermediarios::Migration),
+            Box::new(m20261009210000_companies_as_tenant::Migration),
             // @generated-migrations-list
         ]
     }

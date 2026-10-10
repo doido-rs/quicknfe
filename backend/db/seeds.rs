@@ -7,9 +7,10 @@ use doido::model::sea_orm::prelude::{DateTimeUtc, Decimal};
 
 use crate::models::certificado_digital::ActiveModel as CertificadoActive;
 use crate::models::cliente::ActiveModel as ClienteActive;
+use crate::models::company::ActiveModel as CompanyActive;
+use crate::models::company_usuario::ActiveModel as CompanyMembroActive;
 use crate::models::documento_fiscal::ActiveModel as DocumentoActive;
 use crate::models::empresa::{ActiveModel as EmpresaActive, Entity as EmpresaEntity};
-use crate::models::empresa_usuario::ActiveModel as MembroActive;
 use crate::models::user::{ActiveModel as UserActive, Entity as UserEntity};
 use doido::model::password::hash_password;
 use crate::models::item_documento_fiscal::ActiveModel as ItemActive;
@@ -48,6 +49,8 @@ pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
         seed_fiscal_demo(db).await?
     };
 
+    let company_id = empresa.company_id;
+
     let now: DateTimeUtc = chrono::Utc::now();
     let user = UserActive {
         email: Set(SEED_USER_EMAIL.into()),
@@ -59,9 +62,9 @@ pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
     .insert(db)
     .await?;
 
-    MembroActive {
+    CompanyMembroActive {
         user_id: Set(user.id),
-        empresa_id: Set(empresa.id),
+        company_id: Set(company_id),
         papel: Set("proprietario".into()),
         ..Default::default()
     }
@@ -76,7 +79,15 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
     let data_recebimento: DateTimeUtc = "2026-09-24T17:05:10Z".parse().unwrap();
     let validade_cert: DateTimeUtc = "2027-12-31T23:59:59Z".parse().unwrap();
 
+    let company = CompanyActive {
+        nome: Set("QuickNFe Demo".into()),
+        ..Default::default()
+    }
+    .insert(db)
+    .await?;
+
     let empresa = EmpresaActive {
+        company_id: Set(company.id),
         cpf_cnpj: Set(CNPJ_EMISSOR.into()),
         razao_social: Set("QuickNFe Tecnologia LTDA".into()),
         inscricao_municipal: Set(Some("12345678".into())),
@@ -104,16 +115,17 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
 
     let cliente = ClienteActive {
         empresa_id: Set(empresa.id),
-        cpf_cnpj: Set("99888777000166".into()),
-        razao_social: Set("Cliente Exemplo Comercio LTDA".into()),
-        inscricao_estadual: Set(Some("987654321098".into())),
-        logradouro: Set(Some("Av. Paulista".into())),
-        numero: Set(Some("1000".into())),
-        bairro: Set(Some("Bela Vista".into())),
-        codigo_municipio_ibge: Set(Some("3550308".into())),
+        cpf_cnpj: Set("12345678901".into()),
+        razao_social: Set("Cliente Exemplo".into()),
+        inscricao_municipal: Set(None),
+        inscricao_estadual: Set(None),
+        logradouro: Set(None),
+        numero: Set(None),
+        bairro: Set(None),
+        codigo_municipio_ibge: Set(None),
         uf: Set(Some("SP".into())),
         email: Set(Some("fiscal@cliente-exemplo.com.br".into())),
-        telefone: Set(Some("11999998888".into())),
+        telefone: Set(None),
         ..Default::default()
     }
     .insert(db)
@@ -122,9 +134,9 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
     let lote = LoteActive {
         empresa_id: Set(empresa.id),
         numero_lote: Set(1),
-        protocolo_recebimento: Set(Some("135260924123456".into())),
+        protocolo_recebimento: Set(Some("PROT-SEED-001".into())),
         ambiente: Set(2),
-        status_lote: Set("Processado".into()),
+        status_lote: Set("processado".into()),
         data_recebimento: Set(Some(data_recebimento)),
         ..Default::default()
     }
@@ -135,111 +147,55 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         empresa_id: Set(empresa.id),
         cliente_id: Set(Some(cliente.id)),
         lote_id: Set(Some(lote.id)),
-        modelo: Set("55".into()),
+        modelo: Set("NFSe".into()),
         serie: Set("1".into()),
-        numero_documento: Set(1),
-        chave_acesso: Set(Some(
-            "35260911222333000199550010000000001123456789".into(),
-        )),
+        numero_documento: Set(1001),
+        chave_acesso: Set(None),
+        codigo_verificacao: Set(None),
         ambiente: Set(2),
         tipo_emissao: Set(1),
-        status: Set("AUTORIZADO".into()),
+        status: Set("autorizada".into()),
         data_emissao: Set(data_emissao),
+        data_competencia: Set(None),
         codigo_municipio_emissao: Set("3550308".into()),
-        protocolo_autorizacao: Set(Some("135260924123457".into())),
+        protocolo_autorizacao: Set(Some("AUTH-SEED".into())),
         valor_total_servicos_produtos: Set(dec(1500)),
         valor_liquido: Set(dec(1500)),
-        xml_assinado: Set(Some(
-            r#"<?xml version="1.0" encoding="UTF-8"?><NFe xmlns="http://www.portalfiscal.inf.br/nfe"><!-- seed --></NFe>"#
-                .into(),
-        )),
-        xml_processado: Set(Some(
-            r#"<?xml version="1.0" encoding="UTF-8"?><nfeProc versao="4.00"><!-- seed --></nfeProc>"#
-                .into(),
-        )),
+        xml_assinado: Set(None),
+        xml_processado: Set(None),
         ..Default::default()
     }
     .insert(db)
     .await?;
 
-    let item1 = ItemActive {
+    let item = ItemActive {
         documento_fiscal_id: Set(documento.id),
         numero_item: Set(1),
-        descricao: Set("Licença de software QuickNFe — plano anual".into()),
-        codigo_ncm: Set(Some("85234990".into())),
-        quantidade: Set(dec(1)),
-        valor_unitario: Set(dec(1000)),
-        valor_total_bruto: Set(dec(1000)),
-        valor_desconto: Set(Some(dec(0))),
-        ..Default::default()
-    }
-    .insert(db)
-    .await?;
-
-    let item2 = ItemActive {
-        documento_fiscal_id: Set(documento.id),
-        numero_item: Set(2),
-        descricao: Set("Suporte técnico especializado (12 meses)".into()),
-        codigo_ncm: Set(Some("00000000".into())),
-        quantidade: Set(dec(1)),
-        valor_unitario: Set(dec(500)),
-        valor_total_bruto: Set(dec(500)),
-        valor_desconto: Set(Some(dec(0))),
+        descricao: Set("Consultoria em NF-e".into()),
+        codigo_ncm: Set(None),
+        codigo_tributacao_nacional: Set(None),
+        quantidade: Set(dec_frac(1, 0)),
+        valor_unitario: Set(dec(1500)),
+        valor_total_bruto: Set(dec(1500)),
+        valor_desconto: Set(None),
         ..Default::default()
     }
     .insert(db)
     .await?;
 
     TributoActive {
-        item_id: Set(item1.id),
-        tipo_imposto: Set("ICMS".into()),
-        cst_csosn: Set(Some("102".into())),
-        base_calculo: Set(Some(dec(1000))),
-        aliquota: Set(Some(dec_frac(0, 4))),
-        valor_imposto: Set(Some(dec(0))),
-        iss_retido: Set(Some(0)),
-        aliquota_ibs: Set(Some(dec_frac(120, 4))),
-        valor_ibs: Set(Some(dec(120))),
-        aliquota_cbs: Set(Some(dec_frac(90, 4))),
-        valor_cbs: Set(Some(dec(90))),
-        ..Default::default()
-    }
-    .insert(db)
-    .await?;
-
-    TributoActive {
-        item_id: Set(item1.id),
-        tipo_imposto: Set("PIS".into()),
-        cst_csosn: Set(Some("49".into())),
-        base_calculo: Set(Some(dec(1000))),
-        aliquota: Set(Some(dec_frac(65, 4))),
-        valor_imposto: Set(Some(dec_frac(650, 2))),
-        iss_retido: Set(Some(0)),
-        ..Default::default()
-    }
-    .insert(db)
-    .await?;
-
-    TributoActive {
-        item_id: Set(item1.id),
-        tipo_imposto: Set("COFINS".into()),
-        cst_csosn: Set(Some("49".into())),
-        base_calculo: Set(Some(dec(1000))),
-        aliquota: Set(Some(dec_frac(300, 4))),
-        valor_imposto: Set(Some(dec(30))),
-        iss_retido: Set(Some(0)),
-        ..Default::default()
-    }
-    .insert(db)
-    .await?;
-
-    TributoActive {
-        item_id: Set(item2.id),
+        item_id: Set(item.id),
         tipo_imposto: Set("ISS".into()),
-        base_calculo: Set(Some(dec(500))),
-        aliquota: Set(Some(dec_frac(500, 4))),
-        valor_imposto: Set(Some(dec_frac(2500, 2))),
-        iss_retido: Set(Some(1)),
+        cst_csosn: Set(None),
+        base_calculo: Set(Some(dec(1500))),
+        aliquota: Set(Some(dec_frac(5, 2))),
+        valor_imposto: Set(Some(dec(75))),
+        iss_retido: Set(Some(0)),
+        classificacao_trib_ibscbs: Set(None),
+        aliquota_ibs: Set(Some(dec(0))),
+        valor_ibs: Set(Some(dec(0))),
+        aliquota_cbs: Set(Some(dec(0))),
+        valor_cbs: Set(Some(dec(0))),
         ..Default::default()
     }
     .insert(db)
@@ -248,8 +204,8 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
     LogActive {
         documento_fiscal_id: Set(Some(documento.id)),
         lote_id: Set(Some(lote.id)),
-        codigo_erro: Set("100".into()),
-        mensagem_retorno: Set("Autorizado o uso da NF-e".into()),
+        codigo_erro: Set("0".into()),
+        mensagem_retorno: Set("Autorizado".into()),
         correcao_sugerida: Set(None),
         ..Default::default()
     }

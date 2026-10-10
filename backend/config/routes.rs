@@ -1,6 +1,7 @@
 use crate::controllers::{
-    ApiCertificadosController, ApiClientesController, ApiDocumentosController, ApiEmpresaController,
+    ApiCertificadosController, ApiClientesController, ApiDocumentosController,
     ApiEventosController, ApiIntermediariosController, ApiItensController, ApiLogsController,
+    ApiPrestadoresController,
     ApiLotesController,
     ApiSessionController, ApiTributosController, HelloController, TenantController,
 };
@@ -14,11 +15,15 @@ pub fn router() -> axum::Router {
     let api = doido::auth::routes! {
         get!("/", HelloController::index);
         auth_routes!(User);
-        post!("/tenant/empresa", TenantController::switch);
+        post!("/tenant/company", TenantController::switch_company);
+        post!("/tenant/prestador", TenantController::switch_prestador);
 
         get!("/api/me", ApiSessionController::me);
-        get!("/api/empresa", ApiEmpresaController::show);
-        patch!("/api/empresa", ApiEmpresaController::update);
+        get!("/api/prestadores", ApiPrestadoresController::index);
+        post!("/api/prestadores", ApiPrestadoresController::create);
+        get!("/api/prestadores/{id}", ApiPrestadoresController::show);
+        patch!("/api/prestadores/{id}", ApiPrestadoresController::update);
+        delete!("/api/prestadores/{id}", ApiPrestadoresController::destroy);
 
         get!("/api/clientes", ApiClientesController::index);
         post!("/api/clientes", ApiClientesController::create);

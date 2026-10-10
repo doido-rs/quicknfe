@@ -26,7 +26,7 @@ impl ApiCertificadosController {
         let access = crate::api!(require_tenant(ctx).await);
         let rows = crate::api!(db(
             CertEntity::find()
-                .filter(CertColumn::EmpresaId.eq(access.empresa.id))
+                .filter(CertColumn::EmpresaId.eq(access.prestador.id))
                 .all(ctx.db())
                 .await,
         ));
@@ -36,7 +36,7 @@ impl ApiCertificadosController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.prestador.id, id).await));
         ctx.json(CertificadoDto::from(row))
     }
 
@@ -50,7 +50,7 @@ impl ApiCertificadosController {
         ));
         let created = crate::api!(db(
             CertActive {
-                empresa_id: Set(access.empresa.id),
+                empresa_id: Set(access.prestador.id),
                 tipo: Set(form.tipo),
                 caminho_arquivo: Set(form.caminho_arquivo),
                 senha_encriptada: Set(encode_certificado_senha(&senha)),
@@ -67,7 +67,7 @@ impl ApiCertificadosController {
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.prestador.id, id).await));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
         let mut record: CertActive = existing.into();
         record.tipo = Set(form.tipo);
@@ -83,7 +83,7 @@ impl ApiCertificadosController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.prestador.id, id).await));
         crate::api!(db(CertEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

@@ -42,7 +42,7 @@ function resourcesByMenuSection(): { label: string; items: ResourceDef[] }[] {
 }
 
 const resourceIcons: Record<string, LucideIcon> = {
-  empresa: Building2,
+  prestadores: Building2,
   clientes: Users,
   intermediarios: Handshake,
   certificados: Shield,
@@ -65,10 +65,13 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex flex-col gap-1 group-data-[collapsible=icon]:items-center">
           <span className="text-sm font-semibold tracking-tight">QuickNFe</span>
-          {me?.empresa_ativa && (
+          {me?.prestador_ativo && (
             <Badge variant="secondary" className="w-fit max-w-full truncate font-normal">
-              {me.empresa_ativa.razao_social}
+              {me.prestador_ativo.razao_social}
             </Badge>
+          )}
+          {me?.company_ativa && (
+            <span className="text-xs text-muted-foreground truncate">{me.company_ativa.nome}</span>
           )}
         </div>
       </SidebarHeader>

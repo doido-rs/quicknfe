@@ -23,8 +23,10 @@ function stubFetch(handler: (url: string, method: string) => ReturnType<typeof j
       if (url.includes('/api/me')) {
         return jsonResponse({
           user: { id: 1, email: 'u@test.com' },
-          empresas: [],
-          empresa_ativa: { id: 1, cpf_cnpj: '1', razao_social: 'E' },
+          companies: [],
+          company_ativa: { id: 1, nome: 'C' },
+          prestadores: [],
+          prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'E' },
           papel: 'p',
         })
       }
@@ -53,22 +55,20 @@ describe('ResourceCrud', () => {
     expect(screen.getByRole('button', { name: /criar/i })).toBeInTheDocument()
   })
 
-  it('loads empresa singleton form', async () => {
+  it('renders prestadores list', async () => {
     stubFetch((url, method) => {
-      if (method === 'GET' && url.endsWith('/api/empresa')) {
-        return jsonResponse({
-          id: 1,
-          cpf_cnpj: '11222333000199',
-          razao_social: 'Empresa Seed',
-        })
+      if (method === 'GET' && url.endsWith('/api/prestadores')) {
+        return jsonResponse([
+          { id: 1, cpf_cnpj: '11222333000199', razao_social: 'Prestador Seed' },
+        ])
       }
       return jsonResponse('missing', 404)
     })
 
-    const def = resources.find((r) => r.key === 'empresa')!
+    const def = resources.find((r) => r.key === 'prestadores')!
     renderWithProviders(<ResourceCrud def={def} />)
 
-    expect(await screen.findByDisplayValue('Empresa Seed')).toBeInTheDocument()
+    expect(await screen.findByText('11222333000199')).toBeInTheDocument()
   })
 
   it('edits and deletes a cliente', async () => {

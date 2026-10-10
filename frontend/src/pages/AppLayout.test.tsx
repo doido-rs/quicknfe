@@ -16,8 +16,10 @@ describe('AppLayout', () => {
     stubApiFetch({
       '/api/me': {
         user: { id: 1, email: 'u@test.com' },
-        empresas: [],
-        empresa_ativa: { id: 1, cpf_cnpj: '1', razao_social: 'Minha Empresa' },
+        companies: [],
+        company_ativa: { id: 1, nome: 'Company' },
+        prestadores: [],
+        prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'Minha Empresa' },
         papel: 'proprietario',
       },
     })
@@ -38,8 +40,10 @@ describe('AppLayout', () => {
     stubApiFetch({
       '/api/me': {
         user: { id: 1, email: 'u@test.com' },
-        empresas: [{ empresa: { id: 1, cpf_cnpj: '1', razao_social: 'E' }, papel: 'p' }],
-        empresa_ativa: null,
+        companies: [{ company: { id: 1, nome: 'C' }, papel: 'p' }],
+        company_ativa: null,
+        prestadores: [],
+        prestador_ativo: null,
         papel: null,
       },
     })
@@ -61,8 +65,10 @@ describe('AppLayout', () => {
     stubApiFetch({
       '/api/me': {
         user: { id: 1, email: 'u@test.com' },
-        empresas: [],
-        empresa_ativa: { id: 1, cpf_cnpj: '1', razao_social: 'Minha Empresa' },
+        companies: [],
+        company_ativa: { id: 1, nome: 'Company' },
+        prestadores: [],
+        prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'Minha Empresa' },
         papel: 'proprietario',
       },
     })

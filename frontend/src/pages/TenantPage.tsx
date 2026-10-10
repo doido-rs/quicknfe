@@ -8,23 +8,23 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function TenantPage() {
-  const { me, isLoading, selectEmpresa, signOut } = useAuth()
+  const { me, isLoading, selectCompany, signOut } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   if (!isLoading && !me) {
     return <Navigate to="/login" replace />
   }
 
-  if (!isLoading && me?.empresa_ativa) {
-    return <Navigate to="/app" replace />
+  if (!isLoading && me?.company_ativa) {
+    return <Navigate to="/tenant/prestador" replace />
   }
 
-  async function choose(empresaId: number) {
+  async function choose(companyId: number) {
     setError(null)
     try {
-      await selectEmpresa(empresaId)
+      await selectCompany(companyId)
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Não foi possível selecionar a empresa')
+      setError(isApiError(err) ? err.message : 'Não foi possível selecionar a company')
     }
   }
 
@@ -32,27 +32,27 @@ export function TenantPage() {
     <AuthPageShell>
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Selecione a empresa</CardTitle>
-          <CardDescription>Escolha o tenant ativo para esta sessão.</CardDescription>
+          <CardTitle>Selecione a company</CardTitle>
+          <CardDescription>Escolha o tenant (organização) para esta sessão.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-          {me && me.empresas.length === 0 && (
+          {me && me.companies.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Sua conta ainda não está vinculada a nenhuma empresa. Peça ao administrador
-              para incluí-lo em <code className="rounded bg-muted px-1">empresas_usuarios</code>.
+              Sua conta ainda não está vinculada a nenhuma company. Peça ao administrador para
+              incluí-lo em <code className="rounded bg-muted px-1">companies_usuarios</code>.
             </p>
           )}
           <div className="flex flex-col gap-2">
-            {me?.empresas.map(({ empresa, papel }) => (
+            {me?.companies.map(({ company, papel }) => (
               <Button
-                key={empresa.id}
+                key={company.id}
                 type="button"
                 variant="outline"
                 className="h-auto justify-start py-3 text-left"
-                onClick={() => choose(empresa.id)}
+                onClick={() => choose(company.id)}
               >
-                {empresa.razao_social} ({papel})
+                {company.nome} ({papel})
               </Button>
             ))}
           </div>

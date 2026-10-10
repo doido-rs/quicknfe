@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
+    pub company_id: i64,
     #[sea_orm(unique)]
     pub cpf_cnpj: String,
     pub razao_social: String,
@@ -28,10 +29,16 @@ pub enum Relation {
     CertificadosDigitais,
     #[sea_orm(has_many = "super::clientes::Entity")]
     Clientes,
+    #[sea_orm(
+        belongs_to = "super::companies::Entity",
+        from = "Column::CompanyId",
+        to = "super::companies::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Companies,
     #[sea_orm(has_many = "super::documentos_fiscais::Entity")]
     DocumentosFiscais,
-    #[sea_orm(has_many = "super::empresas_usuarios::Entity")]
-    EmpresasUsuarios,
     #[sea_orm(has_many = "super::intermediarios::Entity")]
     Intermediarios,
     #[sea_orm(has_many = "super::lotes_transmissao::Entity")]
@@ -50,15 +57,15 @@ impl Related<super::clientes::Entity> for Entity {
     }
 }
 
-impl Related<super::documentos_fiscais::Entity> for Entity {
+impl Related<super::companies::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::DocumentosFiscais.def()
+        Relation::Companies.def()
     }
 }
 
-impl Related<super::empresas_usuarios::Entity> for Entity {
+impl Related<super::documentos_fiscais::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::EmpresasUsuarios.def()
+        Relation::DocumentosFiscais.def()
     }
 }
 

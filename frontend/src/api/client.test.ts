@@ -47,7 +47,7 @@ describe('apiFetch', () => {
         status: 204,
       }),
     )
-    const data = await apiFetch<void>('/tenant/empresa', { method: 'POST' })
+    const data = await apiFetch<void>('/tenant/prestador', { method: 'POST' })
     expect(data).toBeUndefined()
   })
 })
@@ -111,7 +111,7 @@ describe('singletonResourceApi', () => {
         json: async () => ({ razao_social: 'B' }),
       })
     vi.stubGlobal('fetch', fetchMock)
-    const api = singletonResourceApi('/api/empresa')
+    const api = singletonResourceApi('/api/prestadores')
     await api.get()
     await api.update({ razao_social: 'B' })
     expect(fetchMock).toHaveBeenCalledTimes(2)
@@ -151,7 +151,7 @@ describe('auth and tenant helpers', () => {
       })
     vi.stubGlobal('fetch', fetchMock)
     await authApi.signIn('a@b.com', 'x')
-    await tenantApi.switchEmpresa(10)
+    await tenantApi.switchPrestador(10)
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })

@@ -29,8 +29,9 @@ use doido::model::password::hash_password;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use doido::controller::axum::http::header;
 use models::cliente::{Column as ClienteColumn, Entity as ClienteEntity};
+use models::company::ActiveModel as CompanyActive;
+use models::company_usuario::ActiveModel as CompanyMembroActive;
 use models::empresa::ActiveModel as EmpresaActive;
-use models::empresa_usuario::ActiveModel as MembroActive;
 use models::user::ActiveModel as UserActive;
 use tower::ServiceExt;
 
@@ -111,8 +112,9 @@ async fn sign_in(app: &doido::controller::axum::Router, email: &str, password: &
 struct TenantFixture {
     user_email: String,
     password: String,
-    empresa_id: i64,
-    other_empresa_id: i64,
+    company_id: i64,
+    prestador_id: i64,
+    other_prestador_id: i64,
     other_cliente_id: i64,
 }
 
@@ -145,9 +147,26 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     .await
     .unwrap();
 
+    let company_a = CompanyActive {
+        nome: Set(format!("Company A {suffix}")),
+        ..Default::default()
+    }
+    .insert(db)
+    .await
+    .unwrap();
+
+    let company_b = CompanyActive {
+        nome: Set(format!("Company B {suffix}")),
+        ..Default::default()
+    }
+    .insert(db)
+    .await
+    .unwrap();
+
     let emp_a = EmpresaActive {
+        company_id: Set(company_a.id),
         cpf_cnpj: Set(unique_cnpj(&suffix, 1)),
-        razao_social: Set(format!("Empresa A {suffix}")),
+        razao_social: Set(format!("Prestador A {suffix}")),
         regime_tributario: Set(1),
         codigo_municipio_ibge: Set("3550308".into()),
         uf: Set("SP".into()),
@@ -159,8 +178,9 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     .unwrap();
 
     let emp_b = EmpresaActive {
+        company_id: Set(company_b.id),
         cpf_cnpj: Set(unique_cnpj(&suffix, 2)),
-        razao_social: Set(format!("Empresa B {suffix}")),
+        razao_social: Set(format!("Prestador B {suffix}")),
         regime_tributario: Set(1),
         codigo_municipio_ibge: Set("3550308".into()),
         uf: Set("SP".into()),
@@ -171,9 +191,9 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     .await
     .unwrap();
 
-    MembroActive {
+    CompanyMembroActive {
         user_id: Set(user_a.id),
-        empresa_id: Set(emp_a.id),
+        company_id: Set(company_a.id),
         papel: Set("proprietario".into()),
         ..Default::default()
     }
@@ -181,9 +201,9 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     .await
     .unwrap();
 
-    MembroActive {
+    CompanyMembroActive {
         user_id: Set(user_b.id),
-        empresa_id: Set(emp_b.id),
+        company_id: Set(company_b.id),
         papel: Set("proprietario".into()),
         ..Default::default()
     }
@@ -204,8 +224,9 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     TenantFixture {
         user_email: email_a,
         password: password.into(),
-        empresa_id: emp_a.id,
-        other_empresa_id: emp_b.id,
+        company_id: company_a.id,
+        prestador_id: emp_a.id,
+        other_prestador_id: emp_b.id,
         other_cliente_id: other_cliente.id,
     }
 }
@@ -256,21 +277,34 @@ async fn login_me_and_tenant_cliente_flow() {
     let (status, _, switch_cookie) = send_json(
         &app,
         "POST",
-        "/tenant/empresa",
-        &format!(r#"{{"empresa_id":{}}}"#, fx.empresa_id),
+        "/tenant/company",
+        &format!(r#"{{"company_id":{}}}"#, fx.company_id),
         Some(&cookie),
     )
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let session = switch_cookie
+    let mut session = switch_cookie
         .as_ref()
         .map(|c| session_cookie(c))
         .unwrap_or(cookie);
 
+    let (status, _, switch_cookie) = send_json(
+        &app,
+        "POST",
+        "/tenant/prestador",
+        &format!(r#"{{"empresa_id":{}}}"#, fx.prestador_id),
+        Some(&session),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    if let Some(c) = switch_cookie {
+        session = session_cookie(&c);
+    }
+
     let (status, body, _) = send_json(&app, "GET", "/api/me", "", Some(&session)).await;
     assert_eq!(status, StatusCode::OK);
     assert!(
-        body.contains("\"empresa_ativa\"") && !body.contains("\"empresa_ativa\":null"),
+        body.contains("\"prestador_ativo\"") && !body.contains("\"prestador_ativo\":null"),
         "me response: {body}"
     );
 
@@ -286,7 +320,7 @@ async fn login_me_and_tenant_cliente_flow() {
     assert!(body.contains("Cliente Teste"));
 
     let rows = ClienteEntity::find()
-        .filter(ClienteColumn::EmpresaId.eq(fx.empresa_id))
+        .filter(ClienteColumn::EmpresaId.eq(fx.prestador_id))
         .all(doido::model::pool::pool())
         .await
         .unwrap();

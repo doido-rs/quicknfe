@@ -14,7 +14,7 @@ use crate::models::user::Model as User;
 
 use super::jwt::{issue_access_token, issue_refresh_token, verify_refresh_token};
 use super::pkce::{random_token, verify_s256};
-use super::session_bridge::{default_empresa_for_user, sign_in_and_get_cookie, switch_empresa};
+use super::session_bridge::{default_company_for_user, sign_in_and_get_cookie, switch_company};
 use super::store::{
     consume_auth_code, find_client, insert_access_token, insert_auth_code, redirect_uri_allowed,
     register_client, upsert_mcp_session,
@@ -131,8 +131,8 @@ pub async fn authorize_post(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    if let Some(empresa_id) = default_empresa_for_user(user.id()).await {
-        session_cookie = switch_empresa(&state.api_router, &session_cookie, empresa_id)
+    if let Some(company_id) = default_company_for_user(user.id()).await {
+        session_cookie = switch_company(&state.api_router, &session_cookie, company_id)
             .await
             .unwrap_or(session_cookie);
     }

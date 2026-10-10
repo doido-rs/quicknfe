@@ -19,8 +19,10 @@ export function stubApiFetch(routes: Record<string, unknown>) {
       return jsonResponse(
         routes['/api/me'] ?? {
           user: { id: 1, email: 'u@test.com' },
-          empresas: [],
-          empresa_ativa: { id: 1, cpf_cnpj: '1', razao_social: 'Minha Empresa' },
+          companies: [],
+          company_ativa: { id: 1, nome: 'Company Test' },
+          prestadores: [{ id: 1, cpf_cnpj: '1', razao_social: 'Prestador Test' }],
+          prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'Prestador Test' },
           papel: 'proprietario',
         },
       )

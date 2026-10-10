@@ -1,4 +1,4 @@
-//! Empresa ativa do usuário autenticado (multi-tenant).
+//! Company (tenant) + prestador ativo (`empresas`) na sessão.
 
 use doido::controller::axum::extract::FromRequestParts;
 use doido::controller::axum::http::request::Parts;
@@ -6,22 +6,27 @@ use doido::controller::axum::http::StatusCode;
 use doido::controller::axum::response::{IntoResponse, Response};
 use doido::controller::secret::key_base;
 use doido::controller::session::{EncryptedCookieSessionStore, Session};
+use serde_json::Value;
 use doido::model::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use doido_auth::extractors::CurrentUser;
 use doido_auth::session::{SESSION_COOKIE, USER_ID_KEY};
 use doido_auth::AuthUser;
 
-use crate::models::empresa::Model as Empresa;
-use crate::models::empresa_usuario::{Column as MembroColumn, Entity as MembroEntity};
+use crate::models::company::Model as Company;
+use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEntity};
+use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity, Model as Empresa};
 use crate::models::user::Model as User;
 
-/// Chave na sessão criptografada (`_doido_session`) para a empresa ativa.
-pub const EMPRESA_ID_KEY: &str = "empresa_id";
+/// Tenant organizacional (company).
+pub const COMPANY_ID_KEY: &str = "company_id";
+/// Prestador de serviços ativo (`empresas.id`).
+pub const PRESTADOR_ID_KEY: &str = "empresa_id";
 
 #[derive(Debug, Clone)]
 pub struct TenantAccess {
     pub user: User,
-    pub empresa: Empresa,
+    pub company: Company,
+    pub prestador: Empresa,
     pub papel: String,
 }
 
@@ -30,6 +35,7 @@ pub enum TenantError {
     Unauthorized,
     Forbidden,
     NoTenantSelected,
+    NoPrestadorSelected,
     Internal(String),
 }
 
@@ -37,7 +43,9 @@ impl IntoResponse for TenantError {
     fn into_response(self) -> Response {
         let status = match self {
             TenantError::Unauthorized => StatusCode::UNAUTHORIZED,
-            TenantError::Forbidden | TenantError::NoTenantSelected => StatusCode::FORBIDDEN,
+            TenantError::Forbidden | TenantError::NoTenantSelected | TenantError::NoPrestadorSelected => {
+                StatusCode::FORBIDDEN
+            }
             TenantError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, self.to_string()).into_response()
@@ -48,8 +56,9 @@ impl std::fmt::Display for TenantError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TenantError::Unauthorized => write!(f, "authentication required"),
-            TenantError::Forbidden => write!(f, "no access to this empresa"),
-            TenantError::NoTenantSelected => write!(f, "select an empresa for this session"),
+            TenantError::Forbidden => write!(f, "no access to this company"),
+            TenantError::NoTenantSelected => write!(f, "select a company for this session"),
+            TenantError::NoPrestadorSelected => write!(f, "select a prestador for this session"),
             TenantError::Internal(msg) => write!(f, "{msg}"),
         }
     }
@@ -58,22 +67,22 @@ impl std::fmt::Display for TenantError {
 pub async fn membership(
     db: &DatabaseConnection,
     user_id: i64,
-    empresa_id: i64,
+    company_id: i64,
 ) -> doido::Result<Option<String>> {
     Ok(MembroEntity::find()
         .filter(MembroColumn::UserId.eq(user_id))
-        .filter(MembroColumn::EmpresaId.eq(empresa_id))
+        .filter(MembroColumn::CompanyId.eq(company_id))
         .one(db)
         .await?
         .map(|m| m.papel))
 }
 
-pub async fn user_empresa_ids(db: &DatabaseConnection, user_id: i64) -> doido::Result<Vec<i64>> {
+pub async fn user_company_ids(db: &DatabaseConnection, user_id: i64) -> doido::Result<Vec<i64>> {
     let rows = MembroEntity::find()
         .filter(MembroColumn::UserId.eq(user_id))
         .all(db)
         .await?;
-    Ok(rows.into_iter().map(|r| r.empresa_id).collect())
+    Ok(rows.into_iter().map(|r| r.company_id).collect())
 }
 
 fn session_from_parts(parts: &Parts) -> Option<Session> {
@@ -87,13 +96,44 @@ fn session_from_parts(parts: &Parts) -> Option<Session> {
     store.decode(&raw)
 }
 
-pub fn empresa_id_from_session(parts: &Parts) -> Option<i64> {
+pub fn company_id_from_session(parts: &Parts) -> Option<i64> {
     let session = session_from_parts(parts)?;
-    session.get(EMPRESA_ID_KEY)
+    session.get(COMPANY_ID_KEY)
 }
 
-pub fn set_empresa_in_session(session: &mut Session, empresa_id: i64) {
-    session.set(EMPRESA_ID_KEY, empresa_id);
+pub fn prestador_id_from_session(parts: &Parts) -> Option<i64> {
+    let session = session_from_parts(parts)?;
+    session.get(PRESTADOR_ID_KEY)
+}
+
+pub fn set_company_in_session(session: &mut Session, company_id: i64) {
+    session.set(COMPANY_ID_KEY, company_id);
+}
+
+pub fn set_prestador_in_session(session: &mut Session, prestador_id: i64) {
+    session.set(PRESTADOR_ID_KEY, prestador_id);
+}
+
+pub fn clear_prestador_in_session(session: &mut Session) {
+    if let Value::Object(map) = &mut session.data {
+        map.remove(PRESTADOR_ID_KEY);
+    }
+}
+
+pub async fn load_prestador_for_company(
+    db: &DatabaseConnection,
+    company_id: i64,
+    prestador_id: i64,
+) -> Result<Empresa, TenantError> {
+    let Some(prestador) = EmpresaEntity::find_by_id(prestador_id)
+        .filter(EmpresaColumn::CompanyId.eq(company_id))
+        .one(db)
+        .await
+        .map_err(|e| TenantError::Internal(e.to_string()))?
+    else {
+        return Err(TenantError::Forbidden);
+    };
+    Ok(prestador)
 }
 
 /// Usuário autenticado a partir da sessão do [`Context`].
@@ -109,37 +149,64 @@ pub async fn user_from_ctx(ctx: &mut doido::controller::Context) -> Result<User,
         .ok_or(TenantError::Unauthorized)
 }
 
-/// Empresa ativa + usuário a partir da sessão (equivalente a [`CurrentTenant`]).
+async fn resolve_tenant_ids(
+    db: &DatabaseConnection,
+    session: &Session,
+) -> Result<(i64, i64), TenantError> {
+    let company_id = session.get::<i64>(COMPANY_ID_KEY);
+    let prestador_id = session.get::<i64>(PRESTADOR_ID_KEY);
+
+    match (company_id, prestador_id) {
+        (Some(c), Some(p)) => Ok((c, p)),
+        (None, Some(p)) => {
+            let Some(prestador) = EmpresaEntity::find_by_id(p)
+                .one(db)
+                .await
+                .map_err(|e| TenantError::Internal(e.to_string()))?
+            else {
+                return Err(TenantError::Forbidden);
+            };
+            Ok((prestador.company_id, p))
+        }
+        (Some(_), None) => Err(TenantError::NoPrestadorSelected),
+        (None, None) => Err(TenantError::NoTenantSelected),
+    }
+}
+
+/// Company + prestador ativo a partir da sessão.
 pub async fn tenant_from_ctx(
     ctx: &mut doido::controller::Context,
 ) -> Result<TenantAccess, TenantError> {
     let user = user_from_ctx(ctx).await?;
-    let empresa_id = ctx
-        .session()
-        .get(EMPRESA_ID_KEY)
-        .ok_or(TenantError::NoTenantSelected)?;
     let db = ctx.db();
-    let Some(papel) = membership(db, user.id, empresa_id)
+    let (company_id, prestador_id) = resolve_tenant_ids(db, ctx.session()).await?;
+
+    let Some(papel) = membership(db, user.id, company_id)
         .await
         .map_err(|e| TenantError::Internal(e.to_string()))?
     else {
         return Err(TenantError::Forbidden);
     };
-    let Some(empresa) = crate::models::empresa::Entity::find_by_id(empresa_id)
+
+    let Some(company) = crate::models::company::Entity::find_by_id(company_id)
         .one(db)
         .await
         .map_err(|e| TenantError::Internal(e.to_string()))?
     else {
         return Err(TenantError::Forbidden);
     };
+
+    let prestador = load_prestador_for_company(db, company_id, prestador_id).await?;
+
     Ok(TenantAccess {
         user,
-        empresa,
+        company,
+        prestador,
         papel,
     })
 }
 
-/// Exige usuário autenticado + empresa ativa na sessão com vínculo válido.
+/// Exige usuário autenticado + company/prestador válidos na sessão.
 pub struct CurrentTenant(pub TenantAccess);
 
 impl<S> FromRequestParts<S> for CurrentTenant
@@ -157,17 +224,17 @@ where
                 .await
                 .map_err(|_| TenantError::Unauthorized)?;
 
-            let empresa_id = empresa_id_from_session(parts).ok_or(TenantError::NoTenantSelected)?;
-
+            let session = session_from_parts(parts).ok_or(TenantError::Unauthorized)?;
             let db = doido_auth::state::global().db.clone();
-            let Some(papel) = membership(&db, user.id, empresa_id)
+            let (company_id, prestador_id) = resolve_tenant_ids(&db, &session).await?;
+            let Some(papel) = membership(&db, user.id, company_id)
                 .await
                 .map_err(|e| TenantError::Internal(e.to_string()))?
             else {
                 return Err(TenantError::Forbidden);
             };
 
-            let Some(empresa) = crate::models::empresa::Entity::find_by_id(empresa_id)
+            let Some(company) = crate::models::company::Entity::find_by_id(company_id)
                 .one(&db)
                 .await
                 .map_err(|e| TenantError::Internal(e.to_string()))?
@@ -175,9 +242,12 @@ where
                 return Err(TenantError::Forbidden);
             };
 
+            let prestador = load_prestador_for_company(&db, company_id, prestador_id).await?;
+
             Ok(CurrentTenant(TenantAccess {
                 user,
-                empresa,
+                company,
+                prestador,
                 papel,
             }))
         }

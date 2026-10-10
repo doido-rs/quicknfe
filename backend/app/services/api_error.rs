@@ -70,7 +70,8 @@ impl IntoResponse for ApiError {
         let status = match &self {
             ApiError::Tenant(TenantError::Unauthorized) => StatusCode::UNAUTHORIZED,
             ApiError::Tenant(TenantError::Forbidden)
-            | ApiError::Tenant(TenantError::NoTenantSelected) => StatusCode::FORBIDDEN,
+            | ApiError::Tenant(TenantError::NoTenantSelected)
+            | ApiError::Tenant(TenantError::NoPrestadorSelected) => StatusCode::FORBIDDEN,
             ApiError::Tenant(TenantError::Internal(_)) | ApiError::Internal(_) => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }

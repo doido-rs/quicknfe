@@ -11,42 +11,46 @@ afterEach(() => {
 })
 
 describe('TenantPage', () => {
-  it('lists empresas when authenticated', async () => {
+  it('lists companies when authenticated', async () => {
     vi.spyOn(client, 'apiFetch').mockResolvedValue({
       user: { id: 1, email: 'u@test.com' },
-      empresas: [
+      companies: [
         {
-          empresa: { id: 10, cpf_cnpj: '1', razao_social: 'Empresa X' },
+          company: { id: 10, nome: 'Company X' },
           papel: 'proprietario',
         },
       ],
-      empresa_ativa: null,
+      company_ativa: null,
+      prestadores: [],
+      prestador_ativo: null,
       papel: null,
     })
 
     renderWithProviders(<TenantPage />, { route: '/tenant' })
-    expect(await screen.findByText(/Empresa X/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Company X/i)).toBeInTheDocument()
   })
 
-  it('selects empresa on click', async () => {
+  it('selects company on click', async () => {
     stubApiFetch({
       '/api/me': {
         user: { id: 1, email: 'u@test.com' },
-        empresas: [
+        companies: [
           {
-            empresa: { id: 10, cpf_cnpj: '1', razao_social: 'Empresa X' },
+            company: { id: 10, nome: 'Company X' },
             papel: 'proprietario',
           },
         ],
-        empresa_ativa: null,
+        company_ativa: null,
+        prestadores: [],
+        prestador_ativo: null,
         papel: null,
       },
     })
-    const switchSpy = vi.spyOn(client.tenantApi, 'switchEmpresa').mockResolvedValue(undefined)
+    const switchSpy = vi.spyOn(client.tenantApi, 'switchCompany').mockResolvedValue(undefined)
 
     renderWithProviders(<TenantPage />, { route: '/tenant' })
-    await screen.findByText(/Empresa X/i)
-    await userEvent.click(screen.getByRole('button', { name: /Empresa X/i }))
+    await screen.findByText(/Company X/i)
+    await userEvent.click(screen.getByRole('button', { name: /Company X/i }))
 
     await waitFor(() => {
       expect(switchSpy).toHaveBeenCalledWith(10)
@@ -56,22 +60,24 @@ describe('TenantPage', () => {
   it('shows error when selection fails', async () => {
     vi.spyOn(client, 'apiFetch').mockResolvedValue({
       user: { id: 1, email: 'u@test.com' },
-      empresas: [
+      companies: [
         {
-          empresa: { id: 10, cpf_cnpj: '1', razao_social: 'Empresa X' },
+          company: { id: 10, nome: 'Company X' },
           papel: 'proprietario',
         },
       ],
-      empresa_ativa: null,
+      company_ativa: null,
+      prestadores: [],
+      prestador_ativo: null,
       papel: null,
     })
-    vi.spyOn(client.tenantApi, 'switchEmpresa').mockRejectedValue(
+    vi.spyOn(client.tenantApi, 'switchCompany').mockRejectedValue(
       client.createApiError(403, 'sem acesso'),
     )
 
     renderWithProviders(<TenantPage />, { route: '/tenant' })
-    await screen.findByText(/Empresa X/i)
-    await userEvent.click(screen.getByRole('button', { name: /Empresa X/i }))
+    await screen.findByText(/Company X/i)
+    await userEvent.click(screen.getByRole('button', { name: /Company X/i }))
 
     expect(await screen.findByText(/sem acesso/i)).toBeInTheDocument()
   })
@@ -79,8 +85,10 @@ describe('TenantPage', () => {
   it('signs out from tenant page', async () => {
     vi.spyOn(client, 'apiFetch').mockResolvedValue({
       user: { id: 1, email: 'u@test.com' },
-      empresas: [],
-      empresa_ativa: null,
+      companies: [],
+      company_ativa: null,
+      prestadores: [],
+      prestador_ativo: null,
       papel: null,
     })
     const signOut = vi.spyOn(client.authApi, 'signOut').mockResolvedValue(undefined)

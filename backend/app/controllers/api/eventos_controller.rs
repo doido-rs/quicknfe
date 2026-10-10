@@ -28,7 +28,7 @@ impl ApiEventosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
+        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, doc_id).await));
         let rows = crate::api!(db(
             EventoEntity::find()
                 .filter(EventoColumn::DocumentoFiscalId.eq(doc_id))
@@ -43,7 +43,7 @@ impl ApiEventosController {
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
         let id = crate::api!(id_param(&ctx, "id"));
         let row = crate::api!(db(
-            tenant_scope::evento_for_tenant(ctx.db(), access.empresa.id, doc_id, id).await,
+            tenant_scope::evento_for_tenant(ctx.db(), access.prestador.id, doc_id, id).await,
         ));
         ctx.json(EventoDto::from(row))
     }
@@ -51,7 +51,7 @@ impl ApiEventosController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.empresa.id, doc_id).await));
+        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, doc_id).await));
         let form: EventoForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             EventoActive {
@@ -76,7 +76,7 @@ impl ApiEventosController {
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
         let id = crate::api!(id_param(&ctx, "id"));
         let existing = crate::api!(db(
-            tenant_scope::evento_for_tenant(ctx.db(), access.empresa.id, doc_id, id).await,
+            tenant_scope::evento_for_tenant(ctx.db(), access.prestador.id, doc_id, id).await,
         ));
         let form: EventoForm = crate::api!(json_body(ctx).await);
         let mut record: EventoActive = existing.into();
@@ -96,7 +96,7 @@ impl ApiEventosController {
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
         let id = crate::api!(id_param(&ctx, "id"));
         crate::api!(db(
-            tenant_scope::evento_for_tenant(ctx.db(), access.empresa.id, doc_id, id).await,
+            tenant_scope::evento_for_tenant(ctx.db(), access.prestador.id, doc_id, id).await,
         ));
         crate::api!(db(EventoEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)

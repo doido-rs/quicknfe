@@ -5,6 +5,7 @@ use serde::Serialize;
 use crate::models::certificado_digital::Model as Certificado;
 use crate::models::cliente::Model as Cliente;
 use crate::models::documento_fiscal::Model as Documento;
+use crate::models::company::Model as Company;
 use crate::models::empresa::Model as Empresa;
 use crate::models::evento_documento_fiscal::Model as Evento;
 use crate::models::intermediario::Model as Intermediario;
@@ -63,16 +64,35 @@ impl From<Empresa> for EmpresaPublic {
 }
 
 #[derive(Serialize)]
-pub struct EmpresaMembership {
-    pub empresa: EmpresaPublic,
+pub struct CompanyPublic {
+    pub id: i64,
+    pub nome: String,
+    pub criado_em: DateTime<Utc>,
+}
+
+impl From<Company> for CompanyPublic {
+    fn from(c: Company) -> Self {
+        Self {
+            id: c.id,
+            nome: c.nome,
+            criado_em: c.criado_em,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct CompanyMembership {
+    pub company: CompanyPublic,
     pub papel: String,
 }
 
 #[derive(Serialize)]
 pub struct MeResponse {
     pub user: UserPublic,
-    pub empresas: Vec<EmpresaMembership>,
-    pub empresa_ativa: Option<EmpresaPublic>,
+    pub companies: Vec<CompanyMembership>,
+    pub company_ativa: Option<CompanyPublic>,
+    pub prestadores: Vec<EmpresaPublic>,
+    pub prestador_ativo: Option<EmpresaPublic>,
     pub papel: Option<String>,
 }
 

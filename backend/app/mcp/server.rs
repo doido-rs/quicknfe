@@ -103,6 +103,11 @@ pub struct JsonBodyParam {
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
+pub struct SwitchCompanyParam {
+    pub company_id: i64,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
 pub struct SwitchEmpresaParam {
     pub empresa_id: i64,
 }
@@ -136,30 +141,35 @@ impl QuickNfeMcpServer {
         self.api("GET", "/api/me".into(), None).await
     }
 
-    #[tool(description = "POST /tenant/empresa — select active empresa for session")]
-    async fn quicknfe_switch_empresa(
+    #[tool(description = "POST /tenant/company — select tenant company")]
+    async fn quicknfe_switch_company(
+        &self,
+        Parameters(p): Parameters<SwitchCompanyParam>,
+    ) -> CallToolResult {
+        self.api(
+            "POST",
+            "/tenant/company".into(),
+            Some(serde_json::json!({ "company_id": p.company_id })),
+        )
+        .await
+    }
+
+    #[tool(description = "POST /tenant/prestador — select active prestador (empresa)")]
+    async fn quicknfe_switch_prestador(
         &self,
         Parameters(p): Parameters<SwitchEmpresaParam>,
     ) -> CallToolResult {
         self.api(
             "POST",
-            "/tenant/empresa".into(),
+            "/tenant/prestador".into(),
             Some(serde_json::json!({ "empresa_id": p.empresa_id })),
         )
         .await
     }
 
-    #[tool(description = "GET /api/empresa")]
-    async fn quicknfe_empresa_show(&self) -> CallToolResult {
-        self.api("GET", "/api/empresa".into(), None).await
-    }
-
-    #[tool(description = "PATCH /api/empresa")]
-    async fn quicknfe_empresa_update(
-        &self,
-        Parameters(p): Parameters<JsonBodyParam>,
-    ) -> CallToolResult {
-        self.api("PATCH", "/api/empresa".into(), Some(p.body)).await
+    #[tool(description = "List prestadores for active company")]
+    async fn quicknfe_prestadores_list(&self) -> CallToolResult {
+        self.api("GET", "/api/prestadores".into(), None).await
     }
 
     #[tool(description = "List clientes")]
@@ -636,7 +646,7 @@ impl ServerHandler for QuickNfeMcpServer {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_instructions(
                 "QuickNFe MCP — OAuth-protected tools over the REST API. \
-                 Call quicknfe_switch_empresa before tenant-scoped operations.",
+                 Call quicknfe_switch_company and quicknfe_switch_prestador before tenant-scoped operations.",
             )
     }
 }

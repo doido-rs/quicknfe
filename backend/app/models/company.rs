@@ -1,7 +1,7 @@
-//! Vínculo multi-tenant usuário ↔ empresa.
+//! Model extensions for Company (tenant).
 #![allow(dead_code, unused_imports)]
 
-pub use super::_entities::empresas_usuarios::*;
+pub use super::_entities::companies::*;
 
 use doido::model::sea_orm::ActiveModelBehavior;
 

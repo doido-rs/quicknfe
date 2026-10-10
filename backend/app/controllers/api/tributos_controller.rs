@@ -32,7 +32,7 @@ impl ApiTributosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let item_id = crate::api!(id_param(&ctx, "item_id"));
-        crate::api!(scoped(tenant_scope::item_for_tenant(ctx.db(), access.empresa.id, item_id).await));
+        crate::api!(scoped(tenant_scope::item_for_tenant(ctx.db(), access.prestador.id, item_id).await));
         let rows = crate::api!(db(
             TributoEntity::find()
                 .filter(TributoColumn::ItemId.eq(item_id))
@@ -47,7 +47,7 @@ impl ApiTributosController {
         let item_id = crate::api!(id_param(&ctx, "item_id"));
         let id = crate::api!(id_param(&ctx, "id"));
         let row = crate::api!(db(
-            tenant_scope::tributo_for_tenant(ctx.db(), access.empresa.id, item_id, id).await,
+            tenant_scope::tributo_for_tenant(ctx.db(), access.prestador.id, item_id, id).await,
         ));
         ctx.json(TributoDto::from(row))
     }
@@ -55,7 +55,7 @@ impl ApiTributosController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let item_id = crate::api!(id_param(&ctx, "item_id"));
-        crate::api!(scoped(tenant_scope::item_for_tenant(ctx.db(), access.empresa.id, item_id).await));
+        crate::api!(scoped(tenant_scope::item_for_tenant(ctx.db(), access.prestador.id, item_id).await));
         let form: TributoForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             TributoActive {
@@ -84,7 +84,7 @@ impl ApiTributosController {
         let item_id = crate::api!(id_param(&ctx, "item_id"));
         let id = crate::api!(id_param(&ctx, "id"));
         let existing = crate::api!(db(
-            tenant_scope::tributo_for_tenant(ctx.db(), access.empresa.id, item_id, id).await,
+            tenant_scope::tributo_for_tenant(ctx.db(), access.prestador.id, item_id, id).await,
         ));
         let form: TributoForm = crate::api!(json_body(ctx).await);
         let mut record: TributoActive = existing.into();
@@ -108,7 +108,7 @@ impl ApiTributosController {
         let item_id = crate::api!(id_param(&ctx, "item_id"));
         let id = crate::api!(id_param(&ctx, "id"));
         crate::api!(db(
-            tenant_scope::tributo_for_tenant(ctx.db(), access.empresa.id, item_id, id).await,
+            tenant_scope::tributo_for_tenant(ctx.db(), access.prestador.id, item_id, id).await,
         ));
         crate::api!(db(TributoEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)

@@ -69,8 +69,13 @@ export const authApi = {
 }
 
 export const tenantApi = {
-  switchEmpresa: (empresa_id: number) =>
-    apiFetch<void>('/tenant/empresa', {
+  switchCompany: (company_id: number) =>
+    apiFetch<void>('/tenant/company', {
+      method: 'POST',
+      body: JSON.stringify({ company_id }),
+    }),
+  switchPrestador: (empresa_id: number) =>
+    apiFetch<void>('/tenant/prestador', {
       method: 'POST',
       body: JSON.stringify({ empresa_id }),
     }),

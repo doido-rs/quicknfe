@@ -27,7 +27,7 @@ impl ApiLotesController {
         let access = crate::api!(require_tenant(ctx).await);
         let rows = crate::api!(db(
             LoteEntity::find()
-                .filter(LoteColumn::EmpresaId.eq(access.empresa.id))
+                .filter(LoteColumn::EmpresaId.eq(access.prestador.id))
                 .all(ctx.db())
                 .await,
         ));
@@ -37,7 +37,7 @@ impl ApiLotesController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let row = crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.prestador.id, id).await));
         ctx.json(LoteDto::from(row))
     }
 
@@ -46,7 +46,7 @@ impl ApiLotesController {
         let form: LoteForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             LoteActive {
-                empresa_id: Set(access.empresa.id),
+                empresa_id: Set(access.prestador.id),
                 numero_lote: Set(form.numero_lote),
                 protocolo_recebimento: Set(form.protocolo_recebimento),
                 ambiente: Set(form.ambiente),
@@ -63,7 +63,7 @@ impl ApiLotesController {
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
+        let existing = crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.prestador.id, id).await));
         let form: LoteForm = crate::api!(json_body(ctx).await);
         let mut record: LoteActive = existing.into();
         record.numero_lote = Set(form.numero_lote);
@@ -78,7 +78,7 @@ impl ApiLotesController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.empresa.id, id).await));
+        crate::api!(scoped(tenant_scope::lote_for_tenant(ctx.db(), access.prestador.id, id).await));
         crate::api!(db(LoteEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

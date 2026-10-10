@@ -17,7 +17,9 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   if (!isLoading && me) {
-    return <Navigate to={me.empresa_ativa ? '/app' : '/tenant'} replace />
+    if (!me.company_ativa) return <Navigate to="/tenant" replace />
+    if (!me.prestador_ativo) return <Navigate to="/tenant/prestador" replace />
+    return <Navigate to="/app" replace />
   }
 
   async function onSubmit(e: FormEvent) {

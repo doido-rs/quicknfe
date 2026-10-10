@@ -1,7 +1,7 @@
 mod certificados_controller;
 mod clientes_controller;
 mod documentos_controller;
-mod empresa_controller;
+mod prestadores_controller;
 mod eventos_controller;
 mod intermediarios_controller;
 mod itens_controller;
@@ -13,7 +13,7 @@ mod tributos_controller;
 pub use certificados_controller::ApiCertificadosController;
 pub use clientes_controller::ApiClientesController;
 pub use documentos_controller::ApiDocumentosController;
-pub use empresa_controller::ApiEmpresaController;
+pub use prestadores_controller::ApiPrestadoresController;
 pub use eventos_controller::ApiEventosController;
 pub use intermediarios_controller::ApiIntermediariosController;
 pub use itens_controller::ApiItensController;

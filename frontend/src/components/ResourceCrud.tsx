@@ -18,7 +18,7 @@ import { buildBody, emptyForm, rowLabel } from '@/lib/resourceForm'
 import type { ResourceDef } from '@/resources/definitions'
 
 export function ResourceCrud({ def }: { def: ResourceDef }) {
-  const isSingleton = def.key === 'empresa'
+  const isSingleton = false
   const api = resourceApi<Record<string, unknown>>(def.path)
   const singleton = singletonResourceApi<Record<string, unknown>>(def.path)
   const queryClient = useQueryClient()

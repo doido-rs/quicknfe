@@ -3,6 +3,7 @@ import { AppLayout } from './pages/AppLayout'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ResourcePage } from './pages/ResourcePage'
+import { PrestadorPage } from './pages/PrestadorPage'
 import { TenantPage } from './pages/TenantPage'
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/tenant" element={<TenantPage />} />
+        <Route path="/tenant/prestador" element={<PrestadorPage />} />
         <Route path="/app" element={<AppLayout />}>
           <Route index element={<Navigate to="documentos" replace />} />
           <Route path=":resourceKey" element={<ResourcePage />} />

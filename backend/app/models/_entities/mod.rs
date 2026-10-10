@@ -4,10 +4,11 @@ pub mod prelude;
 
 pub mod certificados_digitais;
 pub mod clientes;
+pub mod companies;
+pub mod companies_usuarios;
 pub mod documentos_fiscais;
 pub mod doido_jobs;
 pub mod empresas;
-pub mod empresas_usuarios;
 pub mod eventos_documento_fiscal;
 pub mod intermediarios;
 pub mod itens_documento_fiscal;

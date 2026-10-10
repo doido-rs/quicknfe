@@ -1,11 +1,14 @@
 use doido::controller::controller;
 use doido::model::sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
-use crate::auth::tenant::{self, EMPRESA_ID_KEY};
-use crate::models::empresa::Entity as EmpresaEntity;
-use crate::models::empresa_usuario::{Column as MembroColumn, Entity as MembroEntity};
+use crate::auth::tenant::{self, COMPANY_ID_KEY, PRESTADOR_ID_KEY};
+use crate::models::company::Entity as CompanyEntity;
+use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEntity};
+use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity};
 use crate::services::api_error::{db, require_user};
-use crate::services::dto::{EmpresaMembership, EmpresaPublic, MeResponse, UserPublic};
+use crate::services::dto::{
+    CompanyMembership, CompanyPublic, EmpresaPublic, MeResponse, UserPublic,
+};
 
 pub struct ApiSessionController;
 
@@ -21,22 +24,26 @@ impl ApiSessionController {
                 .await,
         ));
 
-        let mut empresas = Vec::with_capacity(membros.len());
+        let mut companies = Vec::with_capacity(membros.len());
         for m in membros {
-            if let Some(empresa) = crate::api!(db(EmpresaEntity::find_by_id(m.empresa_id).one(conn).await)) {
-                empresas.push(EmpresaMembership {
-                    empresa: EmpresaPublic::from(empresa),
+            if let Some(company) =
+                crate::api!(db(CompanyEntity::find_by_id(m.company_id).one(conn).await))
+            {
+                companies.push(CompanyMembership {
+                    company: CompanyPublic::from(company),
                     papel: m.papel,
                 });
             }
         }
 
-        let active_id: Option<i64> = ctx.session().get(EMPRESA_ID_KEY);
-        let (empresa_ativa, papel) = if let Some(eid) = active_id {
-            let membership = crate::api!(db(tenant::membership(conn, user.id, eid).await));
+        let active_company_id: Option<i64> = ctx.session().get(COMPANY_ID_KEY);
+        let active_prestador_id: Option<i64> = ctx.session().get(PRESTADOR_ID_KEY);
+
+        let (company_ativa, papel) = if let Some(cid) = active_company_id {
+            let membership = crate::api!(db(tenant::membership(conn, user.id, cid).await));
             if let Some(p) = membership {
-                let emp = crate::api!(db(EmpresaEntity::find_by_id(eid).one(conn).await));
-                (emp.map(EmpresaPublic::from), Some(p))
+                let company = crate::api!(db(CompanyEntity::find_by_id(cid).one(conn).await));
+                (company.map(CompanyPublic::from), Some(p))
             } else {
                 (None, None)
             }
@@ -44,10 +51,40 @@ impl ApiSessionController {
             (None, None)
         };
 
+        let prestadores = if let Some(cid) = company_ativa.as_ref().map(|c| c.id).or(active_company_id)
+        {
+            crate::api!(db(
+                EmpresaEntity::find()
+                    .filter(EmpresaColumn::CompanyId.eq(cid))
+                    .all(conn)
+                    .await,
+            ))
+            .into_iter()
+            .map(EmpresaPublic::from)
+            .collect()
+        } else {
+            vec![]
+        };
+
+        let prestador_ativo = if let (Some(cid), Some(pid)) = (active_company_id, active_prestador_id)
+        {
+            crate::api!(db(
+                EmpresaEntity::find_by_id(pid)
+                    .filter(EmpresaColumn::CompanyId.eq(cid))
+                    .one(conn)
+                    .await,
+            ))
+            .map(EmpresaPublic::from)
+        } else {
+            None
+        };
+
         ctx.json(MeResponse {
             user: UserPublic::from(user),
-            empresas,
-            empresa_ativa,
+            companies,
+            company_ativa,
+            prestadores,
+            prestador_ativo,
             papel,
         })
     }

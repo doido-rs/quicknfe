@@ -74,16 +74,16 @@ impl Model {
         <Self as AuthUser>::find_by_email(db, email).await
     }
 
-    pub async fn empresa_ids(&self, db: &DatabaseConnection) -> doido::Result<Vec<i64>> {
-        crate::auth::tenant::user_empresa_ids(db, self.id).await
+    pub async fn company_ids(&self, db: &DatabaseConnection) -> doido::Result<Vec<i64>> {
+        crate::auth::tenant::user_company_ids(db, self.id).await
     }
 
-    pub async fn can_access_empresa(
+    pub async fn can_access_company(
         &self,
         db: &DatabaseConnection,
-        empresa_id: i64,
+        company_id: i64,
     ) -> doido::Result<bool> {
-        Ok(crate::auth::tenant::membership(db, self.id, empresa_id)
+        Ok(crate::auth::tenant::membership(db, self.id, company_id)
             .await?
             .is_some())
     }
