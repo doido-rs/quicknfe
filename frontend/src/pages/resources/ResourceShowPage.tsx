@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { resourceApi } from '@/api/client'
+import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { Button } from '@/components/ui/button'
@@ -59,7 +60,10 @@ export function ResourceShowPage() {
             ID {String(row.id)} · {rowLabel(row, def.fields)}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start justify-end gap-2">
+          {def.key === 'documentos' && (
+            <DocumentoXmlDownloadButton documentoId={recordId} row={row} />
+          )}
           <Button variant="outline" asChild>
             <Link {...resourceEditTo(def, recordId)}>Editar</Link>
           </Button>

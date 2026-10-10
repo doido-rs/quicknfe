@@ -5,7 +5,7 @@ use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFil
 use serde::Deserialize;
 
 use crate::models::documento_fiscal::{
-    ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity,
+    ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity, Model as Documento,
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::dto::{DocumentoDto, DocumentoListDto, TransmitirDocumentoResponse};
@@ -55,6 +55,23 @@ async fn validate_refs(
         tenant_scope::ensure_lote_belongs(db, empresa_id, lid).await?;
     }
     Ok(())
+}
+
+fn documento_xml_content(doc: &Documento) -> Option<String> {
+    doc.xml_processado
+        .clone()
+        .or_else(|| doc.xml_assinado.clone())
+        .filter(|xml| !xml.trim().is_empty())
+}
+
+fn xml_download_filename(doc: &Documento) -> String {
+    if let Some(chave) = doc.chave_acesso.as_ref().filter(|c| !c.trim().is_empty()) {
+        return format!("{chave}.xml");
+    }
+    format!(
+        "nf-{}-{}-{}.xml",
+        doc.modelo, doc.serie, doc.numero_documento
+    )
 }
 
 fn apply_form(record: &mut DocActive, form: &DocumentoForm, empresa_id: i64) {
@@ -132,6 +149,25 @@ impl ApiDocumentosController {
         crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, id).await));
         crate::api!(db(DocEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
+    }
+
+    /// Baixa o XML da nota (`xml_processado` ou, na ausência, `xml_assinado`).
+    pub async fn download_xml(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        let row = crate::api!(scoped(
+            tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, id).await,
+        ));
+        let xml = documento_xml_content(&row).ok_or_else(|| {
+            ApiError::Validation("Esta nota fiscal ainda não possui XML armazenado.".into())
+        });
+        let xml = crate::api!(to_response(xml));
+        let filename = xml_download_filename(&row);
+        ctx.send_data(
+            xml.into_bytes(),
+            "application/xml; charset=utf-8",
+            Some(&filename),
+        )
     }
 
     /// Envia a DPS já assinada (`xml_assinado`) para a API SEFIN Nacional (mTLS + JSON).

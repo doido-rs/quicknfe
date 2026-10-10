@@ -116,6 +116,7 @@ describe('Resource pages', () => {
           serie: '1',
           numero_documento: 1,
           status: 'novo',
+          xml_assinado: '<?xml version="1.0"?><NFe/>',
         })
       }
       if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
@@ -126,6 +127,7 @@ describe('Resource pages', () => {
 
     await renderWithProviders({ route: '/app/documentos/9' })
     expect(await screen.findByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /baixar xml/i })).toBeEnabled()
   })
 
   it('hides Novo on read-only logs list', async () => {

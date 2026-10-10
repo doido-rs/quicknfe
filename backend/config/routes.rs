@@ -53,6 +53,7 @@ pub fn router() -> axum::Router {
         get!("/api/documentos", ApiDocumentosController::index);
         post!("/api/documentos", ApiDocumentosController::create);
         get!("/api/documentos/{id}", ApiDocumentosController::show);
+        get!("/api/documentos/{id}/xml", ApiDocumentosController::download_xml);
         patch!("/api/documentos/{id}", ApiDocumentosController::update);
         delete!("/api/documentos/{id}", ApiDocumentosController::destroy);
         post!(
