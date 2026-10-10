@@ -1,9 +1,10 @@
 use doido::controller::controller;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::empresa::{ActiveModel as EmpresaActive, Column as EmpresaColumn, Entity as EmpresaEntity};
-use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
+use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::dto::EmpresaPublic;
 use crate::services::tenant_scope;
 
@@ -35,13 +36,27 @@ pub struct ApiPrestadoresController;
 impl ApiPrestadoresController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
-        let rows = crate::api!(db(
-            EmpresaEntity::find()
-                .filter(EmpresaColumn::CompanyId.eq(access.company.id))
-                .all(ctx.db())
-                .await,
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
+        let mut select = EmpresaEntity::find().filter(EmpresaColumn::CompanyId.eq(access.company.id));
+        if let Some(ref q) = params.q {
+            select = select.filter(
+                Condition::any()
+                    .add(EmpresaColumn::RazaoSocial.contains(q))
+                    .add(EmpresaColumn::CpfCnpj.contains(q)),
+            );
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                EmpresaColumn::Id,
+                params,
+                |m| m.id,
+                EmpresaPublic::from,
+            )
+            .await,
         ));
-        ctx.json(rows.into_iter().map(EmpresaPublic::from).collect::<Vec<_>>())
+        ctx.json(page)
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {

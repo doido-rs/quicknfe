@@ -20,7 +20,7 @@ describe('AppLayout', () => {
         prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'Minha Empresa' },
         papel: 'proprietario',
       },
-      '/api/documentos': [],
+      '/api/documentos': { items: [], next_page_token: null },
     })
 
     await renderWithProviders({ route: '/app/documentos' })
@@ -55,7 +55,7 @@ describe('AppLayout', () => {
         prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'Minha Empresa' },
         papel: 'proprietario',
       },
-      '/api/documentos': [],
+      '/api/documentos': { items: [], next_page_token: null },
     })
     const signOut = vi.spyOn(client.authApi, 'signOut').mockResolvedValue(undefined)
 

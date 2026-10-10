@@ -61,14 +61,15 @@ describe('createApiError', () => {
 })
 
 describe('resourceApi', () => {
-  it('calls list endpoint', async () => {
+  it('calls list endpoint with token pagination', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => [],
+      json: async () => ({ items: [{ id: 1 }], next_page_token: null }),
     })
     vi.stubGlobal('fetch', fetchMock)
-    await resourceApi('/api/clientes').list()
+    const rows = await resourceApi<{ id: number }>('/api/clientes').list()
+    expect(rows).toEqual([{ id: 1 }])
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/clientes',
       expect.objectContaining({ credentials: 'include' }),

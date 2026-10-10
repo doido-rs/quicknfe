@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { asPage } from './pageResponse'
 
 function jsonResponse(data: unknown, status = 200) {
   return {
@@ -30,7 +31,9 @@ export function stubApiFetch(routes: Record<string, unknown>) {
 
     for (const [path, body] of Object.entries(routes)) {
       if (path !== '/api/me' && url.includes(path)) {
-        return jsonResponse(body)
+        const payload =
+          method === 'GET' && Array.isArray(body) ? asPage(body) : body
+        return jsonResponse(payload)
       }
     }
 

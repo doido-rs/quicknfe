@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
 use doido::controller::controller;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::lote_transmissao::{
     ActiveModel as LoteActive, Column as LoteColumn, Entity as LoteEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
+use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::dto::LoteDto;
 use crate::services::tenant_scope;
 
@@ -25,13 +26,27 @@ pub struct ApiLotesController;
 impl ApiLotesController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
-        let rows = crate::api!(db(
-            LoteEntity::find()
-                .filter(LoteColumn::EmpresaId.eq(access.prestador.id))
-                .all(ctx.db())
-                .await,
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
+        let mut select = LoteEntity::find().filter(LoteColumn::EmpresaId.eq(access.prestador.id));
+        if let Some(ref q) = params.q {
+            let mut filter = Condition::any().add(LoteColumn::StatusLote.contains(q));
+            if let Ok(num) = q.parse::<i64>() {
+                filter = filter.add(LoteColumn::NumeroLote.eq(num));
+            }
+            select = select.filter(filter);
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                LoteColumn::Id,
+                params,
+                |m| m.id,
+                LoteDto::from,
+            )
+            .await,
         ));
-        ctx.json(rows.into_iter().map(LoteDto::from).collect::<Vec<_>>())
+        ctx.json(page)
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {

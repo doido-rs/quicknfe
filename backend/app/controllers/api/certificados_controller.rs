@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use doido::controller::controller;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::certificado_digital::{
@@ -8,6 +8,7 @@ use crate::models::certificado_digital::{
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::dto::{encode_certificado_senha, CertificadoDto};
+use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
@@ -24,13 +25,23 @@ pub struct ApiCertificadosController;
 impl ApiCertificadosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
-        let rows = crate::api!(db(
-            CertEntity::find()
-                .filter(CertColumn::EmpresaId.eq(access.prestador.id))
-                .all(ctx.db())
-                .await,
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
+        let mut select = CertEntity::find().filter(CertColumn::EmpresaId.eq(access.prestador.id));
+        if let Some(ref q) = params.q {
+            select = select.filter(CertColumn::Tipo.contains(q));
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                CertColumn::Id,
+                params,
+                |m| m.id,
+                CertificadoDto::from,
+            )
+            .await,
         ));
-        ctx.json(rows.into_iter().map(CertificadoDto::from).collect::<Vec<_>>())
+        ctx.json(page)
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {

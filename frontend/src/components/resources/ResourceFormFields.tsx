@@ -1,8 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import type { ResourceRouteLink } from '@/lib/resourcePaths'
 import type { FieldDef } from '@/resources/definitions'
 
@@ -22,7 +21,6 @@ export function ResourceFormFields({
   onCancel?: () => void
 }) {
   const {
-    register,
     handleSubmit,
     formState: { isSubmitting },
   } = form
@@ -30,20 +28,7 @@ export function ResourceFormFields({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 md:grid-cols-2">
       {fields.map((field) => (
-        <div key={field.key} className="grid gap-2">
-          <Label htmlFor={`field-${field.key}`}>{field.label}</Label>
-          <Input
-            id={`field-${field.key}`}
-            type={
-              field.type === 'number'
-                ? 'number'
-                : field.type === 'date'
-                  ? 'datetime-local'
-                  : 'text'
-            }
-            {...register(field.key, { required: field.required })}
-          />
-        </div>
+        <ResourceFieldInput key={field.key} field={field} form={form} />
       ))}
       <div className="flex flex-wrap gap-2 md:col-span-2">
         <Button type="submit" disabled={isSubmitting}>

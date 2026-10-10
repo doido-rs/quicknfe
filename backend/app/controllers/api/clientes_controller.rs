@@ -1,9 +1,10 @@
 use doido::controller::controller;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::cliente::{ActiveModel as ClienteActive, Column as ClienteColumn, Entity as ClienteEntity};
-use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
+use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::dto::ClienteDto;
 use crate::services::tenant_scope;
 
@@ -28,17 +29,27 @@ pub struct ApiClientesController;
 impl ApiClientesController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
-        let rows = crate::api!(db(
-            ClienteEntity::find()
-                .filter(ClienteColumn::EmpresaId.eq(access.prestador.id))
-                .all(ctx.db())
-                .await,
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
+        let mut select = ClienteEntity::find().filter(ClienteColumn::EmpresaId.eq(access.prestador.id));
+        if let Some(ref q) = params.q {
+            select = select.filter(
+                Condition::any()
+                    .add(ClienteColumn::RazaoSocial.contains(q))
+                    .add(ClienteColumn::CpfCnpj.contains(q)),
+            );
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                ClienteColumn::Id,
+                params,
+                |m| m.id,
+                ClienteDto::from,
+            )
+            .await,
         ));
-        ctx.json(
-            rows.into_iter()
-                .map(ClienteDto::from)
-                .collect::<Vec<_>>(),
-        )
+        ctx.json(page)
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {

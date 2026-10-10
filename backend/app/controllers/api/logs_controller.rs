@@ -1,11 +1,13 @@
 use chrono::{DateTime, Utc};
 use doido::controller::controller;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use crate::models::log_mensagem_retorno::Column as LogColumn;
 use serde::Deserialize;
 
 use crate::models::log_mensagem_retorno::{ActiveModel as LogActive, Entity as LogEntity};
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::dto::LogRetornoDto;
+use crate::services::pagination::{page_params_from_ctx, paginate_select, PageResponse};
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
@@ -49,6 +51,7 @@ pub struct ApiLogsController;
 impl ApiLogsController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
         let docs = crate::api!(db(
             crate::models::documento_fiscal::Entity::find()
                 .filter(crate::models::documento_fiscal::Column::EmpresaId.eq(access.prestador.id))
@@ -65,23 +68,40 @@ impl ApiLogsController {
         let lote_ids: Vec<i64> = lotes.iter().map(|l| l.id).collect();
 
         if doc_ids.is_empty() && lote_ids.is_empty() {
-            return ctx.json(Vec::<LogRetornoDto>::new());
+            return ctx.json(PageResponse {
+                items: Vec::<LogRetornoDto>::new(),
+                next_page_token: None,
+            });
         }
 
         let mut condition = Condition::any();
         if !doc_ids.is_empty() {
-            condition = condition.add(
-                crate::models::log_mensagem_retorno::Column::DocumentoFiscalId.is_in(doc_ids),
-            );
+            condition = condition.add(LogColumn::DocumentoFiscalId.is_in(doc_ids));
         }
         if !lote_ids.is_empty() {
-            condition = condition.add(
-                crate::models::log_mensagem_retorno::Column::LoteId.is_in(lote_ids),
-            );
+            condition = condition.add(LogColumn::LoteId.is_in(lote_ids));
         }
 
-        let rows = crate::api!(db(LogEntity::find().filter(condition).all(ctx.db()).await));
-        ctx.json(rows.into_iter().map(LogRetornoDto::from).collect::<Vec<_>>())
+        let mut select = LogEntity::find().filter(condition);
+        if let Some(ref q) = params.q {
+            select = select.filter(
+                Condition::any()
+                    .add(LogColumn::CodigoErro.contains(q))
+                    .add(LogColumn::MensagemRetorno.contains(q)),
+            );
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                LogColumn::Id,
+                params,
+                |m| m.id,
+                LogRetornoDto::from,
+            )
+            .await,
+        ));
+        ctx.json(page)
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {

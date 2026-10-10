@@ -1,3 +1,6 @@
+import type { ListPageOptions, PageResponse } from './pagination'
+import { buildListQuery } from './pagination'
+
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
 export interface ApiError extends Error {
@@ -83,7 +86,21 @@ export const tenantApi = {
 
 export function resourceApi<T>(basePath: string) {
   return {
-    list: () => apiFetch<T[]>(basePath),
+    listPage: (options?: ListPageOptions) =>
+      apiFetch<PageResponse<T>>(`${basePath}${buildListQuery(options)}`),
+    list: async (options?: ListPageOptions) => {
+      const items: T[] = []
+      let pageToken = options?.pageToken
+      for (;;) {
+        const page = await apiFetch<PageResponse<T>>(
+          `${basePath}${buildListQuery({ ...options, pageToken })}`,
+        )
+        items.push(...page.items)
+        if (!page.next_page_token) break
+        pageToken = page.next_page_token
+      }
+      return items
+    },
     get: (id: number) => apiFetch<T>(`${basePath}/${id}`),
     create: (body: unknown) =>
       apiFetch<T>(basePath, { method: 'POST', body: JSON.stringify(body) }),

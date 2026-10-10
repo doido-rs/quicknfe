@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { resourceApi } from '@/api/client'
+import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { buildBody, emptyForm, rowLabel, useResourceFieldForm } from '@/lib/resourceForm'
 import type { ResourceDef } from '@/resources/definitions'
 
@@ -18,12 +17,13 @@ export function NestedResourcePanel({
   const api = resourceApi<Record<string, unknown>>(path)
   const queryClient = useQueryClient()
   const form = useResourceFieldForm(nested.fields)
-  const { register, handleSubmit, reset } = form
+  const { handleSubmit, reset } = form
 
-  const { data: rows = [] } = useQuery({
+  const { data: page } = useQuery({
     queryKey: [path, 'list'],
-    queryFn: () => api.list(),
+    queryFn: () => api.listPage({ pageSize: 50 }),
   })
+  const rows = page?.items ?? []
 
   const createMutation = useMutation({
     mutationFn: (values: Record<string, string>) => api.create(buildBody(nested.fields, values)),
@@ -44,14 +44,7 @@ export function NestedResourcePanel({
           onSubmit={handleSubmit((values) => createMutation.mutate(values))}
         >
           {nested.fields.map((f) => (
-            <div key={f.key} className="grid gap-2">
-              <Label htmlFor={`nested-${f.key}`}>{f.label}</Label>
-              <Input
-                id={`nested-${f.key}`}
-                type={f.type === 'number' ? 'number' : 'text'}
-                {...register(f.key, { required: f.required })}
-              />
-            </div>
+            <ResourceFieldInput key={f.key} field={f} form={form} idPrefix={`nested-${f.key}`} />
           ))}
           <div className="md:col-span-2">
             <Button type="submit" disabled={createMutation.isPending}>

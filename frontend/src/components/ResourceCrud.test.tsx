@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { asPage } from '../test/pageResponse'
 import { renderWithProviders } from '../test/renderWithProviders'
 
 function jsonResponse(data: unknown, status = 200) {
@@ -40,8 +41,8 @@ afterEach(() => {
 describe('Resource pages', () => {
   it('lists clientes with Novo action', async () => {
     stubFetch((url, method) => {
-      if (method === 'GET' && url.endsWith('/api/clientes')) {
-        return jsonResponse([{ id: 1, cpf_cnpj: '123', razao_social: 'Cliente A' }])
+      if (method === 'GET' && /\/api\/clientes(\?|$)/.test(url)) {
+        return jsonResponse(asPage([{ id: 1, cpf_cnpj: '123', razao_social: 'Cliente A' }]))
       }
       return jsonResponse('missing', 404)
     })
@@ -57,8 +58,8 @@ describe('Resource pages', () => {
       if (method === 'GET' && url.endsWith('/api/clientes/1')) {
         return jsonResponse({ id: 1, cpf_cnpj: '123', razao_social: 'Cliente A' })
       }
-      if (method === 'GET' && url.endsWith('/api/clientes')) {
-        return jsonResponse([])
+      if (method === 'GET' && /\/api\/clientes(\?|$)/.test(url)) {
+        return jsonResponse(asPage([]))
       }
       return jsonResponse('missing', 404)
     })
@@ -82,8 +83,8 @@ describe('Resource pages', () => {
           papel: 'p',
         })
       }
-      if (method === 'GET' && url.endsWith('/api/clientes')) {
-        return jsonResponse([{ id: 1, cpf_cnpj: '123', razao_social: 'Antigo' }])
+      if (method === 'GET' && /\/api\/clientes(\?|$)/.test(url)) {
+        return jsonResponse(asPage([{ id: 1, cpf_cnpj: '123', razao_social: 'Antigo' }]))
       }
       if (method === 'DELETE' && url.includes('/api/clientes/1')) {
         return jsonResponse(undefined, 204)
@@ -120,7 +121,7 @@ describe('Resource pages', () => {
         })
       }
       if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
-        return jsonResponse([{ id: 1, numero_item: 1, descricao: 'Item 1' }])
+        return jsonResponse(asPage([{ id: 1, numero_item: 1, descricao: 'Item 1' }]))
       }
       return jsonResponse('missing', 404)
     })
@@ -132,10 +133,18 @@ describe('Resource pages', () => {
 
   it('hides Novo on read-only logs list', async () => {
     stubFetch((url, method) => {
-      if (method === 'GET' && url.endsWith('/api/logs-retorno')) {
-        return jsonResponse([
-          { id: 1, codigo_erro: 'E1', mensagem_retorno: 'Falha', documento_fiscal_id: null, lote_id: null },
-        ])
+      if (method === 'GET' && /\/api\/logs-retorno(\?|$)/.test(url)) {
+        return jsonResponse(
+          asPage([
+            {
+              id: 1,
+              codigo_erro: 'E1',
+              mensagem_retorno: 'Falha',
+              documento_fiscal_id: null,
+              lote_id: null,
+            },
+          ]),
+        )
       }
       return jsonResponse('missing', 404)
     })

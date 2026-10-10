@@ -1,12 +1,13 @@
 use doido::controller::controller;
 use doido::model::sea_orm::prelude::Decimal;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::item_documento_fiscal::{
     ActiveModel as ItemActive, Column as ItemColumn, Entity as ItemEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped};
+use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
+use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::dto::ItemDto;
 use crate::services::tenant_scope;
 
@@ -30,13 +31,23 @@ impl ApiItensController {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
         crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, doc_id).await));
-        let rows = crate::api!(db(
-            ItemEntity::find()
-                .filter(ItemColumn::DocumentoFiscalId.eq(doc_id))
-                .all(ctx.db())
-                .await,
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
+        let mut select = ItemEntity::find().filter(ItemColumn::DocumentoFiscalId.eq(doc_id));
+        if let Some(ref q) = params.q {
+            select = select.filter(ItemColumn::Descricao.contains(q));
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                ItemColumn::Id,
+                params,
+                |m| m.id,
+                ItemDto::from,
+            )
+            .await,
         ));
-        ctx.json(rows.into_iter().map(ItemDto::from).collect::<Vec<_>>())
+        ctx.json(page)
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {

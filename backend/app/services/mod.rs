@@ -3,5 +3,6 @@
 pub mod api_error;
 pub mod dashboard;
 pub mod dto;
+pub mod pagination;
 pub mod nfse;
 pub mod tenant_scope;

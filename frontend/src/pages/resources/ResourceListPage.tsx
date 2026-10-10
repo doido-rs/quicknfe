@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
 import { resourceApi } from '@/api/client'
@@ -20,10 +20,21 @@ export function ResourceListPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<Record<string, unknown> | null>(null)
 
-  const { data: rows = [], isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: [def.key, 'list'],
-    queryFn: () => api.list(),
+    queryFn: ({ pageParam }) =>
+      api.listPage({ pageToken: pageParam as string | undefined, pageSize: 20 }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_page_token ?? undefined,
   })
+
+  const rows = data?.pages.flatMap((p) => p.items) ?? []
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.remove(id),
@@ -61,13 +72,25 @@ export function ResourceListPage() {
         <CardHeader>
           <CardTitle className="text-base">Lista</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <ResourceDataTable
             def={def}
             rows={rows}
             allowDelete={allowDelete}
             onDelete={onDelete}
           />
+          {hasNextPage && (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isFetchingNextPage}
+                onClick={() => fetchNextPage()}
+              >
+                {isFetchingNextPage ? 'Carregando…' : 'Carregar mais'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

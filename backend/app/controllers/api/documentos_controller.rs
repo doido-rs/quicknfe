@@ -1,7 +1,7 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use doido::controller::controller;
 use doido::model::sea_orm::prelude::Decimal;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::documento_fiscal::{
@@ -10,6 +10,7 @@ use crate::models::documento_fiscal::{
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::dto::{DocumentoDto, DocumentoListDto, TransmitirDocumentoResponse};
 use crate::services::nfse::{transmitir_documento, TransmitirParams};
+use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::tenant_scope;
 
 #[derive(Debug, Default, Deserialize)]
@@ -103,13 +104,31 @@ pub struct ApiDocumentosController;
 impl ApiDocumentosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
-        let rows = crate::api!(db(
-            DocEntity::find()
-                .filter(DocColumn::EmpresaId.eq(access.prestador.id))
-                .all(ctx.db())
-                .await,
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
+        let mut select = DocEntity::find().filter(DocColumn::EmpresaId.eq(access.prestador.id));
+        if let Some(ref q) = params.q {
+            let mut filter = Condition::any()
+                .add(DocColumn::Serie.contains(q))
+                .add(DocColumn::Status.contains(q))
+                .add(DocColumn::Modelo.contains(q))
+                .add(DocColumn::ChaveAcesso.contains(q));
+            if let Ok(num) = q.parse::<i64>() {
+                filter = filter.add(DocColumn::NumeroDocumento.eq(num));
+            }
+            select = select.filter(filter);
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                DocColumn::Id,
+                params,
+                |m| m.id,
+                DocumentoListDto::from,
+            )
+            .await,
         ));
-        ctx.json(rows.into_iter().map(DocumentoListDto::from).collect::<Vec<_>>())
+        ctx.json(page)
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {

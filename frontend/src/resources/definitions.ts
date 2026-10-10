@@ -1,10 +1,12 @@
-export type FieldType = 'text' | 'number' | 'date' | 'textarea'
+export type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'relation'
 
 export interface FieldDef {
   key: string
   label: string
   type?: FieldType
   required?: boolean
+  /** Recurso alvo para campos `relation` ou inferidos de `*_id`. */
+  relationResource?: string
 }
 
 export interface ResourceDef {
@@ -37,9 +39,14 @@ export const resources: ResourceDef[] = [
       { key: 'serie', label: 'Série', required: true },
       { key: 'numero_documento', label: 'Número', type: 'number', required: true },
       { key: 'status', label: 'Status', required: true },
-      { key: 'cliente_id', label: 'Tomador (ID)', type: 'number' },
-      { key: 'intermediario_id', label: 'Intermediário (ID)', type: 'number' },
-      { key: 'lote_id', label: 'Lote ID', type: 'number' },
+      { key: 'cliente_id', label: 'Tomador', type: 'relation', relationResource: 'clientes' },
+      {
+        key: 'intermediario_id',
+        label: 'Intermediário',
+        type: 'relation',
+        relationResource: 'intermediarios',
+      },
+      { key: 'lote_id', label: 'Lote', type: 'relation', relationResource: 'lotes' },
     ],
     nested: {
       label: 'Itens da nota',
@@ -74,8 +81,13 @@ export const resources: ResourceDef[] = [
     fields: [
       { key: 'codigo_erro', label: 'Código erro', required: true },
       { key: 'mensagem_retorno', label: 'Mensagem', required: true },
-      { key: 'documento_fiscal_id', label: 'Nota fiscal ID', type: 'number' },
-      { key: 'lote_id', label: 'Lote ID', type: 'number' },
+      {
+        key: 'documento_fiscal_id',
+        label: 'Nota fiscal',
+        type: 'relation',
+        relationResource: 'documentos',
+      },
+      { key: 'lote_id', label: 'Lote', type: 'relation', relationResource: 'lotes' },
     ],
   },
   {
