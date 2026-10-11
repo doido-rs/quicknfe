@@ -64,11 +64,15 @@ export type FormSectionDef =
     }
   | { type: 'fields'; title: string; fieldKeys: string[]; columns?: 1 | 2 }
 
+export type MenuPlacement = 'sidebar' | 'settings'
+
 export interface ResourceDef {
   key: string
   title: string
   /** Agrupa itens no menu lateral (ordem segue `resources`). */
   menuSection: string
+  /** `settings` — acessível em /app/configuracoes, fora do menu principal. */
+  menuPlacement?: MenuPlacement
   path: string
   idField?: string
   fields: FieldDef[]
@@ -209,7 +213,8 @@ export const resources: ResourceDef[] = [
   {
     key: 'municipios',
     title: 'Municípios (IBGE)',
-    menuSection: 'Referência',
+    menuSection: 'Cadastros',
+    menuPlacement: 'settings',
     path: '/api/municipios',
     allowCreate: false,
     allowDelete: false,
@@ -222,7 +227,8 @@ export const resources: ResourceDef[] = [
   {
     key: 'prestadores',
     title: 'Prestadores de serviço',
-    menuSection: 'Prestador e partes',
+    menuSection: 'Cadastros',
+    menuPlacement: 'settings',
     path: '/api/prestadores',
     cncLookup: {
       inscricaoFieldKey: 'cpf_cnpj',
@@ -272,7 +278,8 @@ export const resources: ResourceDef[] = [
   {
     key: 'clientes',
     title: 'Tomadores de serviço',
-    menuSection: 'Prestador e partes',
+    menuSection: 'Cadastros',
+    menuPlacement: 'settings',
     path: '/api/clientes',
     cncLookup: {
       inscricaoFieldKey: 'cpf_cnpj',
@@ -297,7 +304,8 @@ export const resources: ResourceDef[] = [
   {
     key: 'intermediarios',
     title: 'Intermediários',
-    menuSection: 'Prestador e partes',
+    menuSection: 'Cadastros',
+    menuPlacement: 'settings',
     path: '/api/intermediarios',
     fields: [
       { key: 'cpf_cnpj', label: 'CPF/CNPJ do intermediário', required: true },
@@ -308,3 +316,11 @@ export const resources: ResourceDef[] = [
     ],
   },
 ]
+
+export function sidebarResources(): ResourceDef[] {
+  return resources.filter((r) => (r.menuPlacement ?? 'sidebar') === 'sidebar')
+}
+
+export function settingsResources(): ResourceDef[] {
+  return resources.filter((r) => r.menuPlacement === 'settings')
+}

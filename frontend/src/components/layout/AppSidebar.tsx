@@ -9,6 +9,7 @@ import {
   LogOut,
   MapPin,
   ScrollText,
+  Settings,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -28,12 +29,16 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { appDashboardTo, resourceListTo } from '@/lib/resourcePaths'
-import { resources, type ResourceDef } from '@/resources/definitions'
+import { appDashboardTo, appSettingsTo, resourceListTo } from '@/lib/resourcePaths'
+import {
+  settingsResources,
+  sidebarResources,
+  type ResourceDef,
+} from '@/resources/definitions'
 
-function resourcesByMenuSection(): { label: string; items: ResourceDef[] }[] {
+function resourcesByMenuSection(items: ResourceDef[]): { label: string; items: ResourceDef[] }[] {
   const sections: { label: string; items: ResourceDef[] }[] = []
-  for (const r of resources) {
+  for (const r of items) {
     let section = sections.find((s) => s.label === r.menuSection)
     if (!section) {
       section = { label: r.menuSection, items: [] }
@@ -59,11 +64,21 @@ function ResourceIcon({ resourceKey }: { resourceKey: string }) {
   return <Icon />
 }
 
+function isSettingsPath(pathname: string): boolean {
+  if (pathname === appSettingsTo.to || pathname.startsWith(`${appSettingsTo.to}/`)) {
+    return true
+  }
+  return settingsResources().some(
+    (r) => pathname === `/app/${r.key}` || pathname.startsWith(`/app/${r.key}/`),
+  )
+}
+
 export function AppSidebar() {
   const { me, signOut } = useAuth()
   const { state, isMobile } = useSidebar()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const iconOnly = state === 'collapsed' && !isMobile
+  const settingsActive = isSettingsPath(pathname)
 
   return (
     <Sidebar collapsible="icon">
@@ -115,7 +130,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        {resourcesByMenuSection().map((section) => (
+        {resourcesByMenuSection(sidebarResources()).map((section) => (
           <SidebarGroup key={section.label}>
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -139,6 +154,23 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+        {settingsResources().length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={settingsActive} tooltip="Configurações">
+                    <Link {...appSettingsTo}>
+                      <Settings />
+                      <span>Configurações</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-2">
         <Button

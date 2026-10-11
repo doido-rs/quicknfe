@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResourceDef } from '@/hooks/useResourceDef'
 import { rowLabel } from '@/lib/resourceForm'
-import { resourceNewTo } from '@/lib/resourcePaths'
+import { appSettingsTo, resourceNewTo } from '@/lib/resourcePaths'
 
 export function ResourceListPage() {
   const def = useResourceDef()
@@ -59,6 +59,11 @@ export function ResourceListPage() {
 
   return (
     <div className="space-y-4">
+      {def.menuPlacement === 'settings' && (
+        <Button variant="ghost" size="sm" asChild className="-ml-2">
+          <Link {...appSettingsTo}>← Configurações</Link>
+        </Button>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{def.title}</h1>
         {allowCreate && (

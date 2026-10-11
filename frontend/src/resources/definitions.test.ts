@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { resources } from './definitions'
+import { resources, settingsResources, sidebarResources } from './definitions'
 
 describe('resources', () => {
+  it('keeps cadastros in settings menu, not main sidebar', () => {
+    const sidebarKeys = sidebarResources().map((r) => r.key)
+    const settingsKeys = settingsResources().map((r) => r.key)
+    expect(sidebarKeys).toContain('documentos')
+    expect(sidebarKeys).not.toContain('municipios')
+    expect(sidebarKeys).not.toContain('prestadores')
+    expect(settingsKeys).toEqual(['prestadores', 'clientes', 'intermediarios', 'municipios'])
+  })
+
   it('includes core tenant resources', () => {
     const keys = resources.map((r) => r.key)
     expect(keys).toContain('prestadores')

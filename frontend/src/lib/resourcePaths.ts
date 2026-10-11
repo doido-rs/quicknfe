@@ -53,6 +53,10 @@ export const appDashboardTo = {
   to: '/app/dashboard' as const,
 }
 
+export const appSettingsTo = {
+  to: '/app/configuracoes' as const,
+}
+
 export const defaultResourceListTo = {
   to: '/app/$resourceKey' as const,
   params: { resourceKey: 'documentos' },

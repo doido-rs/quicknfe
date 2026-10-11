@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { AppLayout } from '@/pages/AppLayout'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { PrestadorPage } from '@/pages/PrestadorPage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -74,6 +75,12 @@ const dashboardRoute = createRoute({
   component: DashboardPage,
 })
 
+const settingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'configuracoes',
+  component: SettingsPage,
+})
+
 const resourceLayoutRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '$resourceKey',
@@ -113,6 +120,7 @@ export const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     appIndexRoute,
     dashboardRoute,
+    settingsRoute,
     resourceLayoutRoute.addChildren([
       resourceListRoute,
       resourceNewRoute,
