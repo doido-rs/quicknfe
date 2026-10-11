@@ -46,11 +46,17 @@ pub struct MunicipioDto {
 
 impl From<Municipio> for MunicipioDto {
     fn from(m: Municipio) -> Self {
+        MunicipioDto::from(&m)
+    }
+}
+
+impl From<&Municipio> for MunicipioDto {
+    fn from(m: &Municipio) -> Self {
         Self {
             id: m.id,
-            codigo_ibge: m.codigo_ibge,
-            nome: m.nome,
-            uf: m.uf,
+            codigo_ibge: m.codigo_ibge.clone(),
+            nome: m.nome.clone(),
+            uf: m.uf.clone(),
         }
     }
 }
@@ -64,9 +70,7 @@ pub struct EmpresaPublic {
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: RegimeTributario,
     pub municipio_id: i64,
-    pub codigo_municipio_ibge: String,
-    pub municipio_nome: String,
-    pub uf: String,
+    pub municipio: MunicipioDto,
     pub criado_em: DateTime<Utc>,
 }
 
@@ -116,9 +120,7 @@ impl EmpresaPublic {
                 ))
             })?,
             municipio_id: e.municipio_id,
-            codigo_municipio_ibge: m.codigo_ibge.clone(),
-            municipio_nome: m.nome.clone(),
-            uf: m.uf.clone(),
+            municipio: MunicipioDto::from(m),
             criado_em: e.criado_em,
         })
     }
@@ -169,9 +171,7 @@ pub struct ClienteDto {
     pub numero: Option<String>,
     pub bairro: Option<String>,
     pub municipio_id: Option<i64>,
-    pub codigo_municipio_ibge: Option<String>,
-    pub municipio_nome: Option<String>,
-    pub uf: Option<String>,
+    pub municipio: Option<MunicipioDto>,
     pub email: Option<String>,
     pub telefone: Option<String>,
 }
@@ -189,9 +189,7 @@ impl ClienteDto {
             numero: c.numero,
             bairro: c.bairro,
             municipio_id: c.municipio_id,
-            codigo_municipio_ibge: m.map(|x| x.codigo_ibge.clone()),
-            municipio_nome: m.map(|x| x.nome.clone()),
-            uf: m.map(|x| x.uf.clone()),
+            municipio: m.map(MunicipioDto::from),
             email: c.email,
             telefone: c.telefone,
         }

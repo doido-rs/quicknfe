@@ -42,11 +42,26 @@ pub fn router() -> axum::Router {
         patch!("/api/intermediarios/{id}", ApiIntermediariosController::update);
         delete!("/api/intermediarios/{id}", ApiIntermediariosController::destroy);
 
-        get!("/api/certificados", ApiCertificadosController::index);
-        post!("/api/certificados", ApiCertificadosController::create);
-        get!("/api/certificados/{id}", ApiCertificadosController::show);
-        patch!("/api/certificados/{id}", ApiCertificadosController::update);
-        delete!("/api/certificados/{id}", ApiCertificadosController::destroy);
+        get!(
+            "/api/prestadores/{prestador_id}/certificados",
+            ApiCertificadosController::index
+        );
+        post!(
+            "/api/prestadores/{prestador_id}/certificados",
+            ApiCertificadosController::create
+        );
+        get!(
+            "/api/prestadores/{prestador_id}/certificados/{id}",
+            ApiCertificadosController::show
+        );
+        patch!(
+            "/api/prestadores/{prestador_id}/certificados/{id}",
+            ApiCertificadosController::update
+        );
+        delete!(
+            "/api/prestadores/{prestador_id}/certificados/{id}",
+            ApiCertificadosController::destroy
+        );
 
         get!("/api/lotes", ApiLotesController::index);
         post!("/api/lotes", ApiLotesController::create);

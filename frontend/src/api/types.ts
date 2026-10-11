@@ -8,14 +8,20 @@ export interface CompanyPublic {
   nome: string
 }
 
+export interface MunicipioPublic {
+  id: number
+  codigo_ibge: string
+  nome: string
+  uf: string
+}
+
 export interface EmpresaPublic {
   id: number
   cpf_cnpj: string
   razao_social: string
   regime_tributario?: string
-  codigo_municipio_ibge?: string
-  municipio_nome?: string
-  uf?: string
+  municipio_id?: number
+  municipio?: MunicipioPublic
 }
 
 export interface CompanyMembership {

@@ -25,6 +25,12 @@ describe('resources', () => {
     expect(documentos?.nested?.path(42)).toBe('/api/documentos/42/itens')
   })
 
+  it('nests certificados under prestador show page', () => {
+    const prestadores = resources.find((r) => r.key === 'prestadores')
+    expect(prestadores?.nested?.path(7)).toBe('/api/prestadores/7/certificados')
+    expect(resources.some((r) => r.key === 'certificados')).toBe(false)
+  })
+
   it('groups nota fiscal form: prestador|partes row then extras', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
     expect(documentos?.formSections).toHaveLength(2)

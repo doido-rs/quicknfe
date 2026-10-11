@@ -1,7 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import { useAuth } from '@/auth/AuthContext'
 import { regimeTributarioLabel } from '@/lib/regimeTributario'
+import { resourceShowTo } from '@/lib/resourcePaths'
 import { cn } from '@/lib/utils'
+import { resources } from '@/resources/definitions'
 
 export function PrestadorSessionPanel({
   title,
@@ -44,19 +46,28 @@ export function PrestadorSessionPanel({
               <dd>{regimeTributarioLabel(prestador.regime_tributario)}</dd>
             </div>
           )}
-          {'municipio_nome' in prestador && prestador.municipio_nome != null && (
+          {prestador.municipio && (
             <div>
               <dt className="font-medium text-muted-foreground">Município</dt>
               <dd>
-                {String(prestador.municipio_nome)}
-                {'uf' in prestador && prestador.uf != null ? ` — ${String(prestador.uf)}` : ''}
+                {(() => {
+                  const municipiosDef = resources.find((r) => r.key === 'municipios')
+                  if (municipiosDef && prestador.municipio?.id != null) {
+                    return (
+                      <Link
+                        {...resourceShowTo(municipiosDef, prestador.municipio.id)}
+                        className="text-primary underline-offset-4 hover:underline"
+                      >
+                        {prestador.municipio.nome}
+                      </Link>
+                    )
+                  }
+                  return prestador.municipio.nome
+                })()}
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  UF, IBGE e demais dados no cadastro de municípios.
+                </span>
               </dd>
-            </div>
-          )}
-          {'codigo_municipio_ibge' in prestador && prestador.codigo_municipio_ibge != null && (
-            <div>
-              <dt className="font-medium text-muted-foreground">Código IBGE</dt>
-              <dd>{String(prestador.codigo_municipio_ibge)}</dd>
             </div>
           )}
         </dl>

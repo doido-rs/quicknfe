@@ -9,7 +9,6 @@ import {
   LogOut,
   MapPin,
   ScrollText,
-  Shield,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -50,7 +49,6 @@ const resourceIcons: Record<string, LucideIcon> = {
   prestadores: Building2,
   clientes: Users,
   intermediarios: Handshake,
-  certificados: Shield,
   lotes: Layers,
   documentos: FileText,
   'logs-retorno': ScrollText,

@@ -183,12 +183,19 @@ export const resources: ResourceDef[] = [
         label: 'Município',
         type: 'relation',
         relationResource: 'municipios',
-        relationCopyTo: { codigo_municipio_ibge: 'codigo_ibge', uf: 'uf' },
         required: true,
       },
-      { key: 'codigo_municipio_ibge', label: 'Código IBGE (automático)', readOnly: true },
-      { key: 'uf', label: 'UF (automático)', readOnly: true },
     ],
+    nested: {
+      label: 'Certificados digitais',
+      path: (prestadorId) => `/api/prestadores/${prestadorId}/certificados`,
+      fields: [
+        { key: 'tipo', label: 'Tipo', required: true },
+        { key: 'caminho_arquivo', label: 'Caminho arquivo' },
+        { key: 'senha', label: 'Senha (criar/trocar)' },
+        { key: 'data_validade', label: 'Validade', type: 'date', required: true },
+      ],
+    },
   },
   {
     key: 'clientes',
@@ -205,10 +212,7 @@ export const resources: ResourceDef[] = [
         label: 'Município',
         type: 'relation',
         relationResource: 'municipios',
-        relationCopyTo: { codigo_municipio_ibge: 'codigo_ibge', uf: 'uf' },
       },
-      { key: 'codigo_municipio_ibge', label: 'Código IBGE (automático)', readOnly: true },
-      { key: 'uf', label: 'UF (automático)', readOnly: true },
     ],
   },
   {
@@ -222,18 +226,6 @@ export const resources: ResourceDef[] = [
       { key: 'inscricao_municipal', label: 'Inscrição municipal' },
       { key: 'email', label: 'E-mail' },
       { key: 'telefone', label: 'Telefone' },
-    ],
-  },
-  {
-    key: 'certificados',
-    title: 'Certificados digitais',
-    menuSection: 'Prestador e partes',
-    path: '/api/certificados',
-    fields: [
-      { key: 'tipo', label: 'Tipo', required: true },
-      { key: 'caminho_arquivo', label: 'Caminho arquivo' },
-      { key: 'senha', label: 'Senha (criar/trocar)' },
-      { key: 'data_validade', label: 'Validade', type: 'date', required: true },
     ],
   },
 ]

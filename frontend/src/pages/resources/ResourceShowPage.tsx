@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResourceDef, useResourceRecordId } from '@/hooks/useResourceDef'
-import { formatFieldValue, rowLabel } from '@/lib/resourceForm'
+import { fieldValue, formatFieldValue, rowLabel } from '@/lib/resourceForm'
 import { resourceEditTo, resourceListTo } from '@/lib/resourcePaths'
 
 export function ResourceShowPage() {
@@ -84,7 +84,9 @@ export function ResourceShowPage() {
             {def.fields.map((field) => (
               <div key={field.key}>
                 <dt className="text-sm font-medium text-muted-foreground">{field.label}</dt>
-                <dd className="text-sm">{formatFieldValue(row[field.key], field)}</dd>
+                <dd className="text-sm">
+                  {formatFieldValue(fieldValue(row, field.key), field, row)}
+                </dd>
               </div>
             ))}
           </dl>

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use doido::controller::controller;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::certificado_digital::{
@@ -25,8 +25,12 @@ pub struct ApiCertificadosController;
 impl ApiCertificadosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
+        let prestador_id = crate::api!(id_param(&ctx, "prestador_id"));
+        crate::api!(scoped(
+            tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
+        ));
         let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
-        let mut select = CertEntity::find().filter(CertColumn::EmpresaId.eq(access.prestador.id));
+        let mut select = CertEntity::find().filter(CertColumn::EmpresaId.eq(prestador_id));
         if let Some(ref q) = params.q {
             select = select.filter(CertColumn::Tipo.contains(q));
         }
@@ -46,13 +50,23 @@ impl ApiCertificadosController {
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
+        let prestador_id = crate::api!(id_param(&ctx, "prestador_id"));
+        crate::api!(scoped(
+            tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
+        ));
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.prestador.id, id).await));
+        let row = crate::api!(scoped(
+            tenant_scope::certificado_for_tenant(ctx.db(), prestador_id, id).await,
+        ));
         ctx.json(CertificadoDto::from(row))
     }
 
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
+        let prestador_id = crate::api!(id_param(&ctx, "prestador_id"));
+        crate::api!(scoped(
+            tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
+        ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
         let senha = crate::api!(to_response(
             form.senha
@@ -61,7 +75,7 @@ impl ApiCertificadosController {
         ));
         let created = crate::api!(db(
             CertActive {
-                empresa_id: Set(access.prestador.id),
+                empresa_id: Set(prestador_id),
                 tipo: Set(form.tipo),
                 caminho_arquivo: Set(form.caminho_arquivo),
                 senha_encriptada: Set(encode_certificado_senha(&senha)),
@@ -77,8 +91,14 @@ impl ApiCertificadosController {
 
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
+        let prestador_id = crate::api!(id_param(&ctx, "prestador_id"));
+        crate::api!(scoped(
+            tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
+        ));
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.prestador.id, id).await));
+        let existing = crate::api!(scoped(
+            tenant_scope::certificado_for_tenant(ctx.db(), prestador_id, id).await,
+        ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
         let mut record: CertActive = existing.into();
         record.tipo = Set(form.tipo);
@@ -93,8 +113,14 @@ impl ApiCertificadosController {
 
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
+        let prestador_id = crate::api!(id_param(&ctx, "prestador_id"));
+        crate::api!(scoped(
+            tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
+        ));
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(scoped(tenant_scope::certificado_for_tenant(ctx.db(), access.prestador.id, id).await));
+        crate::api!(scoped(
+            tenant_scope::certificado_for_tenant(ctx.db(), prestador_id, id).await,
+        ));
         crate::api!(db(CertEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

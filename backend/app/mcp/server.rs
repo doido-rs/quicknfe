@@ -97,6 +97,17 @@ pub struct DocEventoParams {
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
+pub struct PrestadorIdParam {
+    pub prestador_id: i64,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct PrestadorCertificadoParams {
+    pub prestador_id: i64,
+    pub id: i64,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
 pub struct JsonBodyParam {
     #[schemars(description = "JSON request body object")]
     pub body: serde_json::Value,
@@ -250,46 +261,78 @@ impl QuickNfeMcpServer {
             .await
     }
 
-    #[tool(description = "List certificados")]
-    async fn quicknfe_certificados_list(&self) -> CallToolResult {
-        self.api("GET", "/api/certificados".into(), None).await
-    }
-
-    #[tool(description = "Get certificado")]
-    async fn quicknfe_certificados_get(&self, Parameters(p): Parameters<IdParam>) -> CallToolResult {
-        self.api("GET", format!("/api/certificados/{}", p.id), None)
-            .await
-    }
-
-    #[tool(description = "Create certificado")]
-    async fn quicknfe_certificados_create(
+    #[tool(description = "List certificados of a prestador")]
+    async fn quicknfe_certificados_list(
         &self,
-        Parameters(p): Parameters<JsonBodyParam>,
-    ) -> CallToolResult {
-        self.api("POST", "/api/certificados".into(), Some(p.body))
-            .await
-    }
-
-    #[tool(description = "Update certificado")]
-    async fn quicknfe_certificados_update(
-        &self,
-        Parameters(p): Parameters<IdBodyParam>,
+        Parameters(p): Parameters<PrestadorIdParam>,
     ) -> CallToolResult {
         self.api(
-            "PATCH",
-            format!("/api/certificados/{}", p.id),
+            "GET",
+            format!("/api/prestadores/{}/certificados", p.prestador_id),
+            None,
+        )
+        .await
+    }
+
+    #[tool(description = "Get certificado of a prestador")]
+    async fn quicknfe_certificados_get(
+        &self,
+        Parameters(p): Parameters<PrestadorCertificadoParams>,
+    ) -> CallToolResult {
+        self.api(
+            "GET",
+            format!(
+                "/api/prestadores/{}/certificados/{}",
+                p.prestador_id, p.id
+            ),
+            None,
+        )
+        .await
+    }
+
+    #[tool(description = "Create certificado for a prestador")]
+    async fn quicknfe_certificados_create(
+        &self,
+        Parameters(p): Parameters<PrestadorCertificadoBodyParam>,
+    ) -> CallToolResult {
+        self.api(
+            "POST",
+            format!("/api/prestadores/{}/certificados", p.prestador_id),
             Some(p.body),
         )
         .await
     }
 
-    #[tool(description = "Delete certificado")]
+    #[tool(description = "Update certificado of a prestador")]
+    async fn quicknfe_certificados_update(
+        &self,
+        Parameters(p): Parameters<PrestadorCertificadoUpdateParam>,
+    ) -> CallToolResult {
+        self.api(
+            "PATCH",
+            format!(
+                "/api/prestadores/{}/certificados/{}",
+                p.prestador_id, p.id
+            ),
+            Some(p.body),
+        )
+        .await
+    }
+
+    #[tool(description = "Delete certificado of a prestador")]
     async fn quicknfe_certificados_delete(
         &self,
-        Parameters(p): Parameters<IdParam>,
+        Parameters(p): Parameters<PrestadorCertificadoParams>,
     ) -> CallToolResult {
-        self.api("DELETE", format!("/api/certificados/{}", p.id), None)
-            .await
+        self.api(
+            "DELETE",
+            format!(
+                "/api/prestadores/{}/certificados/{}",
+                p.prestador_id, p.id
+            ),
+            None,
+        )
+        .await
     }
 
     #[tool(description = "List lotes")]
@@ -636,6 +679,19 @@ pub struct ItemTributoBodyParam {
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct DocEventoBodyParam {
     pub doc_id: i64,
+    pub id: i64,
+    pub body: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct PrestadorCertificadoBodyParam {
+    pub prestador_id: i64,
+    pub body: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct PrestadorCertificadoUpdateParam {
+    pub prestador_id: i64,
     pub id: i64,
     pub body: serde_json::Value,
 }

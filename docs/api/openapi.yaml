@@ -324,10 +324,17 @@ paths:
         '204':
           description: Deleted
 
-  /api/certificados:
+  /api/prestadores/{prestador_id}/certificados:
+    parameters:
+      - name: prestador_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
     get:
       tags: [Certificados]
-      summary: List certificados
+      summary: List certificados of a prestador
       operationId: listCertificados
       security:
         - cookieSession: []
@@ -341,7 +348,7 @@ paths:
                   $ref: '#/components/schemas/CertificadoDto'
     post:
       tags: [Certificados]
-      summary: Create certificado
+      summary: Create certificado for a prestador
       operationId: createCertificado
       security:
         - cookieSession: []
@@ -358,8 +365,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/CertificadoDto'
 
-  /api/certificados/{id}:
+  /api/prestadores/{prestador_id}/certificados/{id}:
     parameters:
+      - name: prestador_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
       - $ref: '#/components/parameters/IdPath'
     get:
       tags: [Certificados]
@@ -1024,15 +1037,22 @@ components:
             - ISENCAO
         municipio_id:
           type: integer
-        codigo_municipio_ibge:
-          type: string
-        municipio_nome:
-          type: string
-        uf:
-          type: string
+        municipio:
+          $ref: '#/components/schemas/MunicipioPublic'
         criado_em:
           type: string
           format: date-time
+    MunicipioPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+        codigo_ibge:
+          type: string
+        nome:
+          type: string
+        uf:
+          type: string
     EmpresaMembership:
       type: object
       properties:
@@ -1098,10 +1118,9 @@ components:
           type: string
         bairro:
           type: string
-        codigo_municipio_ibge:
-          type: string
-        uf:
-          type: string
+        municipio_id:
+          type: integer
+          nullable: true
         email:
           type: string
         telefone:
@@ -1115,6 +1134,9 @@ components:
               type: integer
             empresa_id:
               type: integer
+            municipio:
+              $ref: '#/components/schemas/MunicipioPublic'
+              nullable: true
     IntermediarioForm:
       type: object
       required: [cpf_cnpj, razao_social]
