@@ -1,6 +1,14 @@
 import { REGIME_TRIBUTARIO_OPTIONS } from '@/lib/regimeTributario'
 
-export type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'relation' | 'enum' | 'file'
+export type FieldType =
+  | 'text'
+  | 'number'
+  | 'date'
+  | 'textarea'
+  | 'relation'
+  | 'enum'
+  | 'file'
+  | 'boolean'
 
 /** Preenche formulário de prestador/tomador a partir da consulta CNC. */
 export interface CncLookupDef {
@@ -31,10 +39,22 @@ export interface FieldDef {
   accept?: string
   /** Mapeia o arquivo enviado para chaves do JSON da API. */
   fileUploadAs?: { base64Key: string; nameKey: string }
+  /** Valor inicial no formulário (string). */
+  defaultValue?: string
 }
 
 /** Seção do formulário (layout); campos continuam em `fields` para API/CRUD. */
 export type FormSectionDef =
+  | {
+      type: 'identificacao-nota'
+      title: string
+      competenciaFieldKey: string
+      serieFieldKey: string
+      numeroFieldKey: string
+      automaticoFieldKey: string
+      /** Checkbox “informar manualmente” (inverso de `serie_numero_automatico`). */
+      manualInformLabel: string
+    }
   | {
       type: 'prestador-partes-row'
       prestadorTitle: string
@@ -97,6 +117,18 @@ export const resources: ResourceDef[] = [
         relationScopeFromField: 'empresa_id',
       },
       { key: 'modelo', label: 'Modelo', required: true },
+      {
+        key: 'data_competencia',
+        label: 'Data de competência',
+        type: 'date',
+        required: true,
+      },
+      {
+        key: 'serie_numero_automatico',
+        label: 'Série e número automáticos',
+        type: 'boolean',
+        defaultValue: 'true',
+      },
       { key: 'serie', label: 'Série', required: true },
       { key: 'numero_documento', label: 'Número', type: 'number', required: true },
       { key: 'status', label: 'Status', required: true },
@@ -110,6 +142,15 @@ export const resources: ResourceDef[] = [
     ],
     formSections: [
       {
+        type: 'identificacao-nota',
+        title: 'Competência e numeração',
+        competenciaFieldKey: 'data_competencia',
+        serieFieldKey: 'serie',
+        numeroFieldKey: 'numero_documento',
+        automaticoFieldKey: 'serie_numero_automatico',
+        manualInformLabel: 'Informar série e número manualmente',
+      },
+      {
         type: 'prestador-partes-row',
         prestadorTitle: 'Prestador de serviço',
         prestadorFieldKey: 'empresa_id',
@@ -119,7 +160,7 @@ export const resources: ResourceDef[] = [
       {
         type: 'fields',
         title: 'Dados extras',
-        fieldKeys: ['modelo', 'serie', 'numero_documento', 'status', 'lote_id'],
+        fieldKeys: ['modelo', 'status', 'lote_id'],
         columns: 1,
       },
     ],

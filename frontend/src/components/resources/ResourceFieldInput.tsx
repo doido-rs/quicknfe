@@ -56,6 +56,24 @@ export function ResourceFieldInput({
     )
   }
 
+  if (field.type === 'boolean') {
+    const checkboxId = `${idPrefix}-${field.key}`
+    return (
+      <div className="flex items-center gap-2 md:col-span-2">
+        <input
+          id={checkboxId}
+          type="checkbox"
+          className="size-4 rounded border border-input"
+          checked={form.watch(field.key) === 'true'}
+          onChange={(e) => form.setValue(field.key, e.target.checked ? 'true' : 'false')}
+        />
+        <Label htmlFor={checkboxId} className="font-normal leading-snug">
+          {field.label}
+        </Label>
+      </div>
+    )
+  }
+
   if (field.type === 'enum' && field.enumOptions?.length) {
     const selectId = `${idPrefix}-${field.key}`
     return (
@@ -111,13 +129,7 @@ export function ResourceFieldInput({
         id={inputId}
         readOnly={field.readOnly}
         className={field.readOnly ? 'bg-muted' : undefined}
-        type={
-          field.type === 'number'
-            ? 'number'
-            : field.type === 'date'
-              ? 'datetime-local'
-              : 'text'
-        }
+        type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
         {...form.register(field.key, { required: field.required && !field.readOnly })}
       />
     </div>

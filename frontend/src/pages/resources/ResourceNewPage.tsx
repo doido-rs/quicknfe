@@ -31,7 +31,14 @@ export function ResourceNewPage() {
   }
 
   const createMutation = useMutation({
-    mutationFn: (values: Record<string, string>) => api.create(buildBody(def.fields, values)),
+    mutationFn: (values: Record<string, string>) => {
+      const body = buildBody(def.fields, values) as Record<string, unknown>
+      if (body.serie_numero_automatico === true) {
+        body.numero_documento = 0
+        body.serie = ''
+      }
+      return api.create(body)
+    },
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
       const newId = Number(created.id)

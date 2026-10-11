@@ -18,14 +18,31 @@ export function fieldsByKeys(all: FieldDef[], keys: string[]): FieldDef[] {
 }
 
 export function emptyForm(fields: FieldDef[]): Record<string, string> {
-  return Object.fromEntries(fields.map((f) => [f.key, '']))
+  return Object.fromEntries(
+    fields.map((f) => [f.key, f.defaultValue ?? '']),
+  )
+}
+
+function formStringValue(raw: unknown, field: FieldDef): string {
+  if (field.type === 'boolean') {
+    if (raw === true || raw === 'true' || raw === 1 || raw === '1') return 'true'
+    return 'false'
+  }
+  if (raw == null) return ''
+  if (field.type === 'date' && typeof raw === 'string' && raw.includes('T')) {
+    return raw.slice(0, 10)
+  }
+  return String(raw)
 }
 
 export function rowToForm(row: Record<string, unknown>, fields: FieldDef[]): Record<string, string> {
   return Object.fromEntries(
     fields.map((f) => {
       const raw = fieldValue(row, f.key)
-      return [f.key, raw != null ? String(raw) : '']
+      if (raw == null && f.defaultValue != null) {
+        return [f.key, f.defaultValue]
+      }
+      return [f.key, formStringValue(raw, f)]
     }),
   )
 }
@@ -108,6 +125,9 @@ export function buildBody(fields: FieldDef[], form: Record<string, string>) {
       .filter((f) => !f.readOnly && !f.key.includes('.') && !isFileField(f))
       .map((f) => {
       const raw = form[f.key]
+      if (f.type === 'boolean') {
+        return [f.key, raw === 'true' || raw === '1']
+      }
       if (raw !== '' && (f.type === 'number' || f.key.endsWith('_id'))) {
         return [f.key, Number(raw)]
       }

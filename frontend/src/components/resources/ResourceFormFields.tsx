@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { CncConsultaField } from '@/components/resources/CncConsultaField'
 import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import type { ResourceRouteLink } from '@/lib/resourcePaths'
@@ -29,6 +30,82 @@ function SectionFields({
   )
 }
 
+function IdentificacaoNotaSection({
+  section,
+  allFields,
+  form,
+  sectionIndex,
+}: {
+  section: Extract<FormSectionDef, { type: 'identificacao-nota' }>
+  allFields: FieldDef[]
+  form: UseFormReturn<Record<string, string>>
+  sectionIndex: number
+}) {
+  const automatico = form.watch(section.automaticoFieldKey) === 'true'
+  const informarManual = !automatico
+  const competencia = fieldsByKeys(allFields, [section.competenciaFieldKey])
+  const serie = fieldsByKeys(allFields, [section.serieFieldKey]).map((f) => ({
+    ...f,
+    required: informarManual && f.required,
+  }))
+  const numero = fieldsByKeys(allFields, [section.numeroFieldKey]).map((f) => ({
+    ...f,
+    required: informarManual && f.required,
+  }))
+  const manualCheckboxId = `s${sectionIndex}-informar-serie-numero`
+
+  return (
+    <section
+      className="rounded-lg border bg-card p-4 md:p-6"
+      aria-labelledby={`form-section-${sectionIndex}-identificacao`}
+    >
+      <h2
+        id={`form-section-${sectionIndex}-identificacao`}
+        className="mb-4 text-lg font-semibold tracking-tight"
+      >
+        {section.title}
+      </h2>
+      <div className="grid gap-6 md:grid-cols-5 md:items-start">
+        <div className="md:col-span-2">
+          {competencia.map((field) => (
+            <ResourceFieldInput
+              key={field.key}
+              field={field}
+              form={form}
+              idPrefix={`s${sectionIndex}-comp`}
+            />
+          ))}
+        </div>
+        <div className="grid gap-4 md:col-span-3 sm:grid-cols-2">
+          <div className="flex items-center gap-2 sm:col-span-2">
+            <input
+              id={manualCheckboxId}
+              type="checkbox"
+              className="size-4 shrink-0 rounded border border-input"
+              checked={informarManual}
+              onChange={(e) =>
+                form.setValue(section.automaticoFieldKey, e.target.checked ? 'false' : 'true')
+              }
+            />
+            <Label htmlFor={manualCheckboxId} className="font-normal leading-snug">
+              {section.manualInformLabel}
+            </Label>
+          </div>
+          {informarManual &&
+            [...serie, ...numero].map((field) => (
+              <ResourceFieldInput
+                key={field.key}
+                field={field}
+                form={form}
+                idPrefix={`s${sectionIndex}-num`}
+              />
+            ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function FormSectionBlock({
   section,
   allFields,
@@ -40,6 +117,17 @@ function FormSectionBlock({
   form: UseFormReturn<Record<string, string>>
   sectionIndex: number
 }) {
+  if (section.type === 'identificacao-nota') {
+    return (
+      <IdentificacaoNotaSection
+        section={section}
+        allFields={allFields}
+        form={form}
+        sectionIndex={sectionIndex}
+      />
+    )
+  }
+
   if (section.type === 'prestador-partes-row') {
     const prestadorFields = fieldsByKeys(allFields, [section.prestadorFieldKey])
     return (

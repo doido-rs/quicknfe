@@ -30,6 +30,7 @@ pub struct Model {
     pub status: String,
     pub data_emissao: DateTimeUtc,
     pub data_competencia: Option<Date>,
+    pub serie_numero_automatico: bool,
     pub codigo_municipio_emissao: String,
     pub protocolo_autorizacao: Option<String>,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]

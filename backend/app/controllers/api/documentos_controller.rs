@@ -1,7 +1,7 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use doido::controller::controller;
 use doido::model::sea_orm::prelude::Decimal;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::Deserialize;
 
 use crate::models::documento_fiscal::{
@@ -34,6 +34,8 @@ pub struct DocumentoForm {
     pub status: String,
     pub data_emissao: DateTime<Utc>,
     pub data_competencia: Option<NaiveDate>,
+    #[serde(default)]
+    pub serie_numero_automatico: bool,
     pub codigo_municipio_emissao: String,
     pub protocolo_autorizacao: Option<String>,
     pub valor_total_servicos_produtos: Decimal,
@@ -76,6 +78,52 @@ fn xml_download_filename(doc: &Documento) -> String {
     )
 }
 
+const SERIE_AUTOMATICA: &str = "AUTO";
+
+async fn proximo_numero_automatico(
+    db: &doido::model::sea_orm::DatabaseConnection,
+    empresa_id: i64,
+    modelo: &str,
+) -> Result<i64, ApiError> {
+    let ultimo = DocEntity::find()
+        .filter(DocColumn::EmpresaId.eq(empresa_id))
+        .filter(DocColumn::Modelo.eq(modelo))
+        .filter(DocColumn::Serie.eq(SERIE_AUTOMATICA))
+        .order_by_desc(DocColumn::NumeroDocumento)
+        .one(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+    Ok(ultimo.map(|d| d.numero_documento + 1).unwrap_or(1))
+}
+
+fn validar_identificacao(form: &DocumentoForm) -> Result<(), ApiError> {
+    if form.serie_numero_automatico {
+        return Ok(());
+    }
+    if form.serie.trim().is_empty() {
+        return Err(ApiError::Validation("serie is required".into()));
+    }
+    if form.numero_documento <= 0 {
+        return Err(ApiError::Validation("numero_documento must be positive".into()));
+    }
+    Ok(())
+}
+
+async fn preparar_identificacao(
+    db: &doido::model::sea_orm::DatabaseConnection,
+    form: &mut DocumentoForm,
+) -> Result<(), ApiError> {
+    validar_identificacao(form)?;
+    if form.serie_numero_automatico {
+        form.serie = SERIE_AUTOMATICA.into();
+        if form.numero_documento <= 0 {
+            form.numero_documento =
+                proximo_numero_automatico(db, form.empresa_id, &form.modelo).await?;
+        }
+    }
+    Ok(())
+}
+
 fn apply_form(record: &mut DocActive, form: &DocumentoForm) {
     record.empresa_id = Set(form.empresa_id);
     record.cliente_id = Set(form.cliente_id);
@@ -91,6 +139,7 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) {
     record.status = Set(form.status.clone());
     record.data_emissao = Set(form.data_emissao);
     record.data_competencia = Set(form.data_competencia);
+    record.serie_numero_automatico = Set(form.serie_numero_automatico);
     record.codigo_municipio_emissao = Set(form.codigo_municipio_emissao.clone());
     record.protocolo_autorizacao = Set(form.protocolo_autorizacao.clone());
     record.valor_total_servicos_produtos = Set(form.valor_total_servicos_produtos);
@@ -146,11 +195,12 @@ impl ApiDocumentosController {
 
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
-        let form: DocumentoForm = crate::api!(json_body(ctx).await);
+        let mut form: DocumentoForm = crate::api!(json_body(ctx).await);
         crate::api!(to_response(
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, form.empresa_id).await,
         ));
         crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
+        crate::api!(to_response(preparar_identificacao(ctx.db(), &mut form).await));
         let mut record = DocActive {
             ..Default::default()
         };
@@ -165,11 +215,12 @@ impl ApiDocumentosController {
         let existing = crate::api!(scoped(
             tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
-        let form: DocumentoForm = crate::api!(json_body(ctx).await);
+        let mut form: DocumentoForm = crate::api!(json_body(ctx).await);
         crate::api!(to_response(
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, form.empresa_id).await,
         ));
         crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
+        crate::api!(to_response(preparar_identificacao(ctx.db(), &mut form).await));
         let mut record: DocActive = existing.into();
         apply_form(&mut record, &form);
         let updated = crate::api!(db(record.update(ctx.db()).await));

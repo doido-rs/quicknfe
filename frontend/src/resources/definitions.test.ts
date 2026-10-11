@@ -40,18 +40,26 @@ describe('resources', () => {
     expect(resources.some((r) => r.key === 'certificados')).toBe(false)
   })
 
-  it('groups nota fiscal form: prestador|partes row then extras', () => {
+  it('groups nota fiscal form: identificação, prestador|partes, extras', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
-    expect(documentos?.formSections).toHaveLength(2)
+    expect(documentos?.formSections).toHaveLength(3)
     expect(documentos?.formSections?.[0]).toMatchObject({
+      type: 'identificacao-nota',
+      competenciaFieldKey: 'data_competencia',
+      serieFieldKey: 'serie',
+      numeroFieldKey: 'numero_documento',
+      automaticoFieldKey: 'serie_numero_automatico',
+    })
+    expect(documentos?.formSections?.[1]).toMatchObject({
       type: 'prestador-partes-row',
       prestadorFieldKey: 'empresa_id',
       partesFieldKeys: ['cliente_id', 'intermediario_id'],
     })
-    expect(documentos?.fields.some((f) => f.key === 'empresa_id')).toBe(true)
-    expect(documentos?.formSections?.[1]).toMatchObject({
+    expect(documentos?.fields.some((f) => f.key === 'data_competencia')).toBe(true)
+    expect(documentos?.formSections?.[2]).toMatchObject({
       type: 'fields',
       title: 'Dados extras',
+      fieldKeys: ['modelo', 'status', 'lote_id'],
       columns: 1,
     })
   })

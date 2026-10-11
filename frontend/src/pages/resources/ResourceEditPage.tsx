@@ -30,8 +30,14 @@ export function ResourceEditPage() {
   }, [row, def.fields, form])
 
   const updateMutation = useMutation({
-    mutationFn: (values: Record<string, string>) =>
-      api.update(recordId!, buildBody(def.fields, values)),
+    mutationFn: (values: Record<string, string>) => {
+      const body = buildBody(def.fields, values) as Record<string, unknown>
+      if (body.serie_numero_automatico === true) {
+        body.numero_documento = 0
+        body.serie = ''
+      }
+      return api.update(recordId!, body)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
     },
