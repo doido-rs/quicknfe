@@ -46,6 +46,7 @@ export function ResourceNewPage() {
         <CardContent>
           <ResourceFormFields
             fields={def.fields}
+            formSections={def.formSections}
             form={form}
             onSubmit={(values) => {
               createMutation.mutate(values)

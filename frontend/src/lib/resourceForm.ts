@@ -1,6 +1,12 @@
 import { useForm, type UseFormReturn } from 'react-hook-form'
 import type { FieldDef } from '../resources/definitions'
 
+export function fieldsByKeys(all: FieldDef[], keys: string[]): FieldDef[] {
+  return keys
+    .map((key) => all.find((f) => f.key === key))
+    .filter((f): f is FieldDef => f != null)
+}
+
 export function emptyForm(fields: FieldDef[]): Record<string, string> {
   return Object.fromEntries(fields.map((f) => [f.key, '']))
 }

@@ -17,6 +17,16 @@ export interface FieldDef {
   enumOptions?: { value: string; label: string }[]
 }
 
+/** Seção do formulário (layout); campos continuam em `fields` para API/CRUD. */
+export type FormSectionDef =
+  | {
+      type: 'prestador-partes-row'
+      prestadorTitle: string
+      partesTitle: string
+      partesFieldKeys: string[]
+    }
+  | { type: 'fields'; title: string; fieldKeys: string[]; columns?: 1 | 2 }
+
 export interface ResourceDef {
   key: string
   title: string
@@ -25,6 +35,8 @@ export interface ResourceDef {
   path: string
   idField?: string
   fields: FieldDef[]
+  /** Layout em blocos (ex.: nota fiscal: prestador, tomador/intermediário, extras). */
+  formSections?: FormSectionDef[]
   /** Sem POST (ex.: logs de retorno). */
   allowCreate?: boolean
   /** Sem DELETE na UI (padrão: permitido). */
@@ -43,10 +55,6 @@ export const resources: ResourceDef[] = [
     menuSection: 'Nota fiscal',
     path: '/api/documentos',
     fields: [
-      { key: 'modelo', label: 'Modelo', required: true },
-      { key: 'serie', label: 'Série', required: true },
-      { key: 'numero_documento', label: 'Número', type: 'number', required: true },
-      { key: 'status', label: 'Status', required: true },
       { key: 'cliente_id', label: 'Tomador', type: 'relation', relationResource: 'clientes' },
       {
         key: 'intermediario_id',
@@ -54,7 +62,25 @@ export const resources: ResourceDef[] = [
         type: 'relation',
         relationResource: 'intermediarios',
       },
+      { key: 'modelo', label: 'Modelo', required: true },
+      { key: 'serie', label: 'Série', required: true },
+      { key: 'numero_documento', label: 'Número', type: 'number', required: true },
+      { key: 'status', label: 'Status', required: true },
       { key: 'lote_id', label: 'Lote', type: 'relation', relationResource: 'lotes' },
+    ],
+    formSections: [
+      {
+        type: 'prestador-partes-row',
+        prestadorTitle: 'Prestador de serviço',
+        partesTitle: 'Tomador e intermediário',
+        partesFieldKeys: ['cliente_id', 'intermediario_id'],
+      },
+      {
+        type: 'fields',
+        title: 'Dados extras',
+        fieldKeys: ['modelo', 'serie', 'numero_documento', 'status', 'lote_id'],
+        columns: 1,
+      },
     ],
     nested: {
       label: 'Itens da nota',

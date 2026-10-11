@@ -24,4 +24,18 @@ describe('resources', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
     expect(documentos?.nested?.path(42)).toBe('/api/documentos/42/itens')
   })
+
+  it('groups nota fiscal form: prestador|partes row then extras', () => {
+    const documentos = resources.find((r) => r.key === 'documentos')
+    expect(documentos?.formSections).toHaveLength(2)
+    expect(documentos?.formSections?.[0]).toMatchObject({
+      type: 'prestador-partes-row',
+      partesFieldKeys: ['cliente_id', 'intermediario_id'],
+    })
+    expect(documentos?.formSections?.[1]).toMatchObject({
+      type: 'fields',
+      title: 'Dados extras',
+      columns: 1,
+    })
+  })
 })

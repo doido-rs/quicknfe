@@ -12,6 +12,10 @@ export interface EmpresaPublic {
   id: number
   cpf_cnpj: string
   razao_social: string
+  regime_tributario?: string
+  codigo_municipio_ibge?: string
+  municipio_nome?: string
+  uf?: string
 }
 
 export interface CompanyMembership {
