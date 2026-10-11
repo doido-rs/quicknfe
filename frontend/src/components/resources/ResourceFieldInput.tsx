@@ -43,6 +43,29 @@ export function ResourceFieldInput({
     )
   }
 
+  if (field.type === 'enum' && field.enumOptions?.length) {
+    const selectId = `${idPrefix}-${field.key}`
+    return (
+      <div className="grid gap-2">
+        <Label htmlFor={selectId}>{field.label}</Label>
+        <select
+          id={selectId}
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          {...form.register(field.key, { required: field.required })}
+        >
+          <option value="" disabled={field.required}>
+            {field.required ? 'Selecione…' : '—'}
+          </option>
+          {field.enumOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
   const inputId = `${idPrefix}-${field.key}`
 
   return (

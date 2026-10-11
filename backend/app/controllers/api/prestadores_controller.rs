@@ -3,6 +3,7 @@ use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrai
 use serde::Deserialize;
 
 use crate::models::empresa::{ActiveModel as EmpresaActive, Column as EmpresaColumn, Entity as EmpresaEntity};
+use crate::models::regime_tributario::RegimeTributario;
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
 use crate::services::dto::{empresa_public, empresas_public};
 use crate::services::municipio::require_municipio;
@@ -15,7 +16,7 @@ pub struct PrestadorForm {
     pub razao_social: String,
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
-    pub regime_tributario: i32,
+    pub regime_tributario: RegimeTributario,
     pub municipio_id: i64,
 }
 
@@ -25,7 +26,7 @@ pub struct PrestadorPatchForm {
     pub razao_social: Option<String>,
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
-    pub regime_tributario: Option<i32>,
+    pub regime_tributario: Option<RegimeTributario>,
     pub municipio_id: Option<i64>,
 }
 
@@ -86,7 +87,7 @@ impl ApiPrestadoresController {
                 razao_social: Set(form.razao_social),
                 inscricao_municipal: Set(form.inscricao_municipal),
                 inscricao_estadual: Set(form.inscricao_estadual),
-                regime_tributario: Set(form.regime_tributario),
+                regime_tributario: Set(form.regime_tributario.as_str().into()),
                 municipio_id: Set(form.municipio_id),
                 ..Default::default()
             }
@@ -124,7 +125,7 @@ impl ApiPrestadoresController {
             record.inscricao_estadual = Set(Some(v));
         }
         if let Some(v) = form.regime_tributario {
-            record.regime_tributario = Set(v);
+            record.regime_tributario = Set(v.as_str().into());
         }
         if let Some(v) = form.municipio_id {
             record.municipio_id = Set(v);

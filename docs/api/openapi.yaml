@@ -1011,8 +1011,22 @@ components:
           type: string
           nullable: true
         regime_tributario:
+          type: string
+          enum:
+            - MICROEMPREENDEDOR_INDIVIDUAL
+            - SIMPLES_NACIONAL
+            - SIMPLES_NACIONAL_EXCESSO_SUBLIMITE
+            - LUCRO_PRESUMIDO
+            - LUCRO_REAL
+            - LUCRO_ARBITRADO
+            - REGIME_NORMAL
+            - IMUNIDADE
+            - ISENCAO
+        municipio_id:
           type: integer
         codigo_municipio_ibge:
+          type: string
+        municipio_nome:
           type: string
         uf:
           type: string
@@ -1053,11 +1067,19 @@ components:
         inscricao_estadual:
           type: string
         regime_tributario:
+          type: string
+          enum:
+            - MICROEMPREENDEDOR_INDIVIDUAL
+            - SIMPLES_NACIONAL
+            - SIMPLES_NACIONAL_EXCESSO_SUBLIMITE
+            - LUCRO_PRESUMIDO
+            - LUCRO_REAL
+            - LUCRO_ARBITRADO
+            - REGIME_NORMAL
+            - IMUNIDADE
+            - ISENCAO
+        municipio_id:
           type: integer
-        codigo_municipio_ibge:
-          type: string
-        uf:
-          type: string
     ClienteForm:
       type: object
       required: [cpf_cnpj, razao_social]

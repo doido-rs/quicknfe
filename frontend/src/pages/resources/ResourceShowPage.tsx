@@ -84,7 +84,7 @@ export function ResourceShowPage() {
             {def.fields.map((field) => (
               <div key={field.key}>
                 <dt className="text-sm font-medium text-muted-foreground">{field.label}</dt>
-                <dd className="text-sm">{formatFieldValue(row[field.key])}</dd>
+                <dd className="text-sm">{formatFieldValue(row[field.key], field)}</dd>
               </div>
             ))}
           </dl>

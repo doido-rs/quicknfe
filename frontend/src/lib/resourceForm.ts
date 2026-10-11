@@ -11,8 +11,12 @@ export function rowToForm(row: Record<string, unknown>, fields: FieldDef[]): Rec
   )
 }
 
-export function formatFieldValue(value: unknown): string {
+export function formatFieldValue(value: unknown, field?: FieldDef): string {
   if (value == null || value === '') return '—'
+  if (field?.enumOptions?.length) {
+    const match = field.enumOptions.find((o) => o.value === value)
+    if (match) return match.label
+  }
   return String(value)
 }
 

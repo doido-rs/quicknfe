@@ -178,7 +178,7 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
         company_id: Set(company_a.id),
         cpf_cnpj: Set(unique_cnpj(&suffix, 1)),
         razao_social: Set(format!("Prestador A {suffix}")),
-        regime_tributario: Set(1),
+        regime_tributario: Set("SIMPLES_NACIONAL".into()),
         municipio_id: Set(municipio_sp.id),
         criado_em: Set(Utc::now()),
         ..Default::default()
@@ -191,7 +191,7 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
         company_id: Set(company_b.id),
         cpf_cnpj: Set(unique_cnpj(&suffix, 2)),
         razao_social: Set(format!("Prestador B {suffix}")),
-        regime_tributario: Set(1),
+        regime_tributario: Set("SIMPLES_NACIONAL".into()),
         municipio_id: Set(municipio_sp.id),
         criado_em: Set(Utc::now()),
         ..Default::default()

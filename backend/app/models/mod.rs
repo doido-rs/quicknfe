@@ -27,4 +27,5 @@ pub mod oauth_access_token;
 pub mod oauth_authorization_code;
 pub mod oauth_client;
 pub mod oauth_mcp_session;
+pub mod regime_tributario;
 // @generated-models

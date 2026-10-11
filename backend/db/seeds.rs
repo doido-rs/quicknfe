@@ -99,7 +99,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         razao_social: Set("QuickNFe Tecnologia LTDA".into()),
         inscricao_municipal: Set(Some("12345678".into())),
         inscricao_estadual: Set(Some("123456789012".into())),
-        regime_tributario: Set(1),
+        regime_tributario: Set("SIMPLES_NACIONAL".into()),
         municipio_id: Set(municipio_sp.id),
         ..Default::default()
     }

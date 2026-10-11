@@ -7,6 +7,7 @@ use crate::models::cliente::Model as Cliente;
 use crate::models::documento_fiscal::Model as Documento;
 use crate::models::company::Model as Company;
 use crate::models::empresa::Model as Empresa;
+use crate::models::regime_tributario::RegimeTributario;
 use crate::models::evento_documento_fiscal::Model as Evento;
 use crate::models::intermediario::Model as Intermediario;
 use crate::models::item_documento_fiscal::Model as Item;
@@ -61,7 +62,7 @@ pub struct EmpresaPublic {
     pub razao_social: String,
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
-    pub regime_tributario: i32,
+    pub regime_tributario: RegimeTributario,
     pub municipio_id: i64,
     pub codigo_municipio_ibge: String,
     pub municipio_nome: String,
@@ -74,7 +75,7 @@ pub async fn empresa_public(
     empresa: Empresa,
 ) -> Result<EmpresaPublic, crate::services::api_error::ApiError> {
     let municipio = crate::services::municipio::require_municipio(db, empresa.municipio_id).await?;
-    Ok(EmpresaPublic::from_parts(empresa, &municipio))
+    EmpresaPublic::from_parts(empresa, &municipio)
 }
 
 pub async fn empresas_public(
@@ -92,26 +93,34 @@ pub async fn empresas_public(
                     e.municipio_id
                 ))
             })?;
-            Ok(EmpresaPublic::from_parts(e, municipio))
+            EmpresaPublic::from_parts(e, municipio)
         })
         .collect()
 }
 
 impl EmpresaPublic {
-    pub fn from_parts(e: Empresa, m: &Municipio) -> Self {
-        Self {
+    pub fn from_parts(
+        e: Empresa,
+        m: &Municipio,
+    ) -> Result<Self, crate::services::api_error::ApiError> {
+        Ok(Self {
             id: e.id,
             cpf_cnpj: e.cpf_cnpj,
             razao_social: e.razao_social,
             inscricao_municipal: e.inscricao_municipal,
             inscricao_estadual: e.inscricao_estadual,
-            regime_tributario: e.regime_tributario,
+            regime_tributario: RegimeTributario::parse(&e.regime_tributario).map_err(|_| {
+                crate::services::api_error::ApiError::Internal(format!(
+                    "regime_tributario inválido no banco para empresa {}",
+                    e.id
+                ))
+            })?,
             municipio_id: e.municipio_id,
             codigo_municipio_ibge: m.codigo_ibge.clone(),
             municipio_nome: m.nome.clone(),
             uf: m.uf.clone(),
             criado_em: e.criado_em,
-        }
+        })
     }
 }
 

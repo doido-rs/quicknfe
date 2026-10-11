@@ -1,4 +1,6 @@
-export type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'relation'
+import { REGIME_TRIBUTARIO_OPTIONS } from '@/lib/regimeTributario'
+
+export type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'relation' | 'enum'
 
 export interface FieldDef {
   key: string
@@ -11,6 +13,8 @@ export interface FieldDef {
   relationCopyTo?: Record<string, string>
   /** Campo somente leitura na UI (ex.: derivado de relação). */
   readOnly?: boolean
+  /** Opções para campos `type: 'enum'`. */
+  enumOptions?: { value: string; label: string }[]
 }
 
 export interface ResourceDef {
@@ -117,7 +121,13 @@ export const resources: ResourceDef[] = [
       { key: 'razao_social', label: 'Razão social', required: true },
       { key: 'inscricao_municipal', label: 'Inscrição municipal' },
       { key: 'inscricao_estadual', label: 'Inscrição estadual' },
-      { key: 'regime_tributario', label: 'Regime tributário', type: 'number', required: true },
+      {
+        key: 'regime_tributario',
+        label: 'Regime tributário',
+        type: 'enum',
+        enumOptions: [...REGIME_TRIBUTARIO_OPTIONS],
+        required: true,
+      },
       {
         key: 'municipio_id',
         label: 'Município',
