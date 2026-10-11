@@ -1,6 +1,16 @@
 import { REGIME_TRIBUTARIO_OPTIONS } from '@/lib/regimeTributario'
 
-export type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'relation' | 'enum'
+export type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'relation' | 'enum' | 'file'
+
+/** Preenche formulário de prestador/tomador a partir da consulta CNC. */
+export interface CncLookupDef {
+  inscricaoFieldKey: string
+  razaoSocialFieldKey?: string
+  inscricaoMunicipalFieldKey?: string
+  emailFieldKey?: string
+  telefoneFieldKey?: string
+  municipioFieldKey?: string
+}
 
 export interface FieldDef {
   key: string
@@ -17,6 +27,10 @@ export interface FieldDef {
   enumOptions?: { value: string; label: string }[]
   /** Envia `empresa_id` na listagem da relação (valor = chave do formulário). */
   relationScopeFromField?: string
+  /** Para `type: 'file'` (ex.: `.pfx,.p12`). */
+  accept?: string
+  /** Mapeia o arquivo enviado para chaves do JSON da API. */
+  fileUploadAs?: { base64Key: string; nameKey: string }
 }
 
 /** Seção do formulário (layout); campos continuam em `fields` para API/CRUD. */
@@ -44,10 +58,13 @@ export interface ResourceDef {
   allowCreate?: boolean
   /** Sem DELETE na UI (padrão: permitido). */
   allowDelete?: boolean
+  /** Consulta CNC por inscrição federal (CPF/CNPJ). */
+  cncLookup?: CncLookupDef
   nested?: {
     label: string
     path: (parentId: number) => string
     fields: FieldDef[]
+    createButtonLabel?: string
   }
 }
 
@@ -166,6 +183,12 @@ export const resources: ResourceDef[] = [
     title: 'Prestadores de serviço',
     menuSection: 'Prestador e partes',
     path: '/api/prestadores',
+    cncLookup: {
+      inscricaoFieldKey: 'cpf_cnpj',
+      razaoSocialFieldKey: 'razao_social',
+      inscricaoMunicipalFieldKey: 'inscricao_municipal',
+      municipioFieldKey: 'municipio_id',
+    },
     fields: [
       { key: 'cpf_cnpj', label: 'CPF/CNPJ do prestador', required: true },
       { key: 'razao_social', label: 'Razão social', required: true },
@@ -189,10 +212,18 @@ export const resources: ResourceDef[] = [
     nested: {
       label: 'Certificados digitais',
       path: (prestadorId) => `/api/prestadores/${prestadorId}/certificados`,
+      createButtonLabel: 'Enviar certificado',
       fields: [
-        { key: 'tipo', label: 'Tipo', required: true },
-        { key: 'caminho_arquivo', label: 'Caminho arquivo' },
-        { key: 'senha', label: 'Senha (criar/trocar)' },
+        { key: 'tipo', label: 'Tipo (ex.: A1)', required: true },
+        {
+          key: 'arquivo',
+          label: 'Arquivo do certificado',
+          type: 'file',
+          accept: '.pfx,.p12',
+          required: true,
+          fileUploadAs: { base64Key: 'arquivo_base64', nameKey: 'arquivo_nome' },
+        },
+        { key: 'senha', label: 'Senha do certificado', required: true },
         { key: 'data_validade', label: 'Validade', type: 'date', required: true },
       ],
     },
@@ -202,6 +233,13 @@ export const resources: ResourceDef[] = [
     title: 'Tomadores de serviço',
     menuSection: 'Prestador e partes',
     path: '/api/clientes',
+    cncLookup: {
+      inscricaoFieldKey: 'cpf_cnpj',
+      razaoSocialFieldKey: 'razao_social',
+      emailFieldKey: 'email',
+      telefoneFieldKey: 'telefone',
+      municipioFieldKey: 'municipio_id',
+    },
     fields: [
       { key: 'cpf_cnpj', label: 'CPF/CNPJ do tomador', required: true },
       { key: 'razao_social', label: 'Razão social', required: true },

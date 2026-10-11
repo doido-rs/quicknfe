@@ -25,6 +25,15 @@ describe('resources', () => {
     expect(documentos?.nested?.path(42)).toBe('/api/documentos/42/itens')
   })
 
+  it('enables CNC lookup on prestador and tomador', () => {
+    expect(resources.find((r) => r.key === 'prestadores')?.cncLookup?.inscricaoFieldKey).toBe(
+      'cpf_cnpj',
+    )
+    expect(resources.find((r) => r.key === 'clientes')?.cncLookup?.inscricaoFieldKey).toBe(
+      'cpf_cnpj',
+    )
+  })
+
   it('nests certificados under prestador show page', () => {
     const prestadores = resources.find((r) => r.key === 'prestadores')
     expect(prestadores?.nested?.path(7)).toBe('/api/prestadores/7/certificados')

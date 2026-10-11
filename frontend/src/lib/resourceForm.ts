@@ -60,9 +60,53 @@ export function formatFieldValue(
   return String(value)
 }
 
+function isFileField(f: FieldDef) {
+  return f.type === 'file'
+}
+
+export function fileToBase64Payload(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result !== 'string') {
+        reject(new Error('leitura do arquivo falhou'))
+        return
+      }
+      const comma = result.indexOf(',')
+      resolve(comma >= 0 ? result.slice(comma + 1) : result)
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('leitura do arquivo falhou'))
+    reader.readAsDataURL(file)
+  })
+}
+
+export async function buildCreateBodyWithFiles(
+  fields: FieldDef[],
+  form: Record<string, string>,
+  files: Record<string, File | undefined>,
+): Promise<Record<string, unknown>> {
+  const body = buildBody(
+    fields.filter((f) => !isFileField(f)),
+    form,
+  ) as Record<string, unknown>
+
+  for (const field of fields) {
+    if (!isFileField(field) || !field.fileUploadAs) continue
+    const file = files[field.key]
+    if (!file) continue
+    body[field.fileUploadAs.base64Key] = await fileToBase64Payload(file)
+    body[field.fileUploadAs.nameKey] = file.name
+  }
+
+  return body
+}
+
 export function buildBody(fields: FieldDef[], form: Record<string, string>) {
   return Object.fromEntries(
-    fields.filter((f) => !f.readOnly && !f.key.includes('.')).map((f) => {
+    fields
+      .filter((f) => !f.readOnly && !f.key.includes('.') && !isFileField(f))
+      .map((f) => {
       const raw = form[f.key]
       if (raw !== '' && (f.type === 'number' || f.key.endsWith('_id'))) {
         return [f.key, Number(raw)]

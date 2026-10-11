@@ -12,13 +12,37 @@ static SETTINGS: OnceLock<Settings> = OnceLock::new();
 #[serde(default)]
 pub struct Settings {
     pub sefin: SefinSettings,
+    pub cnc: CncSettings,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             sefin: SefinSettings::default(),
+            cnc: CncSettings::default(),
         }
+    }
+}
+
+/// API ADN — consulta CNC (`GET .../cad`).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct CncSettings {
+    /// URL base até `/cnc/consulta` (sem barra final).
+    pub base_url: String,
+}
+
+impl Default for CncSettings {
+    fn default() -> Self {
+        Self {
+            base_url: "https://adn.producaorestrita.nfse.gov.br/cnc/consulta".into(),
+        }
+    }
+}
+
+impl CncSettings {
+    pub fn base_url_normalized(&self) -> String {
+        normalize_base_url(&self.base_url)
     }
 }
 

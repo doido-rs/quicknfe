@@ -1,10 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { CncConsultaField } from '@/components/resources/CncConsultaField'
 import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import type { ResourceRouteLink } from '@/lib/resourcePaths'
 import { fieldsByKeys } from '@/lib/resourceForm'
-import type { FieldDef, FormSectionDef } from '@/resources/definitions'
+import type { CncLookupDef, FieldDef, FormSectionDef } from '@/resources/definitions'
 
 function SectionFields({
   fields,
@@ -103,6 +104,7 @@ export function ResourceFormFields({
   fields,
   formSections,
   form,
+  cncLookup,
   onSubmit,
   submitLabel,
   cancelLink,
@@ -111,6 +113,7 @@ export function ResourceFormFields({
   fields: FieldDef[]
   formSections?: FormSectionDef[]
   form: UseFormReturn<Record<string, string>>
+  cncLookup?: CncLookupDef
   onSubmit: (values: Record<string, string>) => void | Promise<void>
   submitLabel: string
   cancelLink?: ResourceRouteLink
@@ -138,9 +141,12 @@ export function ResourceFormFields({
     </div>
   )
 
+  const cncBlock = cncLookup ? <CncConsultaField lookup={cncLookup} form={form} /> : null
+
   if (formSections?.length) {
     return (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {cncBlock && <div className="grid gap-4">{cncBlock}</div>}
         {formSections.map((section, index) => (
           <FormSectionBlock
             key={`${section.type}-${index}`}
@@ -157,6 +163,7 @@ export function ResourceFormFields({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 md:grid-cols-2">
+      {cncBlock}
       {fields.map((field) => (
         <ResourceFieldInput key={field.key} field={field} form={form} />
       ))}

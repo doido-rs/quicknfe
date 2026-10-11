@@ -64,6 +64,7 @@ export function ResourceEditPage() {
           <ResourceFormFields
             fields={def.fields}
             formSections={def.formSections}
+            cncLookup={def.cncLookup}
             form={form}
             onSubmit={(values) => {
               updateMutation.mutate(values)

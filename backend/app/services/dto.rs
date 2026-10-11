@@ -470,6 +470,39 @@ pub fn decode_certificado_senha(stored: &str) -> String {
 }
 
 #[derive(Serialize)]
+pub struct CncMensagemPublic {
+    pub codigo: Option<String>,
+    pub descricao: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct CncCadastroItemPublic {
+    pub inscricao: Option<String>,
+    pub tp_inscricao: Option<String>,
+    pub razao_social: Option<String>,
+    pub inscricao_municipal: Option<String>,
+    pub email: Option<String>,
+    pub telefone: Option<String>,
+    pub codigo_municipio_ibge: Option<String>,
+    pub municipio_id: Option<i64>,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub complemento: Option<String>,
+    pub bairro: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct CncConsultaCadPublic {
+    pub status_processamento: Option<String>,
+    pub tipo_ambiente: Option<String>,
+    pub data_hora_processamento: Option<String>,
+    pub alertas: Vec<CncMensagemPublic>,
+    pub erros: Vec<CncMensagemPublic>,
+    pub itens: Vec<CncCadastroItemPublic>,
+}
+
+#[derive(Serialize)]
 pub struct TransmitirDocumentoResponse {
     pub sucesso: bool,
     pub http_status: u16,

@@ -8,6 +8,7 @@ Servidor [Axum](https://github.com/tokio-rs/axum) que simula a API **SEFIN Nacio
 |--------|---------|-----------|
 | `POST` | `/SefinNacional/nfse` | Emissão (body JSON `{ "dpsXmlGZipB64": "..." }`) → **201** |
 | `GET` | `/SefinNacional/dps/{id}` | Consulta DPS mockada processada |
+| `GET` | `/cnc/consulta/cad` | Consulta CNC mock (`inscricaoFederal`, `codMunicipio` opcional) |
 | `GET` | `/health` | Health check |
 
 Os mesmos paths existem com prefixo **`/API/SefinNacional`** (compatível com o cliente `quicknfe` em homologação).
@@ -30,8 +31,15 @@ No `.env` (development) ou no YAML:
 ```bash
 # .env — lido via settings.sefin.base_url em config/development.yml (ambiente: 2)
 SEFIN_BASE_URL=http://127.0.0.1:8090/API/SefinNacional
+CNC_BASE_URL=http://127.0.0.1:8090/cnc/consulta
 cd backend && cargo doido server
 ```
+
+### CNC (consulta cadastro)
+
+- `GET /cnc/consulta/cad?inscricaoFederal=99999999999999` — CNPJ demo (dois vínculos municipais).
+- `GET /cnc/consulta/cad?inscricaoFederal=12345678901` — CPF demo (tomador).
+- Outros documentos → `StatusProcessamento: NENHUM_DOCUMENTO_LOCALIZADO`.
 
 Documentos com `ambiente: 2` (homologação) passam a enviar a DPS para o mock. O certificado mTLS ainda é enviado pelo cliente, mas o mock **não exige** validação de certificado.
 

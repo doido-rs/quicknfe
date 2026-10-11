@@ -7,6 +7,7 @@ use crate::models::certificado_digital::{
     ActiveModel as CertActive, Column as CertColumn, Entity as CertEntity,
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
+use crate::services::certificado_arquivo::gravar_certificado_pfx;
 use crate::services::dto::{encode_certificado_senha, CertificadoDto};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::tenant_scope;
@@ -15,8 +16,29 @@ use crate::services::tenant_scope;
 pub struct CertificadoForm {
     pub tipo: String,
     pub caminho_arquivo: Option<String>,
+    #[serde(default)]
+    pub arquivo_base64: Option<String>,
+    #[serde(default)]
+    pub arquivo_nome: Option<String>,
     pub senha: Option<String>,
     pub data_validade: DateTime<Utc>,
+}
+
+fn caminho_from_form(form: &CertificadoForm, prestador_id: i64) -> Result<Option<String>, ApiError> {
+    if let Some(b64) = form
+        .arquivo_base64
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
+        let nome = form
+            .arquivo_nome
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("certificado.pfx");
+        return gravar_certificado_pfx(prestador_id, nome, b64).map(Some);
+    }
+    Ok(form.caminho_arquivo.clone())
 }
 
 pub struct ApiCertificadosController;
@@ -68,6 +90,13 @@ impl ApiCertificadosController {
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
+        let caminho = crate::api!(to_response(
+            caminho_from_form(&form, prestador_id).and_then(|p| {
+                p.ok_or(ApiError::Validation(
+                    "arquivo do certificado é obrigatório".into(),
+                ))
+            }),
+        ));
         let senha = crate::api!(to_response(
             form.senha
                 .filter(|s| !s.is_empty())
@@ -77,7 +106,7 @@ impl ApiCertificadosController {
             CertActive {
                 empresa_id: Set(prestador_id),
                 tipo: Set(form.tipo),
-                caminho_arquivo: Set(form.caminho_arquivo),
+                caminho_arquivo: Set(Some(caminho)),
                 senha_encriptada: Set(encode_certificado_senha(&senha)),
                 data_validade: Set(form.data_validade),
                 criado_em: Set(Utc::now()),
@@ -100,9 +129,14 @@ impl ApiCertificadosController {
             tenant_scope::certificado_for_tenant(ctx.db(), prestador_id, id).await,
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
+        let caminho = crate::api!(to_response(caminho_from_form(&form, prestador_id)));
         let mut record: CertActive = existing.into();
         record.tipo = Set(form.tipo);
-        record.caminho_arquivo = Set(form.caminho_arquivo);
+        if let Some(c) = caminho {
+            record.caminho_arquivo = Set(Some(c));
+        } else if form.caminho_arquivo.is_some() {
+            record.caminho_arquivo = Set(form.caminho_arquivo);
+        }
         record.data_validade = Set(form.data_validade);
         if let Some(senha) = form.senha.filter(|s| !s.is_empty()) {
             record.senha_encriptada = Set(encode_certificado_senha(&senha));

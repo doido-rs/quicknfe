@@ -1,6 +1,8 @@
 //! Serviços de domínio (escopo tenant, DTOs).
 
 pub mod api_error;
+pub mod certificado_arquivo;
+pub mod cnc;
 pub mod dashboard;
 pub mod dto;
 pub mod pagination;

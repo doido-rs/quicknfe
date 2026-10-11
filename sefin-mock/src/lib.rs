@@ -21,6 +21,10 @@ pub fn build_app(state: AppState) -> Router {
     Router::new()
         .nest("/SefinNacional", sefin.clone())
         .nest("/API/SefinNacional", sefin)
+        .route(
+            "/cnc/consulta/cad",
+            axum::routing::get(handlers::cnc::get_cad),
+        )
         .route("/health", axum::routing::get(|| async { "ok" }))
         .with_state(state)
 }

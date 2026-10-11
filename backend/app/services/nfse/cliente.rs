@@ -20,7 +20,7 @@ pub struct CredenciaisMtls {
     pub senha_pfx: String,
 }
 
-fn build_mtls_client(credenciais: &CredenciaisMtls) -> Result<Client, ApiError> {
+pub fn build_mtls_client(credenciais: &CredenciaisMtls) -> Result<Client, ApiError> {
     let pfx = fs::read(&credenciais.caminho_pfx).map_err(|e| {
         ApiError::Validation(format!(
             "não foi possível ler o certificado em {}: {e}",

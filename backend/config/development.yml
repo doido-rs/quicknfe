@@ -69,3 +69,6 @@ settings:
     ambiente: 2
     # Homologação. SEFIN_BASE_URL no .env aponta ao sefin-mock quando necessário.
     base_url: '{{ get_env(name="SEFIN_BASE_URL", default="https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional") }}'
+  cnc:
+    # CNC_BASE_URL=http://127.0.0.1:8090/cnc/consulta com sefin-mock (sem mTLS).
+    base_url: '{{ get_env(name="CNC_BASE_URL", default="https://adn.producaorestrita.nfse.gov.br/cnc/consulta") }}'

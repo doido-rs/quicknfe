@@ -1,4 +1,5 @@
 mod certificados_controller;
+mod cnc_controller;
 mod clientes_controller;
 mod dashboard_controller;
 mod documentos_controller;
@@ -13,6 +14,7 @@ mod session_controller;
 mod tributos_controller;
 
 pub use certificados_controller::ApiCertificadosController;
+pub use cnc_controller::ApiCncController;
 pub use clientes_controller::ApiClientesController;
 pub use dashboard_controller::ApiDashboardController;
 pub use documentos_controller::ApiDocumentosController;

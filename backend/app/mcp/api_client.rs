@@ -33,6 +33,7 @@ const ALLOWLIST: &[(&str, &str)] = &[
     ("GET", "/api/prestadores/{id}"),
     ("PATCH", "/api/prestadores/{id}"),
     ("DELETE", "/api/prestadores/{id}"),
+    ("GET", "/api/cnc/cad"),
     ("GET", "/api/clientes"),
     ("POST", "/api/clientes"),
     ("GET", "/api/clientes/{id}"),

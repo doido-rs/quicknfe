@@ -25,6 +25,7 @@ async fn main() {
     tracing::info!("POST http://127.0.0.1:{port}/SefinNacional/nfse");
     tracing::info!("GET  http://127.0.0.1:{port}/SefinNacional/dps/{{id}}");
     tracing::info!("(alias) /API/SefinNacional/... para compatibilidade com quicknfe");
+    tracing::info!("GET  http://127.0.0.1:{port}/cnc/consulta/cad?inscricaoFederal=...");
 
     let listener = tokio::net::TcpListener::bind(addr).await.expect("bind");
     axum::serve(listener, app).await.expect("serve");

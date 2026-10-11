@@ -10,10 +10,14 @@ export function ResourceFieldInput({
   field,
   form,
   idPrefix = 'field',
+  attachedFile,
+  onFileChange,
 }: {
   field: FieldDef
   form: UseFormReturn<Record<string, string>>
   idPrefix?: string
+  attachedFile?: File
+  onFileChange?: (key: string, file: File | null) => void
 }) {
   const relationKey = relationResourceKey(field)
   const scopeField = field.relationScopeFromField
@@ -76,6 +80,29 @@ export function ResourceFieldInput({
   }
 
   const inputId = `${idPrefix}-${field.key}`
+
+  if (field.type === 'file') {
+    return (
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor={inputId}>{field.label}</Label>
+        <Input
+          id={inputId}
+          type="file"
+          accept={field.accept}
+          required={field.required && !attachedFile}
+          onChange={(e) => {
+            const file = e.target.files?.[0] ?? null
+            onFileChange?.(field.key, file)
+          }}
+        />
+        {attachedFile && (
+          <p className="text-xs text-muted-foreground">
+            Selecionado: {attachedFile.name} ({Math.ceil(attachedFile.size / 1024)} KB)
+          </p>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-2">

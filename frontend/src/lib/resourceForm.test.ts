@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildCreateBodyWithFiles,
   fieldValue,
+  fileToBase64Payload,
   formatFieldValue,
   formatMunicipioRelationLabel,
   rowToForm,
@@ -30,5 +32,29 @@ describe('resourceForm', () => {
   it('formats empty values', () => {
     expect(formatFieldValue(null)).toBe('—')
     expect(formatFieldValue('ok')).toBe('ok')
+  })
+
+  it('embeds file upload as base64 payload keys', async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], 'test.pfx', {
+      type: 'application/x-pkcs12',
+    })
+    const b64 = await fileToBase64Payload(file)
+    expect(b64.length).toBeGreaterThan(0)
+
+    const body = await buildCreateBodyWithFiles(
+      [
+        { key: 'tipo', label: 'Tipo', required: true },
+        {
+          key: 'arquivo',
+          label: 'Arquivo',
+          type: 'file',
+          fileUploadAs: { base64Key: 'arquivo_base64', nameKey: 'arquivo_nome' },
+        },
+      ],
+      { tipo: 'A1' },
+      { arquivo: file },
+    )
+    expect(body).toMatchObject({ tipo: 'A1', arquivo_nome: 'test.pfx' })
+    expect(body.arquivo_base64).toBe(b64)
   })
 })

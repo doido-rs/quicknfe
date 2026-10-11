@@ -25,6 +25,7 @@ tags:
   - name: Session
   - name: Empresa
   - name: Clientes
+  - name: CNC
   - name: Certificados
   - name: Lotes
   - name: Documentos
@@ -171,6 +172,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmpresaPublic'
+
+  /api/cnc/cad:
+    get:
+      tags: [CNC]
+      summary: Consulta cadastro CNC por inscrição federal
+      operationId: consultaCncCad
+      security:
+        - cookieSession: []
+      parameters:
+        - name: inscricao_federal
+          in: query
+          required: true
+          schema:
+            type: string
+          description: CPF ou CNPJ (somente dígitos)
+        - name: cod_municipio
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: indicador_municipal
+          in: query
+          schema:
+            type: string
+        - name: empresa_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Prestador cujo certificado mTLS é usado (padrão prestador ativo)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CncConsultaCadPublic'
 
   /api/clientes:
     get:
@@ -1160,6 +1197,64 @@ components:
               type: integer
             empresa_id:
               type: integer
+    CncConsultaCadPublic:
+      type: object
+      properties:
+        status_processamento:
+          type: string
+        tipo_ambiente:
+          type: string
+        data_hora_processamento:
+          type: string
+        alertas:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncMensagemPublic'
+        erros:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncMensagemPublic'
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncCadastroItemPublic'
+    CncMensagemPublic:
+      type: object
+      properties:
+        codigo:
+          type: string
+        descricao:
+          type: string
+    CncCadastroItemPublic:
+      type: object
+      properties:
+        inscricao:
+          type: string
+        tp_inscricao:
+          type: string
+        razao_social:
+          type: string
+        inscricao_municipal:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        codigo_municipio_ibge:
+          type: string
+        municipio_id:
+          type: integer
+          format: int64
+        cep:
+          type: string
+        logradouro:
+          type: string
+        numero:
+          type: string
+        complemento:
+          type: string
+        bairro:
+          type: string
     CertificadoForm:
       type: object
       required: [tipo, data_validade]
@@ -1168,6 +1263,13 @@ components:
           type: string
         caminho_arquivo:
           type: string
+          description: Caminho no servidor (alternativa ao upload)
+        arquivo_base64:
+          type: string
+          description: Conteúdo .pfx/.p12 em base64 (preferido na UI)
+        arquivo_nome:
+          type: string
+          description: Nome original do arquivo (ex. certificado.pfx)
         senha:
           type: string
           description: Plain password on create/update only
