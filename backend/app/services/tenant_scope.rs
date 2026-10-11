@@ -12,7 +12,7 @@ use crate::models::documento_fiscal::{Column as DocColumn, Entity as DocEntity};
 use crate::models::evento_documento_fiscal::{Column as EventoColumn, Entity as EventoEntity};
 use crate::models::intermediario::{Column as IntermediarioColumn, Entity as IntermediarioEntity};
 use crate::models::item_documento_fiscal::{Column as ItemColumn, Entity as ItemEntity};
-use crate::models::log_mensagem_retorno::Entity as LogEntity;
+use crate::models::log_mensagem_retorno::{Column as LogColumn, Entity as LogEntity};
 use crate::models::lote_transmissao::{Column as LoteColumn, Entity as LoteEntity};
 use crate::models::tributo_item::{Column as TributoColumn, Entity as TributoEntity};
 
@@ -215,6 +215,21 @@ pub async fn log_for_tenant(
         return Err(ApiError::NotFound);
     }
     Ok(log)
+}
+
+pub async fn log_for_tenant_and_doc(
+    db: &DatabaseConnection,
+    empresa_id: i64,
+    doc_id: i64,
+    log_id: i64,
+) -> Result<crate::models::log_mensagem_retorno::Model, ApiError> {
+    documento_for_tenant(db, empresa_id, doc_id).await?;
+    LogEntity::find_by_id(log_id)
+        .filter(LogColumn::DocumentoFiscalId.eq(doc_id))
+        .one(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?
+        .ok_or(ApiError::NotFound)
 }
 
 pub async fn ensure_cliente_belongs(

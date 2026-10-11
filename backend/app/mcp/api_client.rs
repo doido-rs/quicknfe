@@ -75,6 +75,8 @@ const ALLOWLIST: &[(&str, &str)] = &[
     ("GET", "/api/documentos/{doc_id}/eventos/{id}"),
     ("PATCH", "/api/documentos/{doc_id}/eventos/{id}"),
     ("DELETE", "/api/documentos/{doc_id}/eventos/{id}"),
+    ("GET", "/api/documentos/{doc_id}/logs-retorno"),
+    ("GET", "/api/documentos/{doc_id}/logs-retorno/{id}"),
     ("GET", "/api/logs-retorno"),
     ("GET", "/api/logs-retorno/{id}"),
     ("PATCH", "/api/logs-retorno/{id}"),

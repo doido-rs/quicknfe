@@ -832,6 +832,39 @@ paths:
         '204':
           description: Deleted
 
+  /api/documentos/{doc_id}/logs-retorno:
+    parameters:
+      - $ref: '#/components/parameters/DocIdPath'
+    get:
+      tags: [LogsRetorno]
+      operationId: listLogsRetornoByDocumento
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogRetornoDto'
+
+  /api/documentos/{doc_id}/logs-retorno/{id}:
+    parameters:
+      - $ref: '#/components/parameters/DocIdPath'
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [LogsRetorno]
+      operationId: getLogRetornoByDocumento
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogRetornoDto'
+
   /api/logs-retorno:
     get:
       tags: [LogsRetorno]

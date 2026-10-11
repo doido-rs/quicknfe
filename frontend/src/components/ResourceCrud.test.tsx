@@ -123,6 +123,9 @@ describe('Resource pages', () => {
       if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
         return jsonResponse(asPage([{ id: 1, numero_item: 1, descricao: 'Item 1' }]))
       }
+      if (method === 'GET' && url.includes('/api/documentos/9/logs-retorno')) {
+        return jsonResponse(asPage([]))
+      }
       return jsonResponse('missing', 404)
     })
 
@@ -131,17 +134,29 @@ describe('Resource pages', () => {
     expect(screen.getByRole('button', { name: /baixar xml/i })).toBeEnabled()
   })
 
-  it('hides Novo on read-only logs list', async () => {
+  it('shows read-only SEFAZ logs on documento show without add form', async () => {
     stubFetch((url, method) => {
-      if (method === 'GET' && /\/api\/logs-retorno(\?|$)/.test(url)) {
+      if (method === 'GET' && url.endsWith('/api/documentos/9')) {
+        return jsonResponse({
+          id: 9,
+          modelo: 'NFSe',
+          serie: '1',
+          numero_documento: 1,
+          status: 'rascunho',
+        })
+      }
+      if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
+        return jsonResponse(asPage([]))
+      }
+      if (method === 'GET' && url.includes('/api/documentos/9/logs-retorno')) {
         return jsonResponse(
           asPage([
             {
               id: 1,
               codigo_erro: 'E1',
               mensagem_retorno: 'Falha',
-              documento_fiscal_id: null,
-              lote_id: null,
+              correcao_sugerida: null,
+              data_registro: '2026-01-01T12:00:00Z',
             },
           ]),
         )
@@ -149,9 +164,12 @@ describe('Resource pages', () => {
       return jsonResponse('missing', 404)
     })
 
-    await renderWithProviders({ route: '/app/logs-retorno' })
+    await renderWithProviders({ route: '/app/documentos/9' })
+    const logsTitle = await screen.findByText('Logs de retorno (SEFAZ)')
     await screen.findByText('E1')
-    expect(screen.queryByRole('link', { name: /^novo$/i })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /^ver$/i })).toBeInTheDocument()
+    const logsCard = logsTitle.closest('[data-slot="card"]')
+    expect(logsCard).toBeTruthy()
+    expect(within(logsCard as HTMLElement).queryByRole('button', { name: /adicionar item/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
   })
 })

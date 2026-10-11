@@ -64,7 +64,16 @@ export type FormSectionDef =
     }
   | { type: 'fields'; title: string; fieldKeys: string[]; columns?: 1 | 2 }
 
-export type MenuPlacement = 'sidebar' | 'settings'
+export type MenuPlacement = 'sidebar' | 'settings' | 'none'
+
+export interface NestedDef {
+  label: string
+  path: (parentId: number) => string
+  fields: FieldDef[]
+  createButtonLabel?: string
+  /** Padrão: true. Use false para painéis somente leitura (ex.: logs SEFAZ). */
+  allowCreate?: boolean
+}
 
 export interface ResourceDef {
   key: string
@@ -84,12 +93,7 @@ export interface ResourceDef {
   allowDelete?: boolean
   /** Consulta CNC por inscrição federal (CPF/CNPJ). */
   cncLookup?: CncLookupDef
-  nested?: {
-    label: string
-    path: (parentId: number) => string
-    fields: FieldDef[]
-    createButtonLabel?: string
-  }
+  nested?: NestedDef | NestedDef[]
 }
 
 export const resources: ResourceDef[] = [
@@ -168,17 +172,30 @@ export const resources: ResourceDef[] = [
         columns: 1,
       },
     ],
-    nested: {
-      label: 'Itens da nota',
-      path: (docId) => `/api/documentos/${docId}/itens`,
-      fields: [
-        { key: 'numero_item', label: 'Nº item', type: 'number', required: true },
-        { key: 'descricao', label: 'Descrição', required: true },
-        { key: 'quantidade', label: 'Quantidade', type: 'number' },
-        { key: 'valor_unitario', label: 'Valor unit.', type: 'number' },
-        { key: 'valor_total_bruto', label: 'Total bruto', type: 'number' },
-      ],
-    },
+    nested: [
+      {
+        label: 'Itens da nota',
+        path: (docId) => `/api/documentos/${docId}/itens`,
+        fields: [
+          { key: 'numero_item', label: 'Nº item', type: 'number', required: true },
+          { key: 'descricao', label: 'Descrição', required: true },
+          { key: 'quantidade', label: 'Quantidade', type: 'number' },
+          { key: 'valor_unitario', label: 'Valor unit.', type: 'number' },
+          { key: 'valor_total_bruto', label: 'Total bruto', type: 'number' },
+        ],
+      },
+      {
+        label: 'Logs de retorno (SEFAZ)',
+        path: (docId) => `/api/documentos/${docId}/logs-retorno`,
+        allowCreate: false,
+        fields: [
+          { key: 'codigo_erro', label: 'Código erro', required: true },
+          { key: 'mensagem_retorno', label: 'Mensagem', required: true },
+          { key: 'correcao_sugerida', label: 'Correção sugerida' },
+          { key: 'data_registro', label: 'Data registro', type: 'date' },
+        ],
+      },
+    ],
   },
   {
     key: 'lotes',
@@ -196,6 +213,7 @@ export const resources: ResourceDef[] = [
     key: 'logs-retorno',
     title: 'Logs de retorno (SEFAZ)',
     menuSection: 'Nota fiscal',
+    menuPlacement: 'none',
     path: '/api/logs-retorno',
     allowCreate: false,
     fields: [
@@ -323,4 +341,9 @@ export function sidebarResources(): ResourceDef[] {
 
 export function settingsResources(): ResourceDef[] {
   return resources.filter((r) => r.menuPlacement === 'settings')
+}
+
+export function resourceNesteds(def: ResourceDef): NestedDef[] {
+  if (!def.nested) return []
+  return Array.isArray(def.nested) ? def.nested : [def.nested]
 }

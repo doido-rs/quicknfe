@@ -104,6 +104,48 @@ impl ApiLogsController {
         ctx.json(page)
     }
 
+    pub async fn index_for_documento(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let doc_id = crate::api!(id_param(&ctx, "doc_id"));
+        crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
+        ));
+        let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
+        let mut select = LogEntity::find().filter(LogColumn::DocumentoFiscalId.eq(doc_id));
+        if let Some(ref q) = params.q {
+            select = select.filter(
+                Condition::any()
+                    .add(LogColumn::CodigoErro.contains(q))
+                    .add(LogColumn::MensagemRetorno.contains(q)),
+            );
+        }
+        let page = crate::api!(db(
+            paginate_select(
+                ctx.db(),
+                select,
+                LogColumn::Id,
+                params,
+                |m| m.id,
+                LogRetornoDto::from,
+            )
+            .await,
+        ));
+        ctx.json(page)
+    }
+
+    pub async fn show_for_documento(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let doc_id = crate::api!(id_param(&ctx, "doc_id"));
+        let id = crate::api!(id_param(&ctx, "id"));
+        let doc = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
+        ));
+        let row = crate::api!(db(
+            tenant_scope::log_for_tenant_and_doc(ctx.db(), doc.empresa_id, doc_id, id).await,
+        ));
+        ctx.json(LogRetornoDto::from(row))
+    }
+
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));

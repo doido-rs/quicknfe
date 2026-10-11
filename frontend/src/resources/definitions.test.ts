@@ -6,9 +6,10 @@ describe('resources', () => {
     const sidebarKeys = sidebarResources().map((r) => r.key)
     const settingsKeys = settingsResources().map((r) => r.key)
     expect(sidebarKeys).toContain('documentos')
+    expect(sidebarKeys).not.toContain('logs-retorno')
     expect(sidebarKeys).not.toContain('municipios')
     expect(sidebarKeys).not.toContain('prestadores')
-    expect(settingsKeys).toEqual(['prestadores', 'clientes', 'intermediarios', 'municipios'])
+    expect(settingsKeys).toEqual(['municipios', 'prestadores', 'clientes', 'intermediarios'])
   })
 
   it('includes core tenant resources', () => {
@@ -24,14 +25,22 @@ describe('resources', () => {
     expect(resources[0]?.title).toBe('Notas fiscais')
   })
 
-  it('marks logs as read-only create', () => {
+  it('keeps logs out of menus and read-only', () => {
     const logs = resources.find((r) => r.key === 'logs-retorno')
     expect(logs?.allowCreate).toBe(false)
+    expect(logs?.menuPlacement).toBe('none')
   })
 
-  it('builds nested itens path from documento id', () => {
+  it('builds nested itens and logs paths from documento id', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
-    expect(documentos?.nested?.path(42)).toBe('/api/documentos/42/itens')
+    const nesteds = Array.isArray(documentos?.nested)
+      ? documentos.nested
+      : documentos?.nested
+        ? [documentos.nested]
+        : []
+    expect(nesteds[0]?.path(42)).toBe('/api/documentos/42/itens')
+    expect(nesteds[1]?.path(42)).toBe('/api/documentos/42/logs-retorno')
+    expect(nesteds[1]?.allowCreate).toBe(false)
   })
 
   it('enables CNC lookup on prestador and tomador', () => {
@@ -45,7 +54,10 @@ describe('resources', () => {
 
   it('nests certificados under prestador show page', () => {
     const prestadores = resources.find((r) => r.key === 'prestadores')
-    expect(prestadores?.nested?.path(7)).toBe('/api/prestadores/7/certificados')
+    const nested = prestadores?.nested
+    const certPath =
+      nested && !Array.isArray(nested) ? nested.path(7) : undefined
+    expect(certPath).toBe('/api/prestadores/7/certificados')
     expect(resources.some((r) => r.key === 'certificados')).toBe(false)
   })
 

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResourceDef, useResourceRecordId } from '@/hooks/useResourceDef'
+import { resourceNesteds } from '@/resources/definitions'
 import { fieldValue, formatFieldValue, rowLabel } from '@/lib/resourceForm'
 import { resourceEditTo, resourceListTo } from '@/lib/resourcePaths'
 
@@ -93,7 +94,13 @@ export function ResourceShowPage() {
         </CardContent>
       </Card>
 
-      {def.nested && <NestedResourcePanel parentId={recordId} nested={def.nested} />}
+      {resourceNesteds(def).map((nested) => (
+        <NestedResourcePanel
+          key={nested.path(recordId)}
+          parentId={recordId}
+          nested={nested}
+        />
+      ))}
 
       <DeleteConfirmDialog
         open={deleteOpen}

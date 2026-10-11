@@ -8,7 +8,6 @@ import {
   LayoutGrid,
   LogOut,
   MapPin,
-  ScrollText,
   Settings,
   Users,
 } from 'lucide-react'
@@ -56,7 +55,6 @@ const resourceIcons: Record<string, LucideIcon> = {
   intermediarios: Handshake,
   lotes: Layers,
   documentos: FileText,
-  'logs-retorno': ScrollText,
 }
 
 function ResourceIcon({ resourceKey }: { resourceKey: string }) {

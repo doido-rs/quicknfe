@@ -10,16 +10,17 @@ import {
   rowLabel,
   useResourceFieldForm,
 } from '@/lib/resourceForm'
-import type { ResourceDef } from '@/resources/definitions'
+import type { NestedDef } from '@/resources/definitions'
 
 export function NestedResourcePanel({
   parentId,
   nested,
 }: {
   parentId: number
-  nested: NonNullable<ResourceDef['nested']>
+  nested: NestedDef
 }) {
   const path = nested.path(parentId)
+  const allowCreate = nested.allowCreate !== false
   const api = resourceApi<Record<string, unknown>>(path)
   const queryClient = useQueryClient()
   const form = useResourceFieldForm(nested.fields)
@@ -60,30 +61,35 @@ export function NestedResourcePanel({
         <CardTitle className="text-base">{nested.label}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form
-          className="grid gap-4 md:grid-cols-2"
-          onSubmit={handleSubmit((values) => createMutation.mutate(values))}
-        >
-          {nested.fields.map((f) => (
-            <ResourceFieldInput
-              key={f.key}
-              field={f}
-              form={form}
-              idPrefix={`nested-${f.key}`}
-              attachedFile={files[f.key]}
-              onFileChange={(key, file) =>
-                setFiles((prev) => ({ ...prev, [key]: file ?? undefined }))
-              }
-            />
-          ))}
-          <div className="md:col-span-2">
-            {submitError && <p className="mb-2 text-sm text-destructive">{submitError}</p>}
-            <Button type="submit" disabled={createMutation.isPending}>
-              {nested.createButtonLabel ?? 'Adicionar item'}
-            </Button>
-          </div>
-        </form>
+        {allowCreate && (
+          <form
+            className="grid gap-4 md:grid-cols-2"
+            onSubmit={handleSubmit((values) => createMutation.mutate(values))}
+          >
+            {nested.fields.map((f) => (
+              <ResourceFieldInput
+                key={f.key}
+                field={f}
+                form={form}
+                idPrefix={`nested-${f.key}`}
+                attachedFile={files[f.key]}
+                onFileChange={(key, file) =>
+                  setFiles((prev) => ({ ...prev, [key]: file ?? undefined }))
+                }
+              />
+            ))}
+            <div className="md:col-span-2">
+              {submitError && <p className="mb-2 text-sm text-destructive">{submitError}</p>}
+              <Button type="submit" disabled={createMutation.isPending}>
+                {nested.createButtonLabel ?? 'Adicionar item'}
+              </Button>
+            </div>
+          </form>
+        )}
         <ul className="list-disc space-y-1 pl-5 text-sm">
+          {rows.length === 0 && !allowCreate && (
+            <li className="list-none pl-0 text-muted-foreground">Nenhum registro.</li>
+          )}
           {rows.map((r) => (
             <li key={String(r.id)}>{rowLabel(r, nested.fields)}</li>
           ))}

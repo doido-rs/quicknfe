@@ -101,6 +101,15 @@ pub fn router() -> axum::Router {
         patch!("/api/documentos/{doc_id}/eventos/{id}", ApiEventosController::update);
         delete!("/api/documentos/{doc_id}/eventos/{id}", ApiEventosController::destroy);
 
+        get!(
+            "/api/documentos/{doc_id}/logs-retorno",
+            ApiLogsController::index_for_documento
+        );
+        get!(
+            "/api/documentos/{doc_id}/logs-retorno/{id}",
+            ApiLogsController::show_for_documento
+        );
+
         get!("/api/logs-retorno", ApiLogsController::index);
         get!("/api/logs-retorno/{id}", ApiLogsController::show);
         patch!("/api/logs-retorno/{id}", ApiLogsController::update);
