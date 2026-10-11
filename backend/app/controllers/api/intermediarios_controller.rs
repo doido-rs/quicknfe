@@ -25,9 +25,19 @@ pub struct ApiIntermediariosController;
 impl ApiIntermediariosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
+        let prestador_id = match crate::api!(to_response(tenant_scope::empresa_id_from_list_query(&ctx)))
+        {
+            Some(id) => {
+                crate::api!(scoped(
+                    tenant_scope::prestador_for_company(ctx.db(), access.company.id, id).await,
+                ));
+                id
+            }
+            None => access.prestador.id,
+        };
         let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
         let mut select =
-            IntermediarioEntity::find().filter(IntermediarioColumn::EmpresaId.eq(access.prestador.id));
+            IntermediarioEntity::find().filter(IntermediarioColumn::EmpresaId.eq(prestador_id));
         if let Some(ref q) = params.q {
             select = select.filter(
                 Condition::any()

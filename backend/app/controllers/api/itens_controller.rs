@@ -30,7 +30,9 @@ impl ApiItensController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, doc_id).await));
+        crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
+        ));
         let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
         let mut select = ItemEntity::find().filter(ItemColumn::DocumentoFiscalId.eq(doc_id));
         if let Some(ref q) = params.q {
@@ -54,8 +56,11 @@ impl ApiItensController {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
         let id = crate::api!(id_param(&ctx, "id"));
+        let doc = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
+        ));
         let row = crate::api!(db(
-            tenant_scope::item_for_tenant_and_doc(ctx.db(), access.prestador.id, doc_id, id).await,
+            tenant_scope::item_for_tenant_and_doc(ctx.db(), doc.empresa_id, doc_id, id).await,
         ));
         ctx.json(ItemDto::from(row))
     }
@@ -63,7 +68,9 @@ impl ApiItensController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, doc_id).await));
+        crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
+        ));
         let form: ItemForm = crate::api!(json_body(ctx).await);
         let created = crate::api!(db(
             ItemActive {
@@ -88,8 +95,11 @@ impl ApiItensController {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
         let id = crate::api!(id_param(&ctx, "id"));
+        let doc = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
+        ));
         let existing = crate::api!(db(
-            tenant_scope::item_for_tenant_and_doc(ctx.db(), access.prestador.id, doc_id, id).await,
+            tenant_scope::item_for_tenant_and_doc(ctx.db(), doc.empresa_id, doc_id, id).await,
         ));
         let form: ItemForm = crate::api!(json_body(ctx).await);
         let mut record: ItemActive = existing.into();
@@ -109,8 +119,11 @@ impl ApiItensController {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
         let id = crate::api!(id_param(&ctx, "id"));
+        let doc = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
+        ));
         crate::api!(db(
-            tenant_scope::item_for_tenant_and_doc(ctx.db(), access.prestador.id, doc_id, id).await,
+            tenant_scope::item_for_tenant_and_doc(ctx.db(), doc.empresa_id, doc_id, id).await,
         ));
         crate::api!(db(ItemEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)

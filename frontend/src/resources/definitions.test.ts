@@ -30,8 +30,10 @@ describe('resources', () => {
     expect(documentos?.formSections).toHaveLength(2)
     expect(documentos?.formSections?.[0]).toMatchObject({
       type: 'prestador-partes-row',
+      prestadorFieldKey: 'empresa_id',
       partesFieldKeys: ['cliente_id', 'intermediario_id'],
     })
+    expect(documentos?.fields.some((f) => f.key === 'empresa_id')).toBe(true)
     expect(documentos?.formSections?.[1]).toMatchObject({
       type: 'fields',
       title: 'Dados extras',

@@ -16,6 +16,10 @@ export function ResourceFieldInput({
   idPrefix?: string
 }) {
   const relationKey = relationResourceKey(field)
+  const scopeField = field.relationScopeFromField
+  const scopeRaw = scopeField ? form.watch(scopeField) : ''
+  const scopeEmpresaId =
+    scopeRaw.trim() === '' || scopeRaw == null ? undefined : Number(scopeRaw)
 
   if (relationKey) {
     return (
@@ -29,6 +33,11 @@ export function ResourceFieldInput({
             resourceKey={relationKey}
             value={rhf.value ?? ''}
             onChange={rhf.onChange}
+            listOptions={
+              field.relationScopeFromField && scopeEmpresaId != null && Number.isFinite(scopeEmpresaId)
+                ? { empresaId: scopeEmpresaId }
+                : undefined
+            }
             onSelectRow={(row) => {
               if (!field.relationCopyTo) return
               for (const [formKey, rowKey] of Object.entries(field.relationCopyTo)) {

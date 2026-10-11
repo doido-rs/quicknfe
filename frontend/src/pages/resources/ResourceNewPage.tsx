@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
+import { useAuth } from '@/auth/AuthContext'
 import { resourceApi } from '@/api/client'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
@@ -13,7 +15,16 @@ export function ResourceNewPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const api = resourceApi<Record<string, unknown>>(def.path)
+  const { me } = useAuth()
   const form = useResourceFieldForm(def.fields)
+
+  useEffect(() => {
+    if (def.key !== 'documentos' || !me?.prestador_ativo) return
+    const current = form.getValues('empresa_id')
+    if (!current) {
+      form.setValue('empresa_id', String(me.prestador_ativo.id))
+    }
+  }, [def.key, me?.prestador_ativo, form])
 
   if (def.allowCreate === false) {
     return <Navigate {...resourceListTo(def)} replace />

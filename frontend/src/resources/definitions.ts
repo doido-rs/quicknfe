@@ -15,6 +15,8 @@ export interface FieldDef {
   readOnly?: boolean
   /** Opções para campos `type: 'enum'`. */
   enumOptions?: { value: string; label: string }[]
+  /** Envia `empresa_id` na listagem da relação (valor = chave do formulário). */
+  relationScopeFromField?: string
 }
 
 /** Seção do formulário (layout); campos continuam em `fields` para API/CRUD. */
@@ -22,6 +24,7 @@ export type FormSectionDef =
   | {
       type: 'prestador-partes-row'
       prestadorTitle: string
+      prestadorFieldKey: string
       partesTitle: string
       partesFieldKeys: string[]
     }
@@ -55,23 +58,44 @@ export const resources: ResourceDef[] = [
     menuSection: 'Nota fiscal',
     path: '/api/documentos',
     fields: [
-      { key: 'cliente_id', label: 'Tomador', type: 'relation', relationResource: 'clientes' },
+      {
+        key: 'empresa_id',
+        label: 'Prestador de serviço',
+        type: 'relation',
+        relationResource: 'prestadores',
+        required: true,
+      },
+      {
+        key: 'cliente_id',
+        label: 'Tomador',
+        type: 'relation',
+        relationResource: 'clientes',
+        relationScopeFromField: 'empresa_id',
+      },
       {
         key: 'intermediario_id',
         label: 'Intermediário',
         type: 'relation',
         relationResource: 'intermediarios',
+        relationScopeFromField: 'empresa_id',
       },
       { key: 'modelo', label: 'Modelo', required: true },
       { key: 'serie', label: 'Série', required: true },
       { key: 'numero_documento', label: 'Número', type: 'number', required: true },
       { key: 'status', label: 'Status', required: true },
-      { key: 'lote_id', label: 'Lote', type: 'relation', relationResource: 'lotes' },
+      {
+        key: 'lote_id',
+        label: 'Lote',
+        type: 'relation',
+        relationResource: 'lotes',
+        relationScopeFromField: 'empresa_id',
+      },
     ],
     formSections: [
       {
         type: 'prestador-partes-row',
         prestadorTitle: 'Prestador de serviço',
+        prestadorFieldKey: 'empresa_id',
         partesTitle: 'Tomador e intermediário',
         partesFieldKeys: ['cliente_id', 'intermediario_id'],
       },

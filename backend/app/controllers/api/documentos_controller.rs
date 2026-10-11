@@ -20,6 +20,7 @@ pub struct TransmitirForm {
 
 #[derive(Debug, Deserialize)]
 pub struct DocumentoForm {
+    pub empresa_id: i64,
     pub cliente_id: Option<i64>,
     pub intermediario_id: Option<i64>,
     pub lote_id: Option<i64>,
@@ -75,8 +76,8 @@ fn xml_download_filename(doc: &Documento) -> String {
     )
 }
 
-fn apply_form(record: &mut DocActive, form: &DocumentoForm, empresa_id: i64) {
-    record.empresa_id = Set(empresa_id);
+fn apply_form(record: &mut DocActive, form: &DocumentoForm) {
+    record.empresa_id = Set(form.empresa_id);
     record.cliente_id = Set(form.cliente_id);
     record.intermediario_id = Set(form.intermediario_id);
     record.lote_id = Set(form.lote_id);
@@ -105,7 +106,10 @@ impl ApiDocumentosController {
     pub async fn index(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let params = crate::api!(to_response(page_params_from_ctx(&ctx)));
-        let mut select = DocEntity::find().filter(DocColumn::EmpresaId.eq(access.prestador.id));
+        let empresa_ids = crate::api!(to_response(
+            tenant_scope::empresa_ids_for_company(ctx.db(), access.company.id).await,
+        ));
+        let mut select = DocEntity::find().filter(DocColumn::EmpresaId.is_in(empresa_ids));
         if let Some(ref q) = params.q {
             let mut filter = Condition::any()
                 .add(DocColumn::Serie.contains(q))
@@ -134,18 +138,23 @@ impl ApiDocumentosController {
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let row = crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, id).await));
+        let row = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
+        ));
         ctx.json(DocumentoDto::from(row))
     }
 
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let form: DocumentoForm = crate::api!(json_body(ctx).await);
-        crate::api!(to_response(validate_refs(ctx.db(), access.prestador.id, &form).await));
+        crate::api!(to_response(
+            tenant_scope::prestador_for_company(ctx.db(), access.company.id, form.empresa_id).await,
+        ));
+        crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
         let mut record = DocActive {
             ..Default::default()
         };
-        apply_form(&mut record, &form, access.prestador.id);
+        apply_form(&mut record, &form);
         let created = crate::api!(db(record.insert(ctx.db()).await));
         ctx.json(DocumentoDto::from(created))
     }
@@ -153,11 +162,16 @@ impl ApiDocumentosController {
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        let existing = crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, id).await));
+        let existing = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
+        ));
         let form: DocumentoForm = crate::api!(json_body(ctx).await);
-        crate::api!(to_response(validate_refs(ctx.db(), access.prestador.id, &form).await));
+        crate::api!(to_response(
+            tenant_scope::prestador_for_company(ctx.db(), access.company.id, form.empresa_id).await,
+        ));
+        crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
         let mut record: DocActive = existing.into();
-        apply_form(&mut record, &form, access.prestador.id);
+        apply_form(&mut record, &form);
         let updated = crate::api!(db(record.update(ctx.db()).await));
         ctx.json(DocumentoDto::from(updated))
     }
@@ -165,7 +179,9 @@ impl ApiDocumentosController {
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(scoped(tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, id).await));
+        crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
+        ));
         crate::api!(db(DocEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }
@@ -175,7 +191,7 @@ impl ApiDocumentosController {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
         let row = crate::api!(scoped(
-            tenant_scope::documento_for_tenant(ctx.db(), access.prestador.id, id).await,
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
         let xml = documento_xml_content(&row).ok_or_else(|| {
             ApiError::Validation("Esta nota fiscal ainda não possui XML armazenado.".into())
@@ -197,11 +213,14 @@ impl ApiDocumentosController {
             Ok(f) => f,
             Err(_) => TransmitirForm::default(),
         };
+        let doc = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
+        ));
         let outcome = crate::api!(to_response(
             transmitir_documento(
                 ctx.db(),
                 TransmitirParams {
-                    empresa_id: access.prestador.id,
+                    empresa_id: doc.empresa_id,
                     documento_id: id,
                     certificado_id: form.certificado_id,
                 },

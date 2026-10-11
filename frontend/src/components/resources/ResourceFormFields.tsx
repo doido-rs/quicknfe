@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
-import { PrestadorSessionPanel } from '@/components/resources/PrestadorSessionPanel'
 import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import type { ResourceRouteLink } from '@/lib/resourcePaths'
 import { fieldsByKeys } from '@/lib/resourceForm'
@@ -41,9 +40,26 @@ function FormSectionBlock({
   sectionIndex: number
 }) {
   if (section.type === 'prestador-partes-row') {
+    const prestadorFields = fieldsByKeys(allFields, [section.prestadorFieldKey])
     return (
       <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
-        <PrestadorSessionPanel title={section.prestadorTitle} className="h-full" />
+        <section
+          className="flex h-full flex-col rounded-lg border bg-card p-4 md:p-6"
+          aria-labelledby={`form-section-${sectionIndex}-prestador`}
+        >
+          <h2
+            id={`form-section-${sectionIndex}-prestador`}
+            className="mb-4 text-lg font-semibold tracking-tight"
+          >
+            {section.prestadorTitle}
+          </h2>
+          <SectionFields
+            fields={prestadorFields}
+            form={form}
+            idPrefix={`s${sectionIndex}-prestador`}
+            columns={1}
+          />
+        </section>
         <section
           className="flex h-full flex-col rounded-lg border bg-card p-4 md:p-6"
           aria-labelledby={`form-section-${sectionIndex}-partes`}

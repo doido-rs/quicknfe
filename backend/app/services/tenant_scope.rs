@@ -1,6 +1,9 @@
 //! Carrega registros garantindo que pertencem à empresa do tenant.
 
+use doido::controller::Context;
 use doido::model::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use serde::Deserialize;
+
 
 use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEntity};
 use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity};
@@ -91,6 +94,48 @@ pub async fn documento_for_tenant(
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?
         .ok_or(ApiError::NotFound)
+}
+
+/// Nota fiscal acessível se o prestador (`empresa_id`) pertence à company do tenant.
+pub async fn documento_for_company(
+    db: &DatabaseConnection,
+    company_id: i64,
+    documento_id: i64,
+) -> Result<crate::models::documento_fiscal::Model, ApiError> {
+    let doc = DocEntity::find_by_id(documento_id)
+        .one(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?
+        .ok_or(ApiError::NotFound)?;
+    prestador_for_company(db, company_id, doc.empresa_id).await?;
+    Ok(doc)
+}
+
+pub async fn empresa_ids_for_company(
+    db: &DatabaseConnection,
+    company_id: i64,
+) -> Result<Vec<i64>, ApiError> {
+    Ok(EmpresaEntity::find()
+        .filter(EmpresaColumn::CompanyId.eq(company_id))
+        .all(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?
+        .into_iter()
+        .map(|e| e.id)
+        .collect())
+}
+
+/// `?empresa_id=` opcional na listagem (validação async feita no controller).
+pub fn empresa_id_from_list_query(ctx: &Context) -> Result<Option<i64>, ApiError> {
+    #[derive(Debug, Deserialize)]
+    struct ListPrestadorQuery {
+        empresa_id: Option<i64>,
+    }
+    let raw: ListPrestadorQuery = ctx
+        .query_params()
+        .deserialize()
+        .map_err(|e| ApiError::Validation(e.to_string()))?;
+    Ok(raw.empresa_id)
 }
 
 pub async fn item_for_tenant(

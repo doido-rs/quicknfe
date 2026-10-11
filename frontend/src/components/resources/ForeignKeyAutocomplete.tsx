@@ -22,6 +22,7 @@ export function ForeignKeyAutocomplete({
   value,
   onChange,
   onSelectRow,
+  listOptions,
   required,
 }: {
   field: FieldDef
@@ -29,6 +30,7 @@ export function ForeignKeyAutocomplete({
   value: string
   onChange: (next: string) => void
   onSelectRow?: (row: Record<string, unknown>) => void
+  listOptions?: Pick<import('@/api/pagination').ListPageOptions, 'empresaId'>
   required?: boolean
 }) {
   const listId = useId()
@@ -51,12 +53,19 @@ export function ForeignKeyAutocomplete({
   })
 
   const { data: page, isFetching } = useQuery({
-    queryKey: [resourceKey, 'search', debouncedSearch, pageToken ?? 'start'],
+    queryKey: [
+      resourceKey,
+      'search',
+      debouncedSearch,
+      pageToken ?? 'start',
+      listOptions?.empresaId ?? 'all',
+    ],
     queryFn: () =>
       api!.listPage({
         q: debouncedSearch || undefined,
         pageToken,
         pageSize: 15,
+        ...listOptions,
       }),
     enabled: api != null && open,
   })

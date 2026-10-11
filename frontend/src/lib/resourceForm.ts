@@ -30,7 +30,7 @@ export function buildBody(fields: FieldDef[], form: Record<string, string>) {
   return Object.fromEntries(
     fields.filter((f) => !f.readOnly).map((f) => {
       const raw = form[f.key]
-      if (f.type === 'number' && raw !== '') {
+      if (raw !== '' && (f.type === 'number' || f.key.endsWith('_id'))) {
         return [f.key, Number(raw)]
       }
       if (raw === '') {
