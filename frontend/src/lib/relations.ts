@@ -6,6 +6,7 @@ const FK_RESOURCE: Record<string, string> = {
   intermediario_id: 'intermediarios',
   lote_id: 'lotes',
   documento_fiscal_id: 'documentos',
+  municipio_id: 'municipios',
 }
 
 export function relationResourceKey(field: FieldDef): string | null {

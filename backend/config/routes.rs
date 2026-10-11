@@ -2,6 +2,7 @@ use crate::controllers::{
     ApiCertificadosController, ApiClientesController, ApiDashboardController, ApiDocumentosController,
     ApiEventosController, ApiIntermediariosController, ApiItensController, ApiLogsController,
     ApiPrestadoresController,
+    ApiMunicipiosController,
     ApiLotesController,
     ApiSessionController, ApiTributosController, HelloController, TenantController,
 };
@@ -25,6 +26,9 @@ pub fn router() -> axum::Router {
         get!("/api/prestadores/{id}", ApiPrestadoresController::show);
         patch!("/api/prestadores/{id}", ApiPrestadoresController::update);
         delete!("/api/prestadores/{id}", ApiPrestadoresController::destroy);
+
+        get!("/api/municipios", ApiMunicipiosController::index);
+        get!("/api/municipios/{id}", ApiMunicipiosController::show);
 
         get!("/api/clientes", ApiClientesController::index);
         post!("/api/clientes", ApiClientesController::create);

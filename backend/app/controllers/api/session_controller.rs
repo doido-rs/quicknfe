@@ -7,8 +7,9 @@ use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEnt
 use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity};
 use crate::services::api_error::{db, require_user};
 use crate::services::dto::{
-    CompanyMembership, CompanyPublic, EmpresaPublic, MeResponse, UserPublic,
+    empresas_public, empresa_public, CompanyMembership, CompanyPublic, MeResponse, UserPublic,
 };
+use crate::services::api_error::to_response;
 
 pub struct ApiSessionController;
 
@@ -53,28 +54,29 @@ impl ApiSessionController {
 
         let prestadores = if let Some(cid) = company_ativa.as_ref().map(|c| c.id).or(active_company_id)
         {
-            crate::api!(db(
+            let rows = crate::api!(db(
                 EmpresaEntity::find()
                     .filter(EmpresaColumn::CompanyId.eq(cid))
                     .all(conn)
                     .await,
-            ))
-            .into_iter()
-            .map(EmpresaPublic::from)
-            .collect()
+            ));
+            crate::api!(to_response(empresas_public(conn, rows).await))
         } else {
             vec![]
         };
 
         let prestador_ativo = if let (Some(cid), Some(pid)) = (active_company_id, active_prestador_id)
         {
-            crate::api!(db(
+            if let Some(row) = crate::api!(db(
                 EmpresaEntity::find_by_id(pid)
                     .filter(EmpresaColumn::CompanyId.eq(cid))
                     .one(conn)
                     .await,
-            ))
-            .map(EmpresaPublic::from)
+            )) {
+                Some(crate::api!(to_response(empresa_public(conn, row).await)))
+            } else {
+                None
+            }
         } else {
             None
         };

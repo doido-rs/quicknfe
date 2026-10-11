@@ -2,10 +2,13 @@ use doido::controller::controller;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
-use crate::models::cliente::{ActiveModel as ClienteActive, Column as ClienteColumn, Entity as ClienteEntity};
+use crate::models::cliente::{
+    ActiveModel as ClienteActive, Column as ClienteColumn, Entity as ClienteEntity, Model as Cliente,
+};
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
-use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::dto::ClienteDto;
+use crate::services::municipio::{map_by_ids, require_municipio};
+use crate::services::pagination::{page_params_from_ctx, paginate_select, PageResponse};
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
@@ -17,10 +20,43 @@ pub struct ClienteForm {
     pub logradouro: Option<String>,
     pub numero: Option<String>,
     pub bairro: Option<String>,
-    pub codigo_municipio_ibge: Option<String>,
-    pub uf: Option<String>,
+    pub municipio_id: Option<i64>,
     pub email: Option<String>,
     pub telefone: Option<String>,
+}
+
+async fn cliente_public(
+    db: &impl doido::model::sea_orm::ConnectionTrait,
+    cliente: Cliente,
+) -> Result<ClienteDto, crate::services::api_error::ApiError> {
+    let municipio = match cliente.municipio_id {
+        Some(id) => Some(require_municipio(db, id).await?),
+        None => None,
+    };
+    Ok(ClienteDto::from_parts(
+        cliente,
+        municipio.as_ref(),
+    ))
+}
+
+async fn clientes_public(
+    db: &impl doido::model::sea_orm::ConnectionTrait,
+    clientes: Vec<Cliente>,
+) -> Result<Vec<ClienteDto>, crate::services::api_error::ApiError> {
+    let municipios = map_by_ids(
+        db,
+        clientes.iter().filter_map(|c| c.municipio_id),
+    )
+    .await?;
+    Ok(clientes
+        .into_iter()
+        .map(|c| {
+            let municipio = c
+                .municipio_id
+                .and_then(|id| municipios.get(&id));
+            ClienteDto::from_parts(c, municipio)
+        })
+        .collect())
 }
 
 pub struct ApiClientesController;
@@ -45,23 +81,31 @@ impl ApiClientesController {
                 ClienteColumn::Id,
                 params,
                 |m| m.id,
-                ClienteDto::from,
+                |m| m,
             )
             .await,
         ));
-        ctx.json(page)
+        let items = crate::api!(to_response(clientes_public(ctx.db(), page.items).await));
+        ctx.json(PageResponse {
+            items,
+            next_page_token: page.next_page_token,
+        })
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
         let row = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.prestador.id, id).await));
-        ctx.json(ClienteDto::from(row))
+        let dto = crate::api!(to_response(cliente_public(ctx.db(), row).await));
+        ctx.json(dto)
     }
 
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let form: ClienteForm = crate::api!(json_body(ctx).await);
+        if let Some(municipio_id) = form.municipio_id {
+            crate::api!(to_response(require_municipio(ctx.db(), municipio_id).await));
+        }
         let created = crate::api!(db(
             ClienteActive {
                 empresa_id: Set(access.prestador.id),
@@ -72,8 +116,7 @@ impl ApiClientesController {
                 logradouro: Set(form.logradouro),
                 numero: Set(form.numero),
                 bairro: Set(form.bairro),
-                codigo_municipio_ibge: Set(form.codigo_municipio_ibge),
-                uf: Set(form.uf),
+                municipio_id: Set(form.municipio_id),
                 email: Set(form.email),
                 telefone: Set(form.telefone),
                 ..Default::default()
@@ -81,7 +124,8 @@ impl ApiClientesController {
             .insert(ctx.db())
             .await,
         ));
-        ctx.json(ClienteDto::from(created))
+        let dto = crate::api!(to_response(cliente_public(ctx.db(), created).await));
+        ctx.json(dto)
     }
 
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -89,6 +133,9 @@ impl ApiClientesController {
         let id = crate::api!(id_param(&ctx, "id"));
         let existing = crate::api!(scoped(tenant_scope::cliente_for_tenant(ctx.db(), access.prestador.id, id).await));
         let form: ClienteForm = crate::api!(json_body(ctx).await);
+        if let Some(municipio_id) = form.municipio_id {
+            crate::api!(to_response(require_municipio(ctx.db(), municipio_id).await));
+        }
         let mut record: ClienteActive = existing.into();
         record.cpf_cnpj = Set(form.cpf_cnpj);
         record.razao_social = Set(form.razao_social);
@@ -97,12 +144,12 @@ impl ApiClientesController {
         record.logradouro = Set(form.logradouro);
         record.numero = Set(form.numero);
         record.bairro = Set(form.bairro);
-        record.codigo_municipio_ibge = Set(form.codigo_municipio_ibge);
-        record.uf = Set(form.uf);
+        record.municipio_id = Set(form.municipio_id);
         record.email = Set(form.email);
         record.telefone = Set(form.telefone);
         let updated = crate::api!(db(record.update(ctx.db()).await));
-        ctx.json(ClienteDto::from(updated))
+        let dto = crate::api!(to_response(cliente_public(ctx.db(), updated).await));
+        ctx.json(dto)
     }
 
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {

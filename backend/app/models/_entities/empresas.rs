@@ -18,8 +18,7 @@ pub struct Model {
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: i32,
-    pub codigo_municipio_ibge: String,
-    pub uf: String,
+    pub municipio_id: i64,
     pub criado_em: DateTimeUtc,
 }
 
@@ -43,6 +42,14 @@ pub enum Relation {
     Intermediarios,
     #[sea_orm(has_many = "super::lotes_transmissao::Entity")]
     LotesTransmissao,
+    #[sea_orm(
+        belongs_to = "super::municipios::Entity",
+        from = "Column::MunicipioId",
+        to = "super::municipios::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Municipios,
 }
 
 impl Related<super::certificados_digitais::Entity> for Entity {
@@ -78,5 +85,11 @@ impl Related<super::intermediarios::Entity> for Entity {
 impl Related<super::lotes_transmissao::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::LotesTransmissao.def()
+    }
+}
+
+impl Related<super::municipios::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Municipios.def()
     }
 }

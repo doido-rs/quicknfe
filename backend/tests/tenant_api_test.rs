@@ -35,6 +35,7 @@ use models::cliente::{Column as ClienteColumn, Entity as ClienteEntity};
 use models::company::ActiveModel as CompanyActive;
 use models::company_usuario::ActiveModel as CompanyMembroActive;
 use models::empresa::ActiveModel as EmpresaActive;
+use models::municipio::{Column as MunicipioColumn, Entity as MunicipioEntity};
 use models::user::ActiveModel as UserActive;
 use tower::ServiceExt;
 
@@ -166,13 +167,19 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     .await
     .unwrap();
 
+    let municipio_sp = MunicipioEntity::find()
+        .filter(MunicipioColumn::CodigoIbge.eq("3550308"))
+        .one(db)
+        .await
+        .unwrap()
+        .expect("município seed");
+
     let emp_a = EmpresaActive {
         company_id: Set(company_a.id),
         cpf_cnpj: Set(unique_cnpj(&suffix, 1)),
         razao_social: Set(format!("Prestador A {suffix}")),
         regime_tributario: Set(1),
-        codigo_municipio_ibge: Set("3550308".into()),
-        uf: Set("SP".into()),
+        municipio_id: Set(municipio_sp.id),
         criado_em: Set(Utc::now()),
         ..Default::default()
     }
@@ -185,8 +192,7 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
         cpf_cnpj: Set(unique_cnpj(&suffix, 2)),
         razao_social: Set(format!("Prestador B {suffix}")),
         regime_tributario: Set(1),
-        codigo_municipio_ibge: Set("3550308".into()),
-        uf: Set("SP".into()),
+        municipio_id: Set(municipio_sp.id),
         criado_em: Set(Utc::now()),
         ..Default::default()
     }
@@ -333,7 +339,7 @@ async fn login_me_and_tenant_cliente_flow() {
         &app,
         "PATCH",
         &format!("/api/clientes/{}", fx.other_cliente_id),
-        r#"{"cpf_cnpj":"99888777000166","razao_social":"Hacked","inscricao_municipal":null,"inscricao_estadual":null,"logradouro":null,"numero":null,"bairro":null,"codigo_municipio_ibge":null,"uf":null,"email":null,"telefone":null}"#,
+        r#"{"cpf_cnpj":"99888777000166","razao_social":"Hacked","inscricao_municipal":null,"inscricao_estadual":null,"logradouro":null,"numero":null,"bairro":null,"municipio_id":null,"email":null,"telefone":null}"#,
         Some(&session),
     )
     .await;

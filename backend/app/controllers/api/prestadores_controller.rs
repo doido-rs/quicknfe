@@ -4,8 +4,9 @@ use serde::Deserialize;
 
 use crate::models::empresa::{ActiveModel as EmpresaActive, Column as EmpresaColumn, Entity as EmpresaEntity};
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
-use crate::services::pagination::{page_params_from_ctx, paginate_select};
-use crate::services::dto::EmpresaPublic;
+use crate::services::dto::{empresa_public, empresas_public};
+use crate::services::municipio::require_municipio;
+use crate::services::pagination::{page_params_from_ctx, paginate_select, PageResponse};
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
@@ -15,8 +16,7 @@ pub struct PrestadorForm {
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: i32,
-    pub codigo_municipio_ibge: String,
-    pub uf: String,
+    pub municipio_id: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,8 +26,7 @@ pub struct PrestadorPatchForm {
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: Option<i32>,
-    pub codigo_municipio_ibge: Option<String>,
-    pub uf: Option<String>,
+    pub municipio_id: Option<i64>,
 }
 
 pub struct ApiPrestadoresController;
@@ -52,11 +51,15 @@ impl ApiPrestadoresController {
                 EmpresaColumn::Id,
                 params,
                 |m| m.id,
-                EmpresaPublic::from,
+                |m| m,
             )
             .await,
         ));
-        ctx.json(page)
+        let items = crate::api!(to_response(empresas_public(ctx.db(), page.items).await));
+        ctx.json(PageResponse {
+            items,
+            next_page_token: page.next_page_token,
+        })
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -68,12 +71,14 @@ impl ApiPrestadoresController {
             id,
         )
         .await));
-        ctx.json(EmpresaPublic::from(row))
+        let dto = crate::api!(to_response(empresa_public(ctx.db(), row).await));
+        ctx.json(dto)
     }
 
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let form: PrestadorForm = crate::api!(json_body(ctx).await);
+        crate::api!(to_response(require_municipio(ctx.db(), form.municipio_id).await));
         let created = crate::api!(db(
             EmpresaActive {
                 company_id: Set(access.company.id),
@@ -82,14 +87,14 @@ impl ApiPrestadoresController {
                 inscricao_municipal: Set(form.inscricao_municipal),
                 inscricao_estadual: Set(form.inscricao_estadual),
                 regime_tributario: Set(form.regime_tributario),
-                codigo_municipio_ibge: Set(form.codigo_municipio_ibge),
-                uf: Set(form.uf),
+                municipio_id: Set(form.municipio_id),
                 ..Default::default()
             }
             .insert(ctx.db())
             .await,
         ));
-        ctx.json(EmpresaPublic::from(created))
+        let dto = crate::api!(to_response(empresa_public(ctx.db(), created).await));
+        ctx.json(dto)
     }
 
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -102,6 +107,9 @@ impl ApiPrestadoresController {
         )
         .await));
         let form: PrestadorPatchForm = crate::api!(json_body(ctx).await);
+        if let Some(municipio_id) = form.municipio_id {
+            crate::api!(to_response(require_municipio(ctx.db(), municipio_id).await));
+        }
         let mut record: EmpresaActive = existing.into();
         if let Some(v) = form.cpf_cnpj {
             record.cpf_cnpj = Set(v);
@@ -118,14 +126,12 @@ impl ApiPrestadoresController {
         if let Some(v) = form.regime_tributario {
             record.regime_tributario = Set(v);
         }
-        if let Some(v) = form.codigo_municipio_ibge {
-            record.codigo_municipio_ibge = Set(v);
-        }
-        if let Some(v) = form.uf {
-            record.uf = Set(v);
+        if let Some(v) = form.municipio_id {
+            record.municipio_id = Set(v);
         }
         let updated = crate::api!(db(record.update(ctx.db()).await));
-        ctx.json(EmpresaPublic::from(updated))
+        let dto = crate::api!(to_response(empresa_public(ctx.db(), updated).await));
+        ctx.json(dto)
     }
 
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {

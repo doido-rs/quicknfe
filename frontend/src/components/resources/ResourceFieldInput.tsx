@@ -29,6 +29,13 @@ export function ResourceFieldInput({
             resourceKey={relationKey}
             value={rhf.value ?? ''}
             onChange={rhf.onChange}
+            onSelectRow={(row) => {
+              if (!field.relationCopyTo) return
+              for (const [formKey, rowKey] of Object.entries(field.relationCopyTo)) {
+                const v = row[rowKey]
+                form.setValue(formKey, v != null ? String(v) : '')
+              }
+            }}
             required={field.required}
           />
         )}
@@ -43,6 +50,8 @@ export function ResourceFieldInput({
       <Label htmlFor={inputId}>{field.label}</Label>
       <Input
         id={inputId}
+        readOnly={field.readOnly}
+        className={field.readOnly ? 'bg-muted' : undefined}
         type={
           field.type === 'number'
             ? 'number'
@@ -50,7 +59,7 @@ export function ResourceFieldInput({
               ? 'datetime-local'
               : 'text'
         }
-        {...form.register(field.key, { required: field.required })}
+        {...form.register(field.key, { required: field.required && !field.readOnly })}
       />
     </div>
   )

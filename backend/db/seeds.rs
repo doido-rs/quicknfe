@@ -16,6 +16,7 @@ use doido::model::password::hash_password;
 use crate::models::item_documento_fiscal::ActiveModel as ItemActive;
 use crate::models::log_mensagem_retorno::ActiveModel as LogActive;
 use crate::models::lote_transmissao::ActiveModel as LoteActive;
+use crate::models::municipio::{Column as MunicipioColumn, Entity as MunicipioEntity};
 use crate::models::tributo_item::ActiveModel as TributoActive;
 
 const CNPJ_EMISSOR: &str = "11222333000199";
@@ -86,6 +87,12 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
     .insert(db)
     .await?;
 
+    let municipio_sp = MunicipioEntity::find()
+        .filter(MunicipioColumn::CodigoIbge.eq("3550308"))
+        .one(db)
+        .await?
+        .expect("município São Paulo (3550308) — rode as migrations");
+
     let empresa = EmpresaActive {
         company_id: Set(company.id),
         cpf_cnpj: Set(CNPJ_EMISSOR.into()),
@@ -93,8 +100,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         inscricao_municipal: Set(Some("12345678".into())),
         inscricao_estadual: Set(Some("123456789012".into())),
         regime_tributario: Set(1),
-        codigo_municipio_ibge: Set("3550308".into()),
-        uf: Set("SP".into()),
+        municipio_id: Set(municipio_sp.id),
         ..Default::default()
     }
     .insert(db)
@@ -122,8 +128,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         logradouro: Set(None),
         numero: Set(None),
         bairro: Set(None),
-        codigo_municipio_ibge: Set(None),
-        uf: Set(Some("SP".into())),
+        municipio_id: Set(Some(municipio_sp.id)),
         email: Set(Some("fiscal@cliente-exemplo.com.br".into())),
         telefone: Set(None),
         ..Default::default()

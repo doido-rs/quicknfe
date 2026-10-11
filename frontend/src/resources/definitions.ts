@@ -7,6 +7,10 @@ export interface FieldDef {
   required?: boolean
   /** Recurso alvo para campos `relation` ou inferidos de `*_id`. */
   relationResource?: string
+  /** Copia valores do registro selecionado: chave do form → chave do JSON da API. */
+  relationCopyTo?: Record<string, string>
+  /** Campo somente leitura na UI (ex.: derivado de relação). */
+  readOnly?: boolean
 }
 
 export interface ResourceDef {
@@ -91,6 +95,19 @@ export const resources: ResourceDef[] = [
     ],
   },
   {
+    key: 'municipios',
+    title: 'Municípios (IBGE)',
+    menuSection: 'Referência',
+    path: '/api/municipios',
+    allowCreate: false,
+    allowDelete: false,
+    fields: [
+      { key: 'nome', label: 'Nome', required: true },
+      { key: 'codigo_ibge', label: 'Código IBGE', required: true },
+      { key: 'uf', label: 'UF', required: true },
+    ],
+  },
+  {
     key: 'prestadores',
     title: 'Prestadores de serviço',
     menuSection: 'Prestador e partes',
@@ -101,8 +118,16 @@ export const resources: ResourceDef[] = [
       { key: 'inscricao_municipal', label: 'Inscrição municipal' },
       { key: 'inscricao_estadual', label: 'Inscrição estadual' },
       { key: 'regime_tributario', label: 'Regime tributário', type: 'number', required: true },
-      { key: 'codigo_municipio_ibge', label: 'Município IBGE', required: true },
-      { key: 'uf', label: 'UF', required: true },
+      {
+        key: 'municipio_id',
+        label: 'Município',
+        type: 'relation',
+        relationResource: 'municipios',
+        relationCopyTo: { codigo_municipio_ibge: 'codigo_ibge', uf: 'uf' },
+        required: true,
+      },
+      { key: 'codigo_municipio_ibge', label: 'Código IBGE (automático)', readOnly: true },
+      { key: 'uf', label: 'UF (automático)', readOnly: true },
     ],
   },
   {
@@ -115,7 +140,15 @@ export const resources: ResourceDef[] = [
       { key: 'razao_social', label: 'Razão social', required: true },
       { key: 'email', label: 'E-mail' },
       { key: 'telefone', label: 'Telefone' },
-      { key: 'uf', label: 'UF' },
+      {
+        key: 'municipio_id',
+        label: 'Município',
+        type: 'relation',
+        relationResource: 'municipios',
+        relationCopyTo: { codigo_municipio_ibge: 'codigo_ibge', uf: 'uf' },
+      },
+      { key: 'codigo_municipio_ibge', label: 'Código IBGE (automático)', readOnly: true },
+      { key: 'uf', label: 'UF (automático)', readOnly: true },
     ],
   },
   {

@@ -12,6 +12,7 @@ use crate::models::intermediario::Model as Intermediario;
 use crate::models::item_documento_fiscal::Model as Item;
 use crate::models::log_mensagem_retorno::Model as LogRetorno;
 use crate::models::lote_transmissao::Model as Lote;
+use crate::models::municipio::Model as Municipio;
 use crate::models::tributo_item::Model as Tributo;
 use crate::models::user::Model as User;
 
@@ -35,6 +36,25 @@ impl From<User> for UserPublic {
 }
 
 #[derive(Serialize)]
+pub struct MunicipioDto {
+    pub id: i64,
+    pub codigo_ibge: String,
+    pub nome: String,
+    pub uf: String,
+}
+
+impl From<Municipio> for MunicipioDto {
+    fn from(m: Municipio) -> Self {
+        Self {
+            id: m.id,
+            codigo_ibge: m.codigo_ibge,
+            nome: m.nome,
+            uf: m.uf,
+        }
+    }
+}
+
+#[derive(Serialize)]
 pub struct EmpresaPublic {
     pub id: i64,
     pub cpf_cnpj: String,
@@ -42,13 +62,43 @@ pub struct EmpresaPublic {
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: i32,
+    pub municipio_id: i64,
     pub codigo_municipio_ibge: String,
+    pub municipio_nome: String,
     pub uf: String,
     pub criado_em: DateTime<Utc>,
 }
 
-impl From<Empresa> for EmpresaPublic {
-    fn from(e: Empresa) -> Self {
+pub async fn empresa_public(
+    db: &impl doido::model::sea_orm::ConnectionTrait,
+    empresa: Empresa,
+) -> Result<EmpresaPublic, crate::services::api_error::ApiError> {
+    let municipio = crate::services::municipio::require_municipio(db, empresa.municipio_id).await?;
+    Ok(EmpresaPublic::from_parts(empresa, &municipio))
+}
+
+pub async fn empresas_public(
+    db: &impl doido::model::sea_orm::ConnectionTrait,
+    empresas: Vec<Empresa>,
+) -> Result<Vec<EmpresaPublic>, crate::services::api_error::ApiError> {
+    let municipios =
+        crate::services::municipio::map_by_ids(db, empresas.iter().map(|e| e.municipio_id)).await?;
+    empresas
+        .into_iter()
+        .map(|e| {
+            let municipio = municipios.get(&e.municipio_id).ok_or_else(|| {
+                crate::services::api_error::ApiError::Internal(format!(
+                    "município {} ausente no catálogo",
+                    e.municipio_id
+                ))
+            })?;
+            Ok(EmpresaPublic::from_parts(e, municipio))
+        })
+        .collect()
+}
+
+impl EmpresaPublic {
+    pub fn from_parts(e: Empresa, m: &Municipio) -> Self {
         Self {
             id: e.id,
             cpf_cnpj: e.cpf_cnpj,
@@ -56,8 +106,10 @@ impl From<Empresa> for EmpresaPublic {
             inscricao_municipal: e.inscricao_municipal,
             inscricao_estadual: e.inscricao_estadual,
             regime_tributario: e.regime_tributario,
-            codigo_municipio_ibge: e.codigo_municipio_ibge,
-            uf: e.uf,
+            municipio_id: e.municipio_id,
+            codigo_municipio_ibge: m.codigo_ibge.clone(),
+            municipio_nome: m.nome.clone(),
+            uf: m.uf.clone(),
             criado_em: e.criado_em,
         }
     }
@@ -107,14 +159,16 @@ pub struct ClienteDto {
     pub logradouro: Option<String>,
     pub numero: Option<String>,
     pub bairro: Option<String>,
+    pub municipio_id: Option<i64>,
     pub codigo_municipio_ibge: Option<String>,
+    pub municipio_nome: Option<String>,
     pub uf: Option<String>,
     pub email: Option<String>,
     pub telefone: Option<String>,
 }
 
-impl From<Cliente> for ClienteDto {
-    fn from(c: Cliente) -> Self {
+impl ClienteDto {
+    pub fn from_parts(c: Cliente, m: Option<&Municipio>) -> Self {
         Self {
             id: c.id,
             empresa_id: c.empresa_id,
@@ -125,8 +179,10 @@ impl From<Cliente> for ClienteDto {
             logradouro: c.logradouro,
             numero: c.numero,
             bairro: c.bairro,
-            codigo_municipio_ibge: c.codigo_municipio_ibge,
-            uf: c.uf,
+            municipio_id: c.municipio_id,
+            codigo_municipio_ibge: m.map(|x| x.codigo_ibge.clone()),
+            municipio_nome: m.map(|x| x.nome.clone()),
+            uf: m.map(|x| x.uf.clone()),
             email: c.email,
             telefone: c.telefone,
         }

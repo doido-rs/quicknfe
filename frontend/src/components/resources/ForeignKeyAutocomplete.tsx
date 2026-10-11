@@ -21,12 +21,14 @@ export function ForeignKeyAutocomplete({
   resourceKey,
   value,
   onChange,
+  onSelectRow,
   required,
 }: {
   field: FieldDef
   resourceKey: string
   value: string
   onChange: (next: string) => void
+  onSelectRow?: (row: Record<string, unknown>) => void
   required?: boolean
 }) {
   const listId = useId()
@@ -128,6 +130,7 @@ export function ForeignKeyAutocomplete({
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   onChange(String(id))
+                  onSelectRow?.(row)
                   setSearch(label)
                   setOpen(false)
                 }}

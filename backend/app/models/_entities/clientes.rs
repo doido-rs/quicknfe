@@ -19,8 +19,7 @@ pub struct Model {
     pub logradouro: Option<String>,
     pub numero: Option<String>,
     pub bairro: Option<String>,
-    pub codigo_municipio_ibge: Option<String>,
-    pub uf: Option<String>,
+    pub municipio_id: Option<i64>,
     pub email: Option<String>,
     pub telefone: Option<String>,
 }
@@ -37,6 +36,14 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Empresas,
+    #[sea_orm(
+        belongs_to = "super::municipios::Entity",
+        from = "Column::MunicipioId",
+        to = "super::municipios::Column::Id",
+        on_update = "NoAction",
+        on_delete = "SetNull"
+    )]
+    Municipios,
 }
 
 impl Related<super::documentos_fiscais::Entity> for Entity {
@@ -48,5 +55,11 @@ impl Related<super::documentos_fiscais::Entity> for Entity {
 impl Related<super::empresas::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Empresas.def()
+    }
+}
+
+impl Related<super::municipios::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Municipios.def()
     }
 }

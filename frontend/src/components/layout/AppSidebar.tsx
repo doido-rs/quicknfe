@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LogOut,
+  MapPin,
   ScrollText,
   Shield,
   Users,
@@ -45,6 +46,7 @@ function resourcesByMenuSection(): { label: string; items: ResourceDef[] }[] {
 }
 
 const resourceIcons: Record<string, LucideIcon> = {
+  municipios: MapPin,
   prestadores: Building2,
   clientes: Users,
   intermediarios: Handshake,
