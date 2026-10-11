@@ -1381,6 +1381,18 @@ components:
           type: integer
           nullable: true
           description: Intermediário para NF intermediária (/api/intermediarios)
+        tomador_localidade:
+          type: string
+          enum: [brasil, exterior, nao_informado]
+          default: brasil
+        intermediario_localidade:
+          type: string
+          enum: [brasil, exterior, nao_informado]
+          default: nao_informado
+        tomador_exterior:
+          $ref: '#/components/schemas/ParteExteriorDto'
+        intermediario_exterior:
+          $ref: '#/components/schemas/ParteExteriorDto'
         lote_id:
           type: integer
           nullable: true
@@ -1418,6 +1430,43 @@ components:
           type: string
         xml_processado:
           type: string
+    ParteExteriorDto:
+      type: object
+      required:
+        - razao_social
+        - logradouro
+        - numero
+        - bairro
+        - cidade
+        - codigo_postal
+        - estado_regiao
+        - pais
+      properties:
+        razao_social:
+          type: string
+        telefone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        logradouro:
+          type: string
+        numero:
+          type: string
+        complemento:
+          type: string
+          nullable: true
+        bairro:
+          type: string
+        cidade:
+          type: string
+        codigo_postal:
+          type: string
+        estado_regiao:
+          type: string
+        pais:
+          type: string
     DocumentoListDto:
       type: object
       properties:
@@ -1430,6 +1479,14 @@ components:
         intermediario_id:
           type: integer
           nullable: true
+        tomador_localidade:
+          type: string
+        intermediario_localidade:
+          type: string
+        tomador_exterior:
+          $ref: '#/components/schemas/ParteExteriorDto'
+        intermediario_exterior:
+          $ref: '#/components/schemas/ParteExteriorDto'
         lote_id:
           type: integer
         modelo:

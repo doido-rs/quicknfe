@@ -74,8 +74,10 @@ describe('resources', () => {
     expect(documentos?.formSections?.[1]).toMatchObject({
       type: 'prestador-partes-row',
       prestadorFieldKey: 'empresa_id',
-      partesFieldKeys: ['cliente_id', 'intermediario_id'],
+      partesLocalidade: true,
     })
+    expect(documentos?.fields.some((f) => f.key === 'tomador_localidade')).toBe(true)
+    expect(documentos?.fields.some((f) => f.key === 'tomador_exterior_pais')).toBe(true)
     expect(documentos?.fields.some((f) => f.key === 'data_competencia')).toBe(true)
     expect(documentos?.formSections?.[2]).toMatchObject({
       type: 'fields',

@@ -8,7 +8,9 @@ use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity, Model as Documento,
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
-use crate::services::dto::{DocumentoDto, DocumentoListDto, TransmitirDocumentoResponse};
+use crate::services::dto::{
+    DocumentoDto, DocumentoListDto, ParteExteriorDto, TransmitirDocumentoResponse,
+};
 use crate::services::nfse::{transmitir_documento, TransmitirParams};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::tenant_scope;
@@ -23,6 +25,12 @@ pub struct DocumentoForm {
     pub empresa_id: i64,
     pub cliente_id: Option<i64>,
     pub intermediario_id: Option<i64>,
+    #[serde(default = "default_tomador_localidade")]
+    pub tomador_localidade: String,
+    #[serde(default = "default_intermediario_localidade")]
+    pub intermediario_localidade: String,
+    pub tomador_exterior: Option<ParteExteriorDto>,
+    pub intermediario_exterior: Option<ParteExteriorDto>,
     pub lote_id: Option<i64>,
     pub modelo: String,
     pub serie: String,
@@ -42,6 +50,88 @@ pub struct DocumentoForm {
     pub valor_liquido: Decimal,
     pub xml_assinado: Option<String>,
     pub xml_processado: Option<String>,
+}
+
+fn default_tomador_localidade() -> String {
+    "brasil".into()
+}
+
+fn default_intermediario_localidade() -> String {
+    "nao_informado".into()
+}
+
+fn validar_campo_obrigatorio(valor: &str, campo: &str) -> Result<(), ApiError> {
+    if valor.trim().is_empty() {
+        return Err(ApiError::Validation(format!("{campo} is required")));
+    }
+    Ok(())
+}
+
+fn validar_parte_exterior(ext: &ParteExteriorDto, parte: &str) -> Result<(), ApiError> {
+    validar_campo_obrigatorio(&ext.razao_social, &format!("{parte}.razao_social"))?;
+    validar_campo_obrigatorio(&ext.logradouro, &format!("{parte}.logradouro"))?;
+    validar_campo_obrigatorio(&ext.numero, &format!("{parte}.numero"))?;
+    validar_campo_obrigatorio(&ext.bairro, &format!("{parte}.bairro"))?;
+    validar_campo_obrigatorio(&ext.cidade, &format!("{parte}.cidade"))?;
+    validar_campo_obrigatorio(&ext.codigo_postal, &format!("{parte}.codigo_postal"))?;
+    validar_campo_obrigatorio(&ext.estado_regiao, &format!("{parte}.estado_regiao"))?;
+    validar_campo_obrigatorio(&ext.pais, &format!("{parte}.pais"))?;
+    Ok(())
+}
+
+fn normalizar_parte_localidade(
+    localidade: &str,
+    relation_id: &mut Option<i64>,
+    exterior: &mut Option<ParteExteriorDto>,
+    parte: &str,
+) -> Result<(), ApiError> {
+    match localidade {
+        "brasil" => {
+            *exterior = None;
+        }
+        "nao_informado" => {
+            *relation_id = None;
+            *exterior = None;
+        }
+        "exterior" => {
+            *relation_id = None;
+            let ext = exterior
+                .as_ref()
+                .ok_or_else(|| ApiError::Validation(format!("{parte}_exterior is required")))?;
+            validar_parte_exterior(ext, parte)?;
+        }
+        other => {
+            return Err(ApiError::Validation(format!(
+                "invalid {parte}_localidade: {other}"
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn encode_parte_exterior(ext: &Option<ParteExteriorDto>) -> Result<Option<String>, ApiError> {
+    match ext {
+        None => Ok(None),
+        Some(parte) => serde_json::to_string(parte)
+            .map(Some)
+            .map_err(|e| ApiError::Internal(e.to_string())),
+    }
+}
+
+fn normalizar_partes(form: &mut DocumentoForm) -> Result<(), ApiError> {
+    normalizar_parte_localidade(
+        &form.tomador_localidade,
+        &mut form.cliente_id,
+        &mut form.tomador_exterior,
+        "tomador",
+    )?;
+    normalizar_parte_localidade(
+        &form.intermediario_localidade,
+        &mut form.intermediario_id,
+        &mut form.intermediario_exterior,
+        "intermediario",
+    )?;
+    Ok(())
 }
 
 async fn validate_refs(
@@ -124,10 +214,14 @@ async fn preparar_identificacao(
     Ok(())
 }
 
-fn apply_form(record: &mut DocActive, form: &DocumentoForm) {
+fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiError> {
     record.empresa_id = Set(form.empresa_id);
     record.cliente_id = Set(form.cliente_id);
     record.intermediario_id = Set(form.intermediario_id);
+    record.tomador_localidade = Set(form.tomador_localidade.clone());
+    record.intermediario_localidade = Set(form.intermediario_localidade.clone());
+    record.tomador_exterior = Set(encode_parte_exterior(&form.tomador_exterior)?);
+    record.intermediario_exterior = Set(encode_parte_exterior(&form.intermediario_exterior)?);
     record.lote_id = Set(form.lote_id);
     record.modelo = Set(form.modelo.clone());
     record.serie = Set(form.serie.clone());
@@ -139,13 +233,14 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) {
     record.status = Set(form.status.clone());
     record.data_emissao = Set(form.data_emissao);
     record.data_competencia = Set(form.data_competencia);
-    record.serie_numero_automatico = Set(form.serie_numero_automatico);
+    record.serie_numero_automatico = Set(i8::from(form.serie_numero_automatico));
     record.codigo_municipio_emissao = Set(form.codigo_municipio_emissao.clone());
     record.protocolo_autorizacao = Set(form.protocolo_autorizacao.clone());
     record.valor_total_servicos_produtos = Set(form.valor_total_servicos_produtos);
     record.valor_liquido = Set(form.valor_liquido);
     record.xml_assinado = Set(form.xml_assinado.clone());
     record.xml_processado = Set(form.xml_processado.clone());
+    Ok(())
 }
 
 pub struct ApiDocumentosController;
@@ -199,12 +294,13 @@ impl ApiDocumentosController {
         crate::api!(to_response(
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, form.empresa_id).await,
         ));
+        crate::api!(to_response(normalizar_partes(&mut form)));
         crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
         crate::api!(to_response(preparar_identificacao(ctx.db(), &mut form).await));
         let mut record = DocActive {
             ..Default::default()
         };
-        apply_form(&mut record, &form);
+        crate::api!(to_response(apply_form(&mut record, &form)));
         let created = crate::api!(db(record.insert(ctx.db()).await));
         ctx.json(DocumentoDto::from(created))
     }
@@ -219,10 +315,11 @@ impl ApiDocumentosController {
         crate::api!(to_response(
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, form.empresa_id).await,
         ));
+        crate::api!(to_response(normalizar_partes(&mut form)));
         crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
         crate::api!(to_response(preparar_identificacao(ctx.db(), &mut form).await));
         let mut record: DocActive = existing.into();
-        apply_form(&mut record, &form);
+        crate::api!(to_response(apply_form(&mut record, &form)));
         let updated = crate::api!(db(record.update(ctx.db()).await));
         ctx.json(DocumentoDto::from(updated))
     }

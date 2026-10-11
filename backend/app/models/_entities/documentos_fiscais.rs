@@ -15,6 +15,12 @@ pub struct Model {
     pub empresa_id: i64,
     pub cliente_id: Option<i64>,
     pub intermediario_id: Option<i64>,
+    pub tomador_localidade: String,
+    pub intermediario_localidade: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub tomador_exterior: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub intermediario_exterior: Option<String>,
     pub lote_id: Option<i64>,
     #[sea_orm(unique_key = "unq_empresa_doc")]
     pub modelo: String,
@@ -30,7 +36,7 @@ pub struct Model {
     pub status: String,
     pub data_emissao: DateTimeUtc,
     pub data_competencia: Option<Date>,
-    pub serie_numero_automatico: bool,
+    pub serie_numero_automatico: i8,
     pub codigo_municipio_emissao: String,
     pub protocolo_autorizacao: Option<String>,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]

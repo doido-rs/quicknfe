@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use doido::model::sea_orm::prelude::Decimal;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::models::certificado_digital::Model as Certificado;
 use crate::models::cliente::Model as Cliente;
@@ -269,12 +269,35 @@ impl From<Lote> for LoteDto {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ParteExteriorDto {
+    pub razao_social: String,
+    pub telefone: Option<String>,
+    pub email: Option<String>,
+    pub logradouro: String,
+    pub numero: String,
+    pub complemento: Option<String>,
+    pub bairro: String,
+    pub cidade: String,
+    pub codigo_postal: String,
+    pub estado_regiao: String,
+    pub pais: String,
+}
+
+fn decode_parte_exterior(raw: &Option<String>) -> Option<ParteExteriorDto> {
+    raw.as_ref().and_then(|s| serde_json::from_str(s).ok())
+}
+
 #[derive(Serialize)]
 pub struct DocumentoListDto {
     pub id: i64,
     pub empresa_id: i64,
     pub cliente_id: Option<i64>,
     pub intermediario_id: Option<i64>,
+    pub tomador_localidade: String,
+    pub intermediario_localidade: String,
+    pub tomador_exterior: Option<ParteExteriorDto>,
+    pub intermediario_exterior: Option<ParteExteriorDto>,
     pub lote_id: Option<i64>,
     pub modelo: String,
     pub serie: String,
@@ -308,6 +331,10 @@ impl From<Documento> for DocumentoListDto {
             empresa_id: d.empresa_id,
             cliente_id: d.cliente_id,
             intermediario_id: d.intermediario_id,
+            tomador_localidade: d.tomador_localidade,
+            intermediario_localidade: d.intermediario_localidade,
+            tomador_exterior: decode_parte_exterior(&d.tomador_exterior),
+            intermediario_exterior: decode_parte_exterior(&d.intermediario_exterior),
             lote_id: d.lote_id,
             modelo: d.modelo,
             serie: d.serie,
@@ -319,7 +346,7 @@ impl From<Documento> for DocumentoListDto {
             status: d.status,
             data_emissao: d.data_emissao,
             data_competencia: d.data_competencia,
-            serie_numero_automatico: d.serie_numero_automatico,
+            serie_numero_automatico: d.serie_numero_automatico != 0,
             codigo_municipio_emissao: d.codigo_municipio_emissao,
             protocolo_autorizacao: d.protocolo_autorizacao,
             valor_total_servicos_produtos: d.valor_total_servicos_produtos,

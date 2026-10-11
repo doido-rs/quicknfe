@@ -1,4 +1,25 @@
+import {
+  DOCUMENTO_PARTES,
+  exteriorFormFields,
+  LOCALIDADE_PARTE_OPTIONS,
+} from '@/lib/documentoParteConstants'
 import { REGIME_TRIBUTARIO_OPTIONS } from '@/lib/regimeTributario'
+
+function documentoParteLocalidadeFields(): FieldDef[] {
+  const fields: FieldDef[] = []
+  for (const parte of DOCUMENTO_PARTES) {
+    fields.push({
+      key: parte.localidadeFieldKey,
+      label: `Localidade do ${parte.title.toLowerCase()}`,
+      type: 'enum',
+      enumOptions: [...LOCALIDADE_PARTE_OPTIONS],
+      defaultValue: parte.localidadeFieldKey === 'tomador_localidade' ? 'brasil' : 'nao_informado',
+      formOnly: true,
+    })
+    fields.push(...exteriorFormFields(parte.exteriorPrefix))
+  }
+  return fields
+}
 
 export type FieldType =
   | 'text'
@@ -41,6 +62,8 @@ export interface FieldDef {
   fileUploadAs?: { base64Key: string; nameKey: string }
   /** Valor inicial no formulário (string). */
   defaultValue?: string
+  /** Oculta na ficha de detalhes (campos só do formulário). */
+  formOnly?: boolean
 }
 
 /** Seção do formulário (layout); campos continuam em `fields` para API/CRUD. */
@@ -60,7 +83,9 @@ export type FormSectionDef =
       prestadorTitle: string
       prestadorFieldKey: string
       partesTitle: string
-      partesFieldKeys: string[]
+      /** Tomador/intermediário com localidade (Brasil, exterior, não informado). */
+      partesLocalidade?: boolean
+      partesFieldKeys?: string[]
     }
   | { type: 'fields'; title: string; fieldKeys: string[]; columns?: 1 | 2 }
 
@@ -116,6 +141,7 @@ export const resources: ResourceDef[] = [
         type: 'relation',
         relationResource: 'clientes',
         relationScopeFromField: 'empresa_id',
+        formOnly: true,
       },
       {
         key: 'intermediario_id',
@@ -123,7 +149,9 @@ export const resources: ResourceDef[] = [
         type: 'relation',
         relationResource: 'intermediarios',
         relationScopeFromField: 'empresa_id',
+        formOnly: true,
       },
+      ...documentoParteLocalidadeFields(),
       { key: 'modelo', label: 'Modelo', required: true },
       {
         key: 'data_competencia',
@@ -163,7 +191,7 @@ export const resources: ResourceDef[] = [
         prestadorTitle: 'Prestador de serviço',
         prestadorFieldKey: 'empresa_id',
         partesTitle: 'Tomador e intermediário',
-        partesFieldKeys: ['cliente_id', 'intermediario_id'],
+        partesLocalidade: true,
       },
       {
         type: 'fields',

@@ -7,6 +7,7 @@ import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useResourceDef } from '@/hooks/useResourceDef'
+import { buildDocumentoBody } from '@/lib/documentoParteLocalidade'
 import { buildBody, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
 
@@ -32,7 +33,10 @@ export function ResourceNewPage() {
 
   const createMutation = useMutation({
     mutationFn: (values: Record<string, string>) => {
-      const body = buildBody(def.fields, values) as Record<string, unknown>
+      const body =
+        def.key === 'documentos'
+          ? buildDocumentoBody(def.fields, values)
+          : (buildBody(def.fields, values) as Record<string, unknown>)
       if (body.serie_numero_automatico === true) {
         body.numero_documento = 0
         body.serie = ''

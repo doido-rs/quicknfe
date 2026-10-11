@@ -6,6 +6,7 @@ import { CncConsultaField } from '@/components/resources/CncConsultaField'
 import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import type { ResourceRouteLink } from '@/lib/resourcePaths'
 import { fieldsByKeys } from '@/lib/resourceForm'
+import { ParteLocalidadeFields } from '@/components/resources/ParteLocalidadeFields'
 import type { CncLookupDef, FieldDef, FormSectionDef } from '@/resources/definitions'
 
 function SectionFields({
@@ -159,12 +160,20 @@ function FormSectionBlock({
           >
             {section.partesTitle}
           </h2>
-          <SectionFields
-            fields={fieldsByKeys(allFields, section.partesFieldKeys)}
-            form={form}
-            idPrefix={`s${sectionIndex}-partes`}
-            columns={1}
-          />
+          {section.partesLocalidade ? (
+            <ParteLocalidadeFields
+              allFields={allFields}
+              form={form}
+              sectionIndex={sectionIndex}
+            />
+          ) : (
+            <SectionFields
+              fields={fieldsByKeys(allFields, section.partesFieldKeys ?? [])}
+              form={form}
+              idPrefix={`s${sectionIndex}-partes`}
+              columns={1}
+            />
+          )}
         </section>
       </div>
     )

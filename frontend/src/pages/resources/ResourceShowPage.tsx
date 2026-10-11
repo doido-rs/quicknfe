@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { resourceApi } from '@/api/client'
+import { DocumentoPartesShowCard } from '@/components/resources/DocumentoPartesShowCard'
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
@@ -82,17 +83,21 @@ export function ResourceShowPage() {
         </CardHeader>
         <CardContent>
           <dl className="grid gap-3 sm:grid-cols-2">
-            {def.fields.map((field) => (
-              <div key={field.key}>
-                <dt className="text-sm font-medium text-muted-foreground">{field.label}</dt>
-                <dd className="text-sm">
-                  {formatFieldValue(fieldValue(row, field.key), field, row)}
-                </dd>
-              </div>
-            ))}
+            {def.fields
+              .filter((field) => !field.formOnly)
+              .map((field) => (
+                <div key={field.key}>
+                  <dt className="text-sm font-medium text-muted-foreground">{field.label}</dt>
+                  <dd className="text-sm">
+                    {formatFieldValue(fieldValue(row, field.key), field, row)}
+                  </dd>
+                </div>
+              ))}
           </dl>
         </CardContent>
       </Card>
+
+      {def.key === 'documentos' && <DocumentoPartesShowCard row={row} />}
 
       {resourceNesteds(def).map((nested) => (
         <NestedResourcePanel

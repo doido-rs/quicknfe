@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResourceDef, useResourceRecordId } from '@/hooks/useResourceDef'
+import { buildDocumentoBody, flattenDocumentoRowToForm } from '@/lib/documentoParteLocalidade'
 import { buildBody, rowToForm, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
 
@@ -25,13 +26,19 @@ export function ResourceEditPage() {
 
   useEffect(() => {
     if (row) {
-      form.reset(rowToForm(row, def.fields))
+      const base = rowToForm(row, def.fields)
+      form.reset(
+        def.key === 'documentos' ? flattenDocumentoRowToForm(row, base) : base,
+      )
     }
   }, [row, def.fields, form])
 
   const updateMutation = useMutation({
     mutationFn: (values: Record<string, string>) => {
-      const body = buildBody(def.fields, values) as Record<string, unknown>
+      const body =
+        def.key === 'documentos'
+          ? buildDocumentoBody(def.fields, values)
+          : (buildBody(def.fields, values) as Record<string, unknown>)
       if (body.serie_numero_automatico === true) {
         body.numero_documento = 0
         body.serie = ''
