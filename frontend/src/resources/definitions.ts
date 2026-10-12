@@ -3,7 +3,16 @@ import {
   exteriorFormFields,
   LOCALIDADE_PARTE_OPTIONS,
 } from '@/lib/documentoParteConstants'
+import {
+  REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS,
+  TRIBUTACAO_ISSQN_OPTIONS,
+} from '@/lib/documentoTributacaoIssqn'
 import { REGIME_TRIBUTARIO_OPTIONS } from '@/lib/regimeTributario'
+
+const SIM_NAO_OPTIONS = [
+  { value: 'false', label: 'Não' },
+  { value: 'true', label: 'Sim' },
+] as const
 
 function documentoParteLocalidadeFields(): FieldDef[] {
   const fields: FieldDef[] = []
@@ -270,6 +279,65 @@ export const resources: ResourceDef[] = [
         formOnly: true,
         defaultValue: '0',
       },
+      {
+        key: 'trib_issqn',
+        label: 'Tributação do ISSQN sobre o serviço prestado',
+        type: 'enum',
+        enumOptions: [...TRIBUTACAO_ISSQN_OPTIONS],
+        required: true,
+        defaultValue: '1',
+        formOnly: true,
+      },
+      {
+        key: 'reg_esp_trib_issqn',
+        label: 'Regime Especial de Tributação',
+        type: 'enum',
+        enumOptions: [...REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS],
+        required: true,
+        defaultValue: '0',
+        formOnly: true,
+      },
+      {
+        key: 'issqn_exigibilidade_suspensa',
+        label:
+          'A exigibilidade do recolhimento do ISSQN devido nesta operação está suspensa?',
+        type: 'enum',
+        enumOptions: [...SIM_NAO_OPTIONS],
+        required: true,
+        defaultValue: 'false',
+        formOnly: true,
+      },
+      {
+        key: 'issqn_retencao',
+        label: 'Há retenção do ISSQN pelo Tomador ou pelo Intermediário?',
+        type: 'enum',
+        enumOptions: [...SIM_NAO_OPTIONS],
+        required: true,
+        defaultValue: 'false',
+        formOnly: true,
+      },
+      {
+        key: 'issqn_beneficio_municipal',
+        label: 'Este serviço prestado está amparado por algum benefício municipal?',
+        type: 'enum',
+        enumOptions: [...SIM_NAO_OPTIONS],
+        required: true,
+        defaultValue: 'false',
+        formOnly: true,
+      },
+      {
+        key: 'issqn_deducao_reducao_bc',
+        label:
+          'Será aplicado algum tipo de Dedução/Redução à base de cálculo do ISSQN?',
+        type: 'enum',
+        enumOptions: [...SIM_NAO_OPTIONS],
+        required: true,
+        defaultValue: 'false',
+        formOnly: true,
+      },
+      { key: 'issqn_aliquota', label: 'Alíquota (%)', type: 'number', formOnly: true },
+      { key: 'issqn_base_calculo', label: 'BC ISSQN (R$)', type: 'number', formOnly: true },
+      { key: 'issqn_valor', label: 'Valor ISSQN (R$)', type: 'number', formOnly: true },
     ],
     formSections: [
       {
@@ -302,6 +370,22 @@ export const resources: ResourceDef[] = [
           'valor_recebido_intermediario',
           'desconto_incondicionado',
           'desconto_condicionado',
+        ],
+        columns: 2,
+      },
+      {
+        type: 'fields',
+        title: 'Tributação Municipal',
+        fieldKeys: [
+          'trib_issqn',
+          'reg_esp_trib_issqn',
+          'issqn_exigibilidade_suspensa',
+          'issqn_retencao',
+          'issqn_beneficio_municipal',
+          'issqn_deducao_reducao_bc',
+          'issqn_aliquota',
+          'issqn_base_calculo',
+          'issqn_valor',
         ],
         columns: 2,
       },

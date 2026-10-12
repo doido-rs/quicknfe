@@ -98,6 +98,23 @@ export function buildDocumentoBody(
     body.status = values.status?.trim() || 'novo'
   }
 
+  for (const key of [
+    'issqn_exigibilidade_suspensa',
+    'issqn_retencao',
+    'issqn_beneficio_municipal',
+    'issqn_deducao_reducao_bc',
+  ] as const) {
+    const raw = values[key]
+    body[key] = raw === 'true' || raw === '1'
+  }
+
+  if (body.trib_issqn == null || String(body.trib_issqn).trim() === '') {
+    body.trib_issqn = values.trib_issqn?.trim() || '1'
+  }
+  if (body.reg_esp_trib_issqn == null || String(body.reg_esp_trib_issqn).trim() === '') {
+    body.reg_esp_trib_issqn = values.reg_esp_trib_issqn?.trim() || '0'
+  }
+
   return body
 }
 
@@ -120,6 +137,20 @@ export function flattenDocumentoRowToForm(
     for (const suffix of EXTERIOR_FIELD_SUFFIXES) {
       const val = (ext as Record<string, unknown>)[suffix]
       next[`${prefix}_${suffix}`] = val == null ? '' : String(val)
+    }
+  }
+
+  for (const key of [
+    'issqn_exigibilidade_suspensa',
+    'issqn_retencao',
+    'issqn_beneficio_municipal',
+    'issqn_deducao_reducao_bc',
+  ] as const) {
+    const raw = row[key]
+    if (raw === true || raw === 'true' || raw === 1 || raw === '1') {
+      next[key] = 'true'
+    } else if (raw === false || raw === 'false' || raw === 0 || raw === '0') {
+      next[key] = 'false'
     }
   }
 

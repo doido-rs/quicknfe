@@ -55,6 +55,21 @@ pub struct DocumentoForm {
     pub desconto_incondicionado: Decimal,
     #[serde(default = "default_zero_decimal")]
     pub desconto_condicionado: Decimal,
+    #[serde(default = "default_trib_issqn")]
+    pub trib_issqn: String,
+    #[serde(default = "default_reg_esp_trib_issqn")]
+    pub reg_esp_trib_issqn: String,
+    #[serde(default)]
+    pub issqn_exigibilidade_suspensa: bool,
+    #[serde(default)]
+    pub issqn_retencao: bool,
+    #[serde(default)]
+    pub issqn_beneficio_municipal: bool,
+    #[serde(default)]
+    pub issqn_deducao_reducao_bc: bool,
+    pub issqn_aliquota: Option<Decimal>,
+    pub issqn_base_calculo: Option<Decimal>,
+    pub issqn_valor: Option<Decimal>,
     pub xml_assinado: Option<String>,
     pub xml_processado: Option<String>,
     pub numero_doc_responsabilidade_tecnica: Option<String>,
@@ -73,6 +88,14 @@ fn default_intermediario_localidade() -> String {
 
 fn default_zero_decimal() -> Decimal {
     Decimal::ZERO
+}
+
+fn default_trib_issqn() -> String {
+    "1".into()
+}
+
+fn default_reg_esp_trib_issqn() -> String {
+    "0".into()
 }
 
 fn normalizar_valores_documento(form: &mut DocumentoForm) -> Result<(), ApiError> {
@@ -276,6 +299,15 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.valor_recebido_intermediario = Set(form.valor_recebido_intermediario);
     record.desconto_incondicionado = Set(form.desconto_incondicionado);
     record.desconto_condicionado = Set(form.desconto_condicionado);
+    record.trib_issqn = Set(form.trib_issqn.clone());
+    record.reg_esp_trib_issqn = Set(form.reg_esp_trib_issqn.clone());
+    record.issqn_exigibilidade_suspensa = Set(i8::from(form.issqn_exigibilidade_suspensa));
+    record.issqn_retencao = Set(i8::from(form.issqn_retencao));
+    record.issqn_beneficio_municipal = Set(i8::from(form.issqn_beneficio_municipal));
+    record.issqn_deducao_reducao_bc = Set(i8::from(form.issqn_deducao_reducao_bc));
+    record.issqn_aliquota = Set(form.issqn_aliquota);
+    record.issqn_base_calculo = Set(form.issqn_base_calculo);
+    record.issqn_valor = Set(form.issqn_valor);
     record.xml_assinado = Set(form.xml_assinado.clone());
     record.xml_processado = Set(form.xml_processado.clone());
     record.numero_doc_responsabilidade_tecnica =

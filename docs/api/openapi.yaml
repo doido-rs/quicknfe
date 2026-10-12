@@ -1438,6 +1438,29 @@ components:
           type: number
         desconto_condicionado:
           type: number
+        trib_issqn:
+          type: string
+          description: '1=tributável, 2=imunidade, 3=exportação, 4=não incidência'
+        reg_esp_trib_issqn:
+          type: string
+          description: Regime especial de tributação do ISSQN (0–6)
+        issqn_exigibilidade_suspensa:
+          type: boolean
+        issqn_retencao:
+          type: boolean
+        issqn_beneficio_municipal:
+          type: boolean
+        issqn_deducao_reducao_bc:
+          type: boolean
+        issqn_aliquota:
+          type: number
+          nullable: true
+        issqn_base_calculo:
+          type: number
+          nullable: true
+        issqn_valor:
+          type: number
+          nullable: true
         xml_assinado:
           type: string
         xml_processado:
@@ -1541,6 +1564,27 @@ components:
           type: number
         desconto_condicionado:
           type: number
+        trib_issqn:
+          type: string
+        reg_esp_trib_issqn:
+          type: string
+        issqn_exigibilidade_suspensa:
+          type: boolean
+        issqn_retencao:
+          type: boolean
+        issqn_beneficio_municipal:
+          type: boolean
+        issqn_deducao_reducao_bc:
+          type: boolean
+        issqn_aliquota:
+          type: number
+          nullable: true
+        issqn_base_calculo:
+          type: number
+          nullable: true
+        issqn_valor:
+          type: number
+          nullable: true
         numero_doc_responsabilidade_tecnica:
           type: string
           nullable: true

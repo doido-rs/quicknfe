@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { resourceApi } from '@/api/client'
 import { DocumentoInformacoesComplementaresShowCard } from '@/components/resources/DocumentoInformacoesComplementaresShowCard'
+import { DocumentoTributacaoMunicipalShowCard } from '@/components/resources/DocumentoTributacaoMunicipalShowCard'
 import { DocumentoValoresShowCard } from '@/components/resources/DocumentoValoresShowCard'
 import { DocumentoMunicipiosShowCard } from '@/components/resources/DocumentoMunicipiosShowCard'
 import { DocumentoPartesShowCard } from '@/components/resources/DocumentoPartesShowCard'
@@ -103,6 +104,7 @@ export function ResourceShowPage() {
       {def.key === 'documentos' && <DocumentoPartesShowCard row={row} />}
       {def.key === 'documentos' && <DocumentoMunicipiosShowCard row={row} />}
       {def.key === 'documentos' && <DocumentoValoresShowCard row={row} />}
+      {def.key === 'documentos' && <DocumentoTributacaoMunicipalShowCard row={row} />}
       {def.key === 'documentos' && (
         <DocumentoInformacoesComplementaresShowCard row={row} />
       )}

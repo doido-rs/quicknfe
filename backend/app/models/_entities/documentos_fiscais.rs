@@ -50,6 +50,18 @@ pub struct Model {
     pub desconto_incondicionado: Decimal,
     #[sea_orm(column_type = "Decimal(Some((15, 2)))")]
     pub desconto_condicionado: Decimal,
+    pub trib_issqn: String,
+    pub reg_esp_trib_issqn: String,
+    pub issqn_exigibilidade_suspensa: i8,
+    pub issqn_retencao: i8,
+    pub issqn_beneficio_municipal: i8,
+    pub issqn_deducao_reducao_bc: i8,
+    #[sea_orm(column_type = "Decimal(Some((7, 4)))", nullable)]
+    pub issqn_aliquota: Option<Decimal>,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
+    pub issqn_base_calculo: Option<Decimal>,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
+    pub issqn_valor: Option<Decimal>,
     #[sea_orm(column_type = "Text", nullable)]
     pub xml_assinado: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
