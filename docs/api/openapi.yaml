@@ -1431,6 +1431,13 @@ components:
           type: number
         valor_liquido:
           type: number
+        valor_recebido_intermediario:
+          type: number
+          nullable: true
+        desconto_incondicionado:
+          type: number
+        desconto_condicionado:
+          type: number
         xml_assinado:
           type: string
         xml_processado:
@@ -1526,6 +1533,13 @@ components:
         valor_total_servicos_produtos:
           type: number
         valor_liquido:
+          type: number
+        valor_recebido_intermediario:
+          type: number
+          nullable: true
+        desconto_incondicionado:
+          type: number
+        desconto_condicionado:
           type: number
         numero_doc_responsabilidade_tecnica:
           type: string

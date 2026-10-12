@@ -44,6 +44,12 @@ pub struct Model {
     pub valor_total_servicos_produtos: Decimal,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]
     pub valor_liquido: Decimal,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
+    pub valor_recebido_intermediario: Option<Decimal>,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))")]
+    pub desconto_incondicionado: Decimal,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))")]
+    pub desconto_condicionado: Decimal,
     #[sea_orm(column_type = "Text", nullable)]
     pub xml_assinado: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]

@@ -59,7 +59,20 @@ describe('buildDocumentoBody', () => {
     expect(body.ambiente).toBe(2)
     expect(body.tipo_emissao).toBe(1)
     expect(body.valor_liquido).toBe(0)
+    expect(body.valor_total_servicos_produtos).toBe(0)
     expect(typeof body.data_emissao).toBe('string')
     expect(String(body.data_emissao)).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+
+  it('computes valor liquido from operacao and descontos', () => {
+    const body = buildDocumentoBody(fields, {
+      tomador_localidade: 'nao_informado',
+      intermediario_localidade: 'nao_informado',
+      valor_total_servicos_produtos: '1000',
+      desconto_incondicionado: '100',
+      desconto_condicionado: '50',
+    })
+    expect(body.valor_total_servicos_produtos).toBe(1000)
+    expect(body.valor_liquido).toBe(850)
   })
 })

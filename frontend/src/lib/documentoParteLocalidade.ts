@@ -82,12 +82,17 @@ export function buildDocumentoBody(
 
   if (body.ambiente == null) body.ambiente = Number(values.ambiente) || 2
   if (body.tipo_emissao == null) body.tipo_emissao = Number(values.tipo_emissao) || 1
-  if (body.valor_total_servicos_produtos == null) {
-    body.valor_total_servicos_produtos = Number(values.valor_total_servicos_produtos) || 0
+  const parseAmount = (raw: string | undefined): number => {
+    if (raw == null || raw.trim() === '') return 0
+    const n = Number(raw)
+    return Number.isFinite(n) ? n : 0
   }
-  if (body.valor_liquido == null) {
-    body.valor_liquido = Number(values.valor_liquido) || 0
-  }
+
+  const operacao = parseAmount(values.valor_total_servicos_produtos)
+  const descIncond = parseAmount(values.desconto_incondicionado)
+  const descCond = parseAmount(values.desconto_condicionado)
+  body.valor_total_servicos_produtos = operacao
+  body.valor_liquido = Math.max(0, operacao - descIncond - descCond)
 
   if (body.status == null || String(body.status).trim() === '') {
     body.status = values.status?.trim() || 'novo'

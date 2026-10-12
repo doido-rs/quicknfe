@@ -50,6 +50,11 @@ pub struct DocumentoForm {
     pub protocolo_autorizacao: Option<String>,
     pub valor_total_servicos_produtos: Decimal,
     pub valor_liquido: Decimal,
+    pub valor_recebido_intermediario: Option<Decimal>,
+    #[serde(default = "default_zero_decimal")]
+    pub desconto_incondicionado: Decimal,
+    #[serde(default = "default_zero_decimal")]
+    pub desconto_condicionado: Decimal,
     pub xml_assinado: Option<String>,
     pub xml_processado: Option<String>,
     pub numero_doc_responsabilidade_tecnica: Option<String>,
@@ -64,6 +69,27 @@ fn default_tomador_localidade() -> String {
 
 fn default_intermediario_localidade() -> String {
     "nao_informado".into()
+}
+
+fn default_zero_decimal() -> Decimal {
+    Decimal::ZERO
+}
+
+fn normalizar_valores_documento(form: &mut DocumentoForm) -> Result<(), ApiError> {
+    if form.valor_total_servicos_produtos <= Decimal::ZERO {
+        return Err(ApiError::Validation(
+            "valor da operação/serviço prestado must be positive".into(),
+        ));
+    }
+    let liquido = form.valor_total_servicos_produtos
+        - form.desconto_incondicionado
+        - form.desconto_condicionado;
+    form.valor_liquido = if liquido < Decimal::ZERO {
+        Decimal::ZERO
+    } else {
+        liquido
+    };
+    Ok(())
 }
 
 fn validar_campo_obrigatorio(valor: &str, campo: &str) -> Result<(), ApiError> {
@@ -247,6 +273,9 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.protocolo_autorizacao = Set(form.protocolo_autorizacao.clone());
     record.valor_total_servicos_produtos = Set(form.valor_total_servicos_produtos);
     record.valor_liquido = Set(form.valor_liquido);
+    record.valor_recebido_intermediario = Set(form.valor_recebido_intermediario);
+    record.desconto_incondicionado = Set(form.desconto_incondicionado);
+    record.desconto_condicionado = Set(form.desconto_condicionado);
     record.xml_assinado = Set(form.xml_assinado.clone());
     record.xml_processado = Set(form.xml_processado.clone());
     record.numero_doc_responsabilidade_tecnica =
@@ -310,6 +339,7 @@ impl ApiDocumentosController {
         ));
         crate::api!(to_response(normalizar_partes(&mut form)));
         crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
+        crate::api!(to_response(normalizar_valores_documento(&mut form)));
         crate::api!(to_response(preparar_identificacao(ctx.db(), &mut form).await));
         let mut record = DocActive {
             ..Default::default()
@@ -331,6 +361,7 @@ impl ApiDocumentosController {
         ));
         crate::api!(to_response(normalizar_partes(&mut form)));
         crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
+        crate::api!(to_response(normalizar_valores_documento(&mut form)));
         crate::api!(to_response(preparar_identificacao(ctx.db(), &mut form).await));
         let mut record: DocActive = existing.into();
         crate::api!(to_response(apply_form(&mut record, &form)));

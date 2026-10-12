@@ -238,7 +238,27 @@ export const resources: ResourceDef[] = [
       { key: 'data_emissao', label: 'Data de emissão', formOnly: true },
       {
         key: 'valor_total_servicos_produtos',
-        label: 'Valor total serviços/produtos',
+        label: 'Valor da operação/serviço prestado',
+        type: 'number',
+        required: true,
+        formOnly: true,
+      },
+      {
+        key: 'valor_recebido_intermediario',
+        label: 'Valor recebido pelo intermediário',
+        type: 'number',
+        formOnly: true,
+      },
+      {
+        key: 'desconto_incondicionado',
+        label: 'Desconto incondicionado',
+        type: 'number',
+        formOnly: true,
+        defaultValue: '0',
+      },
+      {
+        key: 'desconto_condicionado',
+        label: 'Desconto condicionado',
         type: 'number',
         formOnly: true,
         defaultValue: '0',
@@ -273,6 +293,17 @@ export const resources: ResourceDef[] = [
         title: 'Municípios da nota',
         emissaoFieldKey: 'municipio_emissao_id',
         prestacaoFieldKey: 'municipio_prestacao_id',
+      },
+      {
+        type: 'fields',
+        title: 'Valores do Fornecimento/Serviço Prestado',
+        fieldKeys: [
+          'valor_total_servicos_produtos',
+          'valor_recebido_intermediario',
+          'desconto_incondicionado',
+          'desconto_condicionado',
+        ],
+        columns: 2,
       },
       {
         type: 'fields',

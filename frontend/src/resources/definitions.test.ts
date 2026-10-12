@@ -69,7 +69,7 @@ describe('resources', () => {
 
   it('groups nota fiscal form: identificação, prestador|partes, extras', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
-    expect(documentos?.formSections).toHaveLength(5)
+    expect(documentos?.formSections).toHaveLength(6)
     expect(documentos?.formSections?.[0]).toMatchObject({
       type: 'identificacao-nota',
       competenciaFieldKey: 'data_competencia',
@@ -92,6 +92,16 @@ describe('resources', () => {
     })
     expect(documentos?.formSections?.[3]).toMatchObject({
       type: 'fields',
+      title: 'Valores do Fornecimento/Serviço Prestado',
+      fieldKeys: [
+        'valor_total_servicos_produtos',
+        'valor_recebido_intermediario',
+        'desconto_incondicionado',
+        'desconto_condicionado',
+      ],
+    })
+    expect(documentos?.formSections?.[4]).toMatchObject({
+      type: 'fields',
       title: 'Informações complementares',
       fieldKeys: [
         'numero_doc_responsabilidade_tecnica',
@@ -100,7 +110,7 @@ describe('resources', () => {
         'numero_pedido_ordem_b2b',
       ],
     })
-    expect(documentos?.formSections?.[4]).toMatchObject({
+    expect(documentos?.formSections?.[5]).toMatchObject({
       type: 'fields',
       title: 'Modelo',
       fieldKeys: ['modelo'],
