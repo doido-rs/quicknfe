@@ -2,6 +2,7 @@ import type { UseFormReturn } from 'react-hook-form'
 import { Controller } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import { ForeignKeyAutocomplete } from '@/components/resources/ForeignKeyAutocomplete'
 import { relationResourceKey } from '@/lib/relations'
 import type { FieldDef } from '@/resources/definitions'
@@ -98,6 +99,24 @@ export function ResourceFieldInput({
   }
 
   const inputId = `${idPrefix}-${field.key}`
+
+  if (field.type === 'textarea') {
+    return (
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor={inputId}>{field.label}</Label>
+        <textarea
+          id={inputId}
+          rows={4}
+          readOnly={field.readOnly}
+          className={cn(
+            'w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30',
+            field.readOnly && 'bg-muted',
+          )}
+          {...form.register(field.key, { required: field.required && !field.readOnly })}
+        />
+      </div>
+    )
+  }
 
   if (field.type === 'file') {
     return (

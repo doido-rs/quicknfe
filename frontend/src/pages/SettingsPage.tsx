@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Handshake,
   MapPin,
+  ScrollText,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -16,6 +17,7 @@ const settingsIcons: Record<string, LucideIcon> = {
   clientes: Users,
   intermediarios: Handshake,
   municipios: MapPin,
+  cnas: ScrollText,
 }
 
 export function SettingsPage() {
@@ -26,7 +28,7 @@ export function SettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Cadastros de prestadores, tomadores, intermediários e municípios (IBGE).
+          Cadastros de prestadores, tomadores, intermediários, CNA e municípios (IBGE).
         </p>
       </div>
       <ul className="grid gap-3">

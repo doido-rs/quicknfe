@@ -6,6 +6,7 @@
 
 pub mod _entities;
 
+pub mod cna;
 pub mod certificado_digital;
 pub mod cliente;
 pub mod company;

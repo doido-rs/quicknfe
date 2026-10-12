@@ -2,6 +2,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use doido::model::sea_orm::prelude::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::models::cna::Model as Cna;
 use crate::models::certificado_digital::Model as Certificado;
 use crate::models::cliente::Model as Cliente;
 use crate::models::documento_fiscal::Model as Documento;
@@ -32,6 +33,23 @@ impl From<User> for UserPublic {
             email: u.email,
             created_at: u.created_at,
             updated_at: u.updated_at,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct CnaDto {
+    pub id: i64,
+    pub codigo: String,
+    pub descricao: String,
+}
+
+impl From<Cna> for CnaDto {
+    fn from(c: Cna) -> Self {
+        Self {
+            id: c.id,
+            codigo: c.codigo,
+            descricao: c.descricao,
         }
     }
 }
@@ -373,8 +391,10 @@ pub struct ItemDto {
     pub documento_fiscal_id: i64,
     pub numero_item: i32,
     pub descricao: String,
+    pub descricao_servico: Option<String>,
     pub codigo_ncm: Option<String>,
     pub codigo_tributacao_nacional: Option<String>,
+    pub cna_id: Option<i64>,
     pub quantidade: Decimal,
     pub valor_unitario: Decimal,
     pub valor_total_bruto: Decimal,
@@ -388,8 +408,10 @@ impl From<Item> for ItemDto {
             documento_fiscal_id: i.documento_fiscal_id,
             numero_item: i.numero_item,
             descricao: i.descricao,
+            descricao_servico: i.descricao_servico,
             codigo_ncm: i.codigo_ncm,
             codigo_tributacao_nacional: i.codigo_tributacao_nacional,
+            cna_id: i.cna_id,
             quantidade: i.quantidade,
             valor_unitario: i.valor_unitario,
             valor_total_bruto: i.valor_total_bruto,

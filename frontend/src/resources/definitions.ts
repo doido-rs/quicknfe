@@ -104,6 +104,8 @@ export interface NestedDef {
   createButtonLabel?: string
   /** Padrão: true. Use false para painéis somente leitura (ex.: logs SEFAZ). */
   allowCreate?: boolean
+  /** Ajusta o JSON antes do POST (ex.: preencher `descricao` a partir da descrição do serviço). */
+  prepareCreateBody?: (body: Record<string, unknown>) => Record<string, unknown>
 }
 
 export interface ResourceDef {
@@ -174,7 +176,7 @@ export const resources: ResourceDef[] = [
         required: true,
         formOnly: true,
       },
-      { key: 'modelo', label: 'Modelo', required: true },
+      { key: 'modelo', label: 'Modelo', required: true, defaultValue: 'NFSe', readOnly: true },
       {
         key: 'data_competencia',
         label: 'Data de competência',
@@ -189,13 +191,54 @@ export const resources: ResourceDef[] = [
       },
       { key: 'serie', label: 'Série', required: true },
       { key: 'numero_documento', label: 'Número', type: 'number', required: true },
-      { key: 'status', label: 'Status', required: true },
+      {
+        key: 'status',
+        label: 'Situação',
+        type: 'enum',
+        required: true,
+        defaultValue: 'novo',
+        enumOptions: [
+          { value: 'novo', label: 'Novo' },
+          { value: 'rascunho', label: 'Rascunho' },
+          { value: 'autorizada', label: 'Autorizada' },
+          { value: 'rejeitada', label: 'Rejeitada' },
+        ],
+      },
       {
         key: 'lote_id',
         label: 'Lote',
         type: 'relation',
         relationResource: 'lotes',
         relationScopeFromField: 'empresa_id',
+      },
+      {
+        key: 'ambiente',
+        label: 'Ambiente',
+        type: 'number',
+        formOnly: true,
+        defaultValue: '2',
+      },
+      {
+        key: 'tipo_emissao',
+        label: 'Tipo de emissão',
+        type: 'number',
+        formOnly: true,
+        defaultValue: '1',
+      },
+      { key: 'data_emissao', label: 'Data de emissão', formOnly: true },
+      {
+        key: 'valor_total_servicos_produtos',
+        label: 'Valor total serviços/produtos',
+        type: 'number',
+        formOnly: true,
+        defaultValue: '0',
+      },
+      {
+        key: 'valor_liquido',
+        label: 'Valor líquido',
+        type: 'number',
+        formOnly: true,
+        defaultValue: '0',
       },
     ],
     formSections: [
@@ -223,7 +266,7 @@ export const resources: ResourceDef[] = [
       },
       {
         type: 'fields',
-        title: 'Dados extras',
+        title: 'Modelo e situação',
         fieldKeys: ['modelo', 'status', 'lote_id'],
         columns: 1,
       },
@@ -232,12 +275,35 @@ export const resources: ResourceDef[] = [
       {
         label: 'Itens da nota',
         path: (docId) => `/api/documentos/${docId}/itens`,
+        prepareCreateBody: (body) => {
+          const servico = body.descricao_servico
+          if (
+            (body.descricao == null || String(body.descricao).trim() === '') &&
+            servico != null &&
+            String(servico).trim() !== ''
+          ) {
+            body.descricao = String(servico).trim().slice(0, 500)
+          }
+          return body
+        },
         fields: [
           { key: 'numero_item', label: 'Nº item', type: 'number', required: true },
-          { key: 'descricao', label: 'Descrição', required: true },
-          { key: 'quantidade', label: 'Quantidade', type: 'number' },
-          { key: 'valor_unitario', label: 'Valor unit.', type: 'number' },
-          { key: 'valor_total_bruto', label: 'Total bruto', type: 'number' },
+          {
+            key: 'descricao_servico',
+            label: 'Descrição do serviço/fornecimento',
+            type: 'textarea',
+            required: true,
+          },
+          {
+            key: 'cna_id',
+            label: 'Código de Tributação Nacional',
+            type: 'relation',
+            relationResource: 'cnas',
+            required: true,
+          },
+          { key: 'quantidade', label: 'Quantidade', type: 'number', defaultValue: '1' },
+          { key: 'valor_unitario', label: 'Valor unitário', type: 'number', defaultValue: '0' },
+          { key: 'valor_total_bruto', label: 'Total bruto', type: 'number', defaultValue: '0' },
         ],
       },
       {
@@ -282,6 +348,19 @@ export const resources: ResourceDef[] = [
         relationResource: 'documentos',
       },
       { key: 'lote_id', label: 'Lote', type: 'relation', relationResource: 'lotes' },
+    ],
+  },
+  {
+    key: 'cnas',
+    title: 'Códigos de tributação nacional (CNA)',
+    menuSection: 'Cadastros',
+    menuPlacement: 'settings',
+    path: '/api/cnas',
+    allowCreate: false,
+    allowDelete: false,
+    fields: [
+      { key: 'codigo', label: 'Código', required: true },
+      { key: 'descricao', label: 'Descrição', required: true },
     ],
   },
   {

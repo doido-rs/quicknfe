@@ -4,6 +4,7 @@
 
 pub use super::certificados_digitais::Entity as CertificadosDigitais;
 pub use super::clientes::Entity as Clientes;
+pub use super::cnas::Entity as Cnas;
 pub use super::companies::Entity as Companies;
 pub use super::companies_usuarios::Entity as CompaniesUsuarios;
 pub use super::documentos_fiscais::Entity as DocumentosFiscais;

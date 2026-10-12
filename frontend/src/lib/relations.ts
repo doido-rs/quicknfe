@@ -7,6 +7,7 @@ const FK_RESOURCE: Record<string, string> = {
   lote_id: 'lotes',
   documento_fiscal_id: 'documentos',
   municipio_id: 'municipios',
+  cna_id: 'cnas',
   empresa_id: 'prestadores',
 }
 
@@ -22,6 +23,12 @@ export function relationApiPath(resourceKey: string): string | undefined {
 }
 
 export function relationOptionLabel(resourceKey: string, row: Record<string, unknown>): string {
+  if (resourceKey === 'cnas') {
+    const codigo = row.codigo != null ? String(row.codigo) : ''
+    const descricao = row.descricao != null ? String(row.descricao) : ''
+    if (codigo && descricao) return `${codigo} — ${descricao}`
+    return codigo || descricao || `#${String(row.id ?? '')}`
+  }
   const def = resources.find((r) => r.key === resourceKey)
   if (!def) return `#${String(row.id ?? '')}`
   const summary = rowLabel(row, def.fields)

@@ -2,6 +2,7 @@
 
 pub mod api_error;
 pub mod certificado_arquivo;
+pub mod cna;
 pub mod cnc;
 pub mod dashboard;
 pub mod dto;

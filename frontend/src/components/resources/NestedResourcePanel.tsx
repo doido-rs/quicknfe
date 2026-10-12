@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { resourceApi } from '@/api/client'
 import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,15 @@ export function NestedResourcePanel({
   })
   const rows = page?.items ?? []
 
+  useEffect(() => {
+    if (!nested.fields.some((f) => f.key === 'numero_item')) return
+    const next = rows.length + 1
+    const current = form.getValues('numero_item')
+    if (current === '' || current === String(Math.max(0, next - 1))) {
+      form.setValue('numero_item', String(next))
+    }
+  }, [rows.length, nested.fields, form])
+
   const createMutation = useMutation({
     mutationFn: async (values: Record<string, string>) => {
       for (const f of nested.fields) {
@@ -41,7 +50,10 @@ export function NestedResourcePanel({
           throw new Error(`Selecione o arquivo: ${f.label}`)
         }
       }
-      const body = await buildCreateBodyWithFiles(nested.fields, values, files)
+      let body = await buildCreateBodyWithFiles(nested.fields, values, files)
+      if (nested.prepareCreateBody) {
+        body = nested.prepareCreateBody(body)
+      }
       return api.create(body)
     },
     onSuccess: () => {

@@ -149,6 +149,12 @@ export function useResourceFieldForm(
 }
 
 export function rowLabel(row: Record<string, unknown>, fields: FieldDef[]): string {
-  const first = fields.find((f) => row[f.key] != null)
+  const preferredKeys = ['descricao_servico', 'descricao', 'razao_social', 'nome']
+  for (const key of preferredKeys) {
+    if (fields.some((f) => f.key === key) && row[key] != null && String(row[key]).trim() !== '') {
+      return String(row[key])
+    }
+  }
+  const first = fields.find((f) => row[f.key] != null && String(row[f.key]).trim() !== '')
   return first ? String(row[first.key]) : String(row.id ?? '')
 }

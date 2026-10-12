@@ -1,3 +1,4 @@
+mod cnas_controller;
 mod certificados_controller;
 mod cnc_controller;
 mod clientes_controller;
@@ -13,6 +14,7 @@ mod lotes_controller;
 mod session_controller;
 mod tributos_controller;
 
+pub use cnas_controller::ApiCnasController;
 pub use certificados_controller::ApiCertificadosController;
 pub use cnc_controller::ApiCncController;
 pub use clientes_controller::ApiClientesController;

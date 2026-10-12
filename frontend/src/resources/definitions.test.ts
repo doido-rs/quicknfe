@@ -9,7 +9,13 @@ describe('resources', () => {
     expect(sidebarKeys).not.toContain('logs-retorno')
     expect(sidebarKeys).not.toContain('municipios')
     expect(sidebarKeys).not.toContain('prestadores')
-    expect(settingsKeys).toEqual(['municipios', 'prestadores', 'clientes', 'intermediarios'])
+    expect(settingsKeys).toEqual([
+      'cnas',
+      'municipios',
+      'prestadores',
+      'clientes',
+      'intermediarios',
+    ])
   })
 
   it('includes core tenant resources', () => {
@@ -86,9 +92,15 @@ describe('resources', () => {
     })
     expect(documentos?.formSections?.[3]).toMatchObject({
       type: 'fields',
-      title: 'Dados extras',
+      title: 'Modelo e situação',
       fieldKeys: ['modelo', 'status', 'lote_id'],
       columns: 1,
     })
+    expect(documentos?.fields.some((f) => f.key === 'ambiente' && f.formOnly)).toBe(true)
+    const itensNested = Array.isArray(documentos?.nested)
+      ? documentos?.nested[0]
+      : documentos?.nested
+    expect(itensNested?.fields.some((f) => f.key === 'descricao_servico')).toBe(true)
+    expect(itensNested?.fields.some((f) => f.key === 'descricao')).toBe(false)
   })
 })

@@ -30,6 +30,13 @@ export function ResourceNewPage() {
   }, [def.key, me?.prestador_ativo, form])
 
   useEffect(() => {
+    if (def.key !== 'documentos') return
+    if (!form.getValues('data_competencia')) {
+      form.setValue('data_competencia', new Date().toISOString().slice(0, 10))
+    }
+  }, [def.key, form])
+
+  useEffect(() => {
     if (def.key !== 'documentos' || !empresaId) return
     const prestadorId = Number(empresaId)
     if (!Number.isFinite(prestadorId)) return

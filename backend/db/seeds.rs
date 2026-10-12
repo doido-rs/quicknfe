@@ -178,6 +178,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         documento_fiscal_id: Set(documento.id),
         numero_item: Set(1),
         descricao: Set("Consultoria em NF-e".into()),
+        descricao_servico: Set(Some("Consultoria em NF-e".into())),
         codigo_ncm: Set(None),
         codigo_tributacao_nacional: Set(None),
         quantidade: Set(dec_frac(1, 0)),

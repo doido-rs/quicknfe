@@ -8,7 +8,7 @@ pub use api::{
     ApiPrestadoresController,
     ApiEventosController, ApiIntermediariosController, ApiItensController, ApiLogsController,
     ApiLotesController,
-    ApiMunicipiosController,
+    ApiCnasController, ApiMunicipiosController,
     ApiSessionController, ApiTributosController,
 };
 pub use hello_controller::HelloController;

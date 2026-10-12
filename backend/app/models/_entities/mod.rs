@@ -4,6 +4,7 @@ pub mod prelude;
 
 pub mod certificados_digitais;
 pub mod clientes;
+pub mod cnas;
 pub mod companies;
 pub mod companies_usuarios;
 pub mod documentos_fiscais;

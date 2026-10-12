@@ -60,6 +60,9 @@ dev: up db-setup ## Backend :3000 + frontend :3001 (hot reload em ambos)
 dev-backend: ## API Doido em http://localhost:3000 (cargo-watch)
 	cd $(BACKEND_DIR) && cargo watch -q -w src -w app -w config -w db -x 'doido server'
 
+dev-worker:
+	cd $(BACKEND_DIR) && cargo watch -q -w src -w app -w config -w db -x 'doido worker'
+
 dev-frontend: ## Vite em http://localhost:3001 (proxy /api → backend)
 	cd $(FRONTEND_DIR) && $(BUN) run dev
 

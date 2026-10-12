@@ -71,6 +71,24 @@ export function buildDocumentoBody(
     body.intermediario_exterior = null
   }
 
+  if (body.modelo == null || String(body.modelo).trim() === '') {
+    body.modelo = values.modelo?.trim() || 'NFSe'
+  }
+
+  const dataEmissaoRaw = values.data_emissao?.trim()
+  if (body.data_emissao == null || String(body.data_emissao).trim() === '') {
+    body.data_emissao = dataEmissaoRaw !== '' ? dataEmissaoRaw : new Date().toISOString()
+  }
+
+  if (body.ambiente == null) body.ambiente = Number(values.ambiente) || 2
+  if (body.tipo_emissao == null) body.tipo_emissao = Number(values.tipo_emissao) || 1
+  if (body.valor_total_servicos_produtos == null) {
+    body.valor_total_servicos_produtos = Number(values.valor_total_servicos_produtos) || 0
+  }
+  if (body.valor_liquido == null) {
+    body.valor_liquido = Number(values.valor_liquido) || 0
+  }
+
   return body
 }
 

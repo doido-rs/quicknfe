@@ -44,4 +44,22 @@ describe('buildDocumentoBody', () => {
     expect(body.cliente_id).toBeNull()
     expect(body.tomador_exterior).toMatchObject({ razao_social: 'ACME EU', pais: 'USA' })
   })
+
+  it('fills API defaults for hidden documento fields', () => {
+    const body = buildDocumentoBody(fields, {
+      tomador_localidade: 'nao_informado',
+      intermediario_localidade: 'nao_informado',
+      modelo: 'NFSe',
+      ambiente: '2',
+      tipo_emissao: '1',
+      valor_total_servicos_produtos: '0',
+      valor_liquido: '0',
+    })
+    expect(body.modelo).toBe('NFSe')
+    expect(body.ambiente).toBe(2)
+    expect(body.tipo_emissao).toBe(1)
+    expect(body.valor_liquido).toBe(0)
+    expect(typeof body.data_emissao).toBe('string')
+    expect(String(body.data_emissao)).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
 })

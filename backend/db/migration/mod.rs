@@ -15,6 +15,8 @@ mod m20261011180000_documento_serie_numero_automatico;
 mod m20261011210000_documento_partes_localidade;
 mod m20261011230000_documento_municipios;
 mod m20261012010000_create_paises;
+mod m20261012120000_create_cnas;
+mod m20261012140000_item_descricao_servico;
 // @generated-migrations-mod — `doido generate model` inserts `mod` declarations above this line. Do not remove.
 
 pub struct Migrator;
@@ -40,6 +42,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20261011210000_documento_partes_localidade::Migration),
             Box::new(m20261011230000_documento_municipios::Migration),
             Box::new(m20261012010000_create_paises::Migration),
+            Box::new(m20261012120000_create_cnas::Migration),
+            Box::new(m20261012140000_item_descricao_servico::Migration),
             // @generated-migrations-list
         ]
     }

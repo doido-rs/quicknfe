@@ -1551,10 +1551,19 @@ components:
           type: integer
         descricao:
           type: string
+        descricao_servico:
+          type: string
+          description: Descrição do serviço ou fornecimento (NFSe)
         codigo_ncm:
           type: string
+        cna_id:
+          type: integer
+          nullable: true
+          description: CNA — código de tributação nacional
         codigo_tributacao_nacional:
           type: string
+          readOnly: true
+          description: Preenchido a partir do CNA selecionado
         quantidade:
           type: number
         valor_unitario:

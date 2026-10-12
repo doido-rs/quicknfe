@@ -17,8 +17,11 @@ pub struct Model {
     pub numero_item: i32,
     #[sea_orm(column_type = "Text")]
     pub descricao: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub descricao_servico: Option<String>,
     pub codigo_ncm: Option<String>,
     pub codigo_tributacao_nacional: Option<String>,
+    pub cna_id: Option<i64>,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]
     pub quantidade: Decimal,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]
@@ -32,6 +35,14 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
+        belongs_to = "super::cnas::Entity",
+        from = "Column::CnaId",
+        to = "super::cnas::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Cnas,
+    #[sea_orm(
         belongs_to = "super::documentos_fiscais::Entity",
         from = "Column::DocumentoFiscalId",
         to = "super::documentos_fiscais::Column::Id",
@@ -41,6 +52,12 @@ pub enum Relation {
     DocumentosFiscais,
     #[sea_orm(has_many = "super::tributos_item::Entity")]
     TributosItem,
+}
+
+impl Related<super::cnas::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Cnas.def()
+    }
 }
 
 impl Related<super::documentos_fiscais::Entity> for Entity {
