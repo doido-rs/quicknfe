@@ -70,6 +70,13 @@ pub struct DocumentoForm {
     pub issqn_aliquota: Option<Decimal>,
     pub issqn_base_calculo: Option<Decimal>,
     pub issqn_valor: Option<Decimal>,
+    #[serde(default = "default_cst_pis_cofins")]
+    pub cst_pis_cofins: String,
+    #[serde(default = "default_tp_ret_pis_cofins_csll")]
+    pub tp_ret_pis_cofins_csll: String,
+    pub valor_irrf: Option<Decimal>,
+    pub valor_contrib_sociais_retidas: Option<Decimal>,
+    pub valor_contrib_previdenciaria_retida: Option<Decimal>,
     pub xml_assinado: Option<String>,
     pub xml_processado: Option<String>,
     pub numero_doc_responsabilidade_tecnica: Option<String>,
@@ -95,6 +102,14 @@ fn default_trib_issqn() -> String {
 }
 
 fn default_reg_esp_trib_issqn() -> String {
+    "0".into()
+}
+
+fn default_cst_pis_cofins() -> String {
+    "00".into()
+}
+
+fn default_tp_ret_pis_cofins_csll() -> String {
     "0".into()
 }
 
@@ -308,6 +323,11 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.issqn_aliquota = Set(form.issqn_aliquota);
     record.issqn_base_calculo = Set(form.issqn_base_calculo);
     record.issqn_valor = Set(form.issqn_valor);
+    record.cst_pis_cofins = Set(form.cst_pis_cofins.clone());
+    record.tp_ret_pis_cofins_csll = Set(form.tp_ret_pis_cofins_csll.clone());
+    record.valor_irrf = Set(form.valor_irrf);
+    record.valor_contrib_sociais_retidas = Set(form.valor_contrib_sociais_retidas);
+    record.valor_contrib_previdenciaria_retida = Set(form.valor_contrib_previdenciaria_retida);
     record.xml_assinado = Set(form.xml_assinado.clone());
     record.xml_processado = Set(form.xml_processado.clone());
     record.numero_doc_responsabilidade_tecnica =

@@ -20,6 +20,7 @@ mod m20261012140000_item_descricao_servico;
 mod m20261012160000_documento_info_complementares;
 mod m20261012170000_documento_valores_fornecimento;
 mod m20261012180000_documento_tributacao_municipal;
+mod m20261012190000_documento_tributacao_federal;
 // @generated-migrations-mod — `doido generate model` inserts `mod` declarations above this line. Do not remove.
 
 pub struct Migrator;
@@ -50,6 +51,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261012160000_documento_info_complementares::Migration),
             Box::new(m20261012170000_documento_valores_fornecimento::Migration),
             Box::new(m20261012180000_documento_tributacao_municipal::Migration),
+            Box::new(m20261012190000_documento_tributacao_federal::Migration),
             // @generated-migrations-list
         ]
     }

@@ -115,6 +115,13 @@ export function buildDocumentoBody(
     body.reg_esp_trib_issqn = values.reg_esp_trib_issqn?.trim() || '0'
   }
 
+  if (body.cst_pis_cofins == null || String(body.cst_pis_cofins).trim() === '') {
+    body.cst_pis_cofins = values.cst_pis_cofins?.trim() || '00'
+  }
+  if (body.tp_ret_pis_cofins_csll == null || String(body.tp_ret_pis_cofins_csll).trim() === '') {
+    body.tp_ret_pis_cofins_csll = values.tp_ret_pis_cofins_csll?.trim() || '0'
+  }
+
   return body
 }
 

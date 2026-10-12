@@ -62,6 +62,14 @@ pub struct Model {
     pub issqn_base_calculo: Option<Decimal>,
     #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
     pub issqn_valor: Option<Decimal>,
+    pub cst_pis_cofins: String,
+    pub tp_ret_pis_cofins_csll: String,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
+    pub valor_irrf: Option<Decimal>,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
+    pub valor_contrib_sociais_retidas: Option<Decimal>,
+    #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
+    pub valor_contrib_previdenciaria_retida: Option<Decimal>,
     #[sea_orm(column_type = "Text", nullable)]
     pub xml_assinado: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]

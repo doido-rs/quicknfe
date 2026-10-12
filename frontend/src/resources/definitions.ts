@@ -4,6 +4,10 @@ import {
   LOCALIDADE_PARTE_OPTIONS,
 } from '@/lib/documentoParteConstants'
 import {
+  CST_PIS_COFINS_OPTIONS,
+  TP_RET_PIS_COFINS_CSLL_OPTIONS,
+} from '@/lib/documentoTributacaoFederal'
+import {
   REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS,
   TRIBUTACAO_ISSQN_OPTIONS,
 } from '@/lib/documentoTributacaoIssqn'
@@ -338,6 +342,37 @@ export const resources: ResourceDef[] = [
       { key: 'issqn_aliquota', label: 'Alíquota (%)', type: 'number', formOnly: true },
       { key: 'issqn_base_calculo', label: 'BC ISSQN (R$)', type: 'number', formOnly: true },
       { key: 'issqn_valor', label: 'Valor ISSQN (R$)', type: 'number', formOnly: true },
+      {
+        key: 'cst_pis_cofins',
+        label: 'Situação Tributária do PIS/COFINS',
+        type: 'enum',
+        enumOptions: [...CST_PIS_COFINS_OPTIONS],
+        required: true,
+        defaultValue: '00',
+        formOnly: true,
+      },
+      {
+        key: 'tp_ret_pis_cofins_csll',
+        label: 'Tipo de retenção do PIS/COFINS/CSLL',
+        type: 'enum',
+        enumOptions: [...TP_RET_PIS_COFINS_CSLL_OPTIONS],
+        required: true,
+        defaultValue: '0',
+        formOnly: true,
+      },
+      { key: 'valor_irrf', label: 'IRRF (R$)', type: 'number', formOnly: true },
+      {
+        key: 'valor_contrib_sociais_retidas',
+        label: 'Contribuições Sociais — Retidas (R$)',
+        type: 'number',
+        formOnly: true,
+      },
+      {
+        key: 'valor_contrib_previdenciaria_retida',
+        label: 'Contribuição Previdenciária — Retida (R$)',
+        type: 'number',
+        formOnly: true,
+      },
     ],
     formSections: [
       {
@@ -386,6 +421,18 @@ export const resources: ResourceDef[] = [
           'issqn_aliquota',
           'issqn_base_calculo',
           'issqn_valor',
+        ],
+        columns: 2,
+      },
+      {
+        type: 'fields',
+        title: 'Tributação Federal',
+        fieldKeys: [
+          'cst_pis_cofins',
+          'tp_ret_pis_cofins_csll',
+          'valor_irrf',
+          'valor_contrib_sociais_retidas',
+          'valor_contrib_previdenciaria_retida',
         ],
         columns: 2,
       },

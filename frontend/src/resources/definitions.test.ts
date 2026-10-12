@@ -69,7 +69,7 @@ describe('resources', () => {
 
   it('groups nota fiscal form: identificação, prestador|partes, extras', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
-    expect(documentos?.formSections).toHaveLength(7)
+    expect(documentos?.formSections).toHaveLength(8)
     expect(documentos?.formSections?.[0]).toMatchObject({
       type: 'identificacao-nota',
       competenciaFieldKey: 'data_competencia',
@@ -107,6 +107,20 @@ describe('resources', () => {
     })
     expect(documentos?.formSections?.[5]).toMatchObject({
       type: 'fields',
+      title: 'Tributação Federal',
+      fieldKeys: [
+        'cst_pis_cofins',
+        'tp_ret_pis_cofins_csll',
+        'valor_irrf',
+        'valor_contrib_sociais_retidas',
+        'valor_contrib_previdenciaria_retida',
+      ],
+    })
+    const cstField = documentos?.fields.find((f) => f.key === 'cst_pis_cofins')
+    expect(cstField?.type).toBe('enum')
+    expect(cstField?.enumOptions?.length).toBeGreaterThan(0)
+    expect(documentos?.formSections?.[6]).toMatchObject({
+      type: 'fields',
       title: 'Informações complementares',
       fieldKeys: [
         'numero_doc_responsabilidade_tecnica',
@@ -115,7 +129,7 @@ describe('resources', () => {
         'numero_pedido_ordem_b2b',
       ],
     })
-    expect(documentos?.formSections?.[6]).toMatchObject({
+    expect(documentos?.formSections?.[7]).toMatchObject({
       type: 'fields',
       title: 'Modelo',
       fieldKeys: ['modelo'],
