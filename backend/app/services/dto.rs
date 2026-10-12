@@ -333,6 +333,10 @@ pub struct DocumentoListDto {
     pub protocolo_autorizacao: Option<String>,
     pub valor_total_servicos_produtos: Decimal,
     pub valor_liquido: Decimal,
+    pub numero_doc_responsabilidade_tecnica: Option<String>,
+    pub documento_referencia: Option<String>,
+    pub informacoes_complementares: Option<String>,
+    pub numero_pedido_ordem_b2b: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -371,6 +375,10 @@ impl From<Documento> for DocumentoListDto {
             protocolo_autorizacao: d.protocolo_autorizacao,
             valor_total_servicos_produtos: d.valor_total_servicos_produtos,
             valor_liquido: d.valor_liquido,
+            numero_doc_responsabilidade_tecnica: d.numero_doc_responsabilidade_tecnica,
+            documento_referencia: d.documento_referencia,
+            informacoes_complementares: d.informacoes_complementares,
+            numero_pedido_ordem_b2b: d.numero_pedido_ordem_b2b,
         }
     }
 }

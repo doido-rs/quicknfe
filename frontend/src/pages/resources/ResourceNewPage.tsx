@@ -104,6 +104,7 @@ export function ResourceNewPage() {
             }}
             submitLabel="Criar"
             cancelLink={resourceListTo(def)}
+            actionsAlign={def.key === 'documentos' ? 'end' : undefined}
           />
         </CardContent>
       </Card>

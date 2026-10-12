@@ -84,6 +84,7 @@ export function ResourceEditPage() {
             }}
             submitLabel="Salvar"
             cancelLink={resourceShowTo(def, recordId)}
+            actionsAlign={def.key === 'documentos' ? 'end' : undefined}
           />
           {updateMutation.isSuccess && (
             <p className="mt-4 text-sm text-muted-foreground">Alterações salvas.</p>

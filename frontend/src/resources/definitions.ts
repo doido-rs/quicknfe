@@ -195,7 +195,6 @@ export const resources: ResourceDef[] = [
         key: 'status',
         label: 'Situação',
         type: 'enum',
-        required: true,
         defaultValue: 'novo',
         enumOptions: [
           { value: 'novo', label: 'Novo' },
@@ -205,11 +204,22 @@ export const resources: ResourceDef[] = [
         ],
       },
       {
-        key: 'lote_id',
-        label: 'Lote',
-        type: 'relation',
-        relationResource: 'lotes',
-        relationScopeFromField: 'empresa_id',
+        key: 'numero_doc_responsabilidade_tecnica',
+        label: 'Número do documento de responsabilidade técnica',
+        formOnly: true,
+      },
+      { key: 'documento_referencia', label: 'Documento de referência', formOnly: true },
+      {
+        key: 'informacoes_complementares',
+        label: 'Informações complementares',
+        type: 'textarea',
+        formOnly: true,
+      },
+      {
+        key: 'numero_pedido_ordem_b2b',
+        label:
+          'Número do Pedido, Ordem de Compra, Ordem de Serviço ou Projeto que autorize a prestação do serviço/fornecimento em operações B2B',
+        formOnly: true,
       },
       {
         key: 'ambiente',
@@ -266,8 +276,19 @@ export const resources: ResourceDef[] = [
       },
       {
         type: 'fields',
-        title: 'Modelo e situação',
-        fieldKeys: ['modelo', 'status', 'lote_id'],
+        title: 'Informações complementares',
+        fieldKeys: [
+          'numero_doc_responsabilidade_tecnica',
+          'documento_referencia',
+          'informacoes_complementares',
+          'numero_pedido_ordem_b2b',
+        ],
+        columns: 2,
+      },
+      {
+        type: 'fields',
+        title: 'Modelo',
+        fieldKeys: ['modelo'],
         columns: 1,
       },
     ],

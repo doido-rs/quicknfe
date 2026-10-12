@@ -1435,6 +1435,20 @@ components:
           type: string
         xml_processado:
           type: string
+        numero_doc_responsabilidade_tecnica:
+          type: string
+          nullable: true
+          description: Número do documento de responsabilidade técnica
+        documento_referencia:
+          type: string
+          nullable: true
+        informacoes_complementares:
+          type: string
+          nullable: true
+        numero_pedido_ordem_b2b:
+          type: string
+          nullable: true
+          description: Pedido, ordem de compra, ordem de serviço ou projeto (B2B)
     ParteExteriorDto:
       type: object
       required:
@@ -1513,6 +1527,18 @@ components:
           type: number
         valor_liquido:
           type: number
+        numero_doc_responsabilidade_tecnica:
+          type: string
+          nullable: true
+        documento_referencia:
+          type: string
+          nullable: true
+        informacoes_complementares:
+          type: string
+          nullable: true
+        numero_pedido_ordem_b2b:
+          type: string
+          nullable: true
     DocumentoDto:
       allOf:
         - $ref: '#/components/schemas/DocumentoListDto'

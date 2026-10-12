@@ -242,6 +242,7 @@ export function ResourceFormFields({
   submitLabel,
   cancelLink,
   onCancel,
+  actionsAlign,
 }: {
   fields: FieldDef[]
   formSections?: FormSectionDef[]
@@ -251,26 +252,35 @@ export function ResourceFormFields({
   submitLabel: string
   cancelLink?: ResourceRouteLink
   onCancel?: () => void
+  /** Alinha Criar/Cancelar à direita (ex.: notas fiscais). */
+  actionsAlign?: 'end'
 }) {
   const {
     handleSubmit,
     formState: { isSubmitting },
   } = form
 
+  const cancelButton = cancelLink ? (
+    <Button type="button" variant="outline" asChild>
+      <Link {...cancelLink}>Cancelar</Link>
+    </Button>
+  ) : onCancel ? (
+    <Button type="button" variant="outline" onClick={onCancel}>
+      Cancelar
+    </Button>
+  ) : null
+
   const actions = (
-    <div className="flex flex-wrap gap-2">
+    <div
+      className={
+        actionsAlign === 'end' ? 'flex flex-wrap justify-end gap-2' : 'flex flex-wrap gap-2'
+      }
+    >
+      {actionsAlign === 'end' ? cancelButton : null}
       <Button type="submit" disabled={isSubmitting}>
         {submitLabel}
       </Button>
-      {cancelLink ? (
-        <Button type="button" variant="outline" asChild>
-          <Link {...cancelLink}>Cancelar</Link>
-        </Button>
-      ) : onCancel ? (
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-      ) : null}
+      {actionsAlign === 'end' ? null : cancelButton}
     </div>
   )
 

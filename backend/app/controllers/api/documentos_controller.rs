@@ -52,6 +52,10 @@ pub struct DocumentoForm {
     pub valor_liquido: Decimal,
     pub xml_assinado: Option<String>,
     pub xml_processado: Option<String>,
+    pub numero_doc_responsabilidade_tecnica: Option<String>,
+    pub documento_referencia: Option<String>,
+    pub informacoes_complementares: Option<String>,
+    pub numero_pedido_ordem_b2b: Option<String>,
 }
 
 fn default_tomador_localidade() -> String {
@@ -245,6 +249,11 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.valor_liquido = Set(form.valor_liquido);
     record.xml_assinado = Set(form.xml_assinado.clone());
     record.xml_processado = Set(form.xml_processado.clone());
+    record.numero_doc_responsabilidade_tecnica =
+        Set(form.numero_doc_responsabilidade_tecnica.clone());
+    record.documento_referencia = Set(form.documento_referencia.clone());
+    record.informacoes_complementares = Set(form.informacoes_complementares.clone());
+    record.numero_pedido_ordem_b2b = Set(form.numero_pedido_ordem_b2b.clone());
     Ok(())
 }
 

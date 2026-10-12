@@ -89,6 +89,10 @@ export function buildDocumentoBody(
     body.valor_liquido = Number(values.valor_liquido) || 0
   }
 
+  if (body.status == null || String(body.status).trim() === '') {
+    body.status = values.status?.trim() || 'novo'
+  }
+
   return body
 }
 

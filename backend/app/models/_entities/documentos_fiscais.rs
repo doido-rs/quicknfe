@@ -48,6 +48,14 @@ pub struct Model {
     pub xml_assinado: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub xml_processado: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub numero_doc_responsabilidade_tecnica: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub documento_referencia: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub informacoes_complementares: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub numero_pedido_ordem_b2b: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

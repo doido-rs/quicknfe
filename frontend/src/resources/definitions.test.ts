@@ -69,7 +69,7 @@ describe('resources', () => {
 
   it('groups nota fiscal form: identificação, prestador|partes, extras', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
-    expect(documentos?.formSections).toHaveLength(4)
+    expect(documentos?.formSections).toHaveLength(5)
     expect(documentos?.formSections?.[0]).toMatchObject({
       type: 'identificacao-nota',
       competenciaFieldKey: 'data_competencia',
@@ -92,10 +92,26 @@ describe('resources', () => {
     })
     expect(documentos?.formSections?.[3]).toMatchObject({
       type: 'fields',
-      title: 'Modelo e situação',
-      fieldKeys: ['modelo', 'status', 'lote_id'],
+      title: 'Informações complementares',
+      fieldKeys: [
+        'numero_doc_responsabilidade_tecnica',
+        'documento_referencia',
+        'informacoes_complementares',
+        'numero_pedido_ordem_b2b',
+      ],
+    })
+    expect(documentos?.formSections?.[4]).toMatchObject({
+      type: 'fields',
+      title: 'Modelo',
+      fieldKeys: ['modelo'],
       columns: 1,
     })
+    expect(documentos?.fields.some((f) => f.key === 'lote_id')).toBe(false)
+    expect(
+      documentos?.formSections?.every(
+        (s) => s.type !== 'fields' || !s.fieldKeys.includes('status'),
+      ),
+    ).toBe(true)
     expect(documentos?.fields.some((f) => f.key === 'ambiente' && f.formOnly)).toBe(true)
     const itensNested = Array.isArray(documentos?.nested)
       ? documentos?.nested[0]
