@@ -18,6 +18,7 @@ pub use super::oauth_access_tokens::Entity as OauthAccessTokens;
 pub use super::oauth_authorization_codes::Entity as OauthAuthorizationCodes;
 pub use super::oauth_clients::Entity as OauthClients;
 pub use super::oauth_mcp_sessions::Entity as OauthMcpSessions;
+pub use super::paises::Entity as Paises;
 pub use super::storage_attachments::Entity as StorageAttachments;
 pub use super::storage_blobs::Entity as StorageBlobs;
 pub use super::storage_variant_records::Entity as StorageVariantRecords;

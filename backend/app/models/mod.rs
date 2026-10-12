@@ -17,6 +17,7 @@ pub mod intermediario;
 pub mod item_documento_fiscal;
 pub mod log_mensagem_retorno;
 pub mod municipio;
+pub mod pais;
 pub mod lote_transmissao;
 pub mod tributo_item;
 pub mod storage_attachment;

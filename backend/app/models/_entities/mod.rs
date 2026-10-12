@@ -18,6 +18,7 @@ pub mod oauth_access_tokens;
 pub mod oauth_authorization_codes;
 pub mod oauth_clients;
 pub mod oauth_mcp_sessions;
+pub mod paises;
 pub mod storage_attachments;
 pub mod storage_blobs;
 pub mod storage_variant_records;
