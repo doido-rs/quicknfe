@@ -19,6 +19,8 @@ export function ResourceNewPage() {
   const { me } = useAuth()
   const form = useResourceFieldForm(def.fields)
 
+  const empresaId = form.watch('empresa_id')
+
   useEffect(() => {
     if (def.key !== 'documentos' || !me?.prestador_ativo) return
     const current = form.getValues('empresa_id')
@@ -26,6 +28,25 @@ export function ResourceNewPage() {
       form.setValue('empresa_id', String(me.prestador_ativo.id))
     }
   }, [def.key, me?.prestador_ativo, form])
+
+  useEffect(() => {
+    if (def.key !== 'documentos' || !empresaId) return
+    const prestadorId = Number(empresaId)
+    if (!Number.isFinite(prestadorId)) return
+
+    const prestadorApi = resourceApi<{ municipio_id?: number }>('/api/prestadores')
+    void prestadorApi.get(prestadorId).then((prestador) => {
+      const municipioId = prestador.municipio_id
+      if (municipioId == null) return
+      const asString = String(municipioId)
+      if (!form.getValues('municipio_emissao_id')) {
+        form.setValue('municipio_emissao_id', asString)
+      }
+      if (!form.getValues('municipio_prestacao_id')) {
+        form.setValue('municipio_prestacao_id', asString)
+      }
+    })
+  }, [def.key, empresaId, form])
 
   if (def.allowCreate === false) {
     return <Navigate {...resourceListTo(def)} replace />

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { resourceApi } from '@/api/client'
+import { DocumentoMunicipiosShowCard } from '@/components/resources/DocumentoMunicipiosShowCard'
 import { DocumentoPartesShowCard } from '@/components/resources/DocumentoPartesShowCard'
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
@@ -98,6 +99,7 @@ export function ResourceShowPage() {
       </Card>
 
       {def.key === 'documentos' && <DocumentoPartesShowCard row={row} />}
+      {def.key === 'documentos' && <DocumentoMunicipiosShowCard row={row} />}
 
       {resourceNesteds(def).map((nested) => (
         <NestedResourcePanel

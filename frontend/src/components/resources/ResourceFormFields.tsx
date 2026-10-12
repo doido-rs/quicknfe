@@ -129,6 +129,42 @@ function FormSectionBlock({
     )
   }
 
+  if (section.type === 'municipios-nota') {
+    const emissao = fieldsByKeys(allFields, [section.emissaoFieldKey])
+    const prestacao = fieldsByKeys(allFields, [section.prestacaoFieldKey])
+    return (
+      <section
+        className="rounded-lg border bg-card p-4 md:p-6"
+        aria-labelledby={`form-section-${sectionIndex}-municipios`}
+      >
+        <h2
+          id={`form-section-${sectionIndex}-municipios`}
+          className="mb-4 text-lg font-semibold tracking-tight"
+        >
+          {section.title}
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          {emissao.map((field) => (
+            <ResourceFieldInput
+              key={field.key}
+              field={field}
+              form={form}
+              idPrefix={`s${sectionIndex}-mun-em`}
+            />
+          ))}
+          {prestacao.map((field) => (
+            <ResourceFieldInput
+              key={field.key}
+              field={field}
+              form={form}
+              idPrefix={`s${sectionIndex}-mun-pr`}
+            />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
   if (section.type === 'prestador-partes-row') {
     const prestadorFields = fieldsByKeys(allFields, [section.prestadorFieldKey])
     return (

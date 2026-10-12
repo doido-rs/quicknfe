@@ -63,7 +63,7 @@ describe('resources', () => {
 
   it('groups nota fiscal form: identificação, prestador|partes, extras', () => {
     const documentos = resources.find((r) => r.key === 'documentos')
-    expect(documentos?.formSections).toHaveLength(3)
+    expect(documentos?.formSections).toHaveLength(4)
     expect(documentos?.formSections?.[0]).toMatchObject({
       type: 'identificacao-nota',
       competenciaFieldKey: 'data_competencia',
@@ -80,6 +80,11 @@ describe('resources', () => {
     expect(documentos?.fields.some((f) => f.key === 'tomador_exterior_pais')).toBe(true)
     expect(documentos?.fields.some((f) => f.key === 'data_competencia')).toBe(true)
     expect(documentos?.formSections?.[2]).toMatchObject({
+      type: 'municipios-nota',
+      emissaoFieldKey: 'municipio_emissao_id',
+      prestacaoFieldKey: 'municipio_prestacao_id',
+    })
+    expect(documentos?.formSections?.[3]).toMatchObject({
       type: 'fields',
       title: 'Dados extras',
       fieldKeys: ['modelo', 'status', 'lote_id'],

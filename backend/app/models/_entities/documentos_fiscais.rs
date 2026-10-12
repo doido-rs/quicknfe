@@ -37,7 +37,8 @@ pub struct Model {
     pub data_emissao: DateTimeUtc,
     pub data_competencia: Option<Date>,
     pub serie_numero_automatico: i8,
-    pub codigo_municipio_emissao: String,
+    pub municipio_emissao_id: i64,
+    pub municipio_prestacao_id: i64,
     pub protocolo_autorizacao: Option<String>,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]
     pub valor_total_servicos_produtos: Decimal,
@@ -89,6 +90,22 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     LotesTransmissao,
+    #[sea_orm(
+        belongs_to = "super::municipios::Entity",
+        from = "Column::MunicipioEmissaoId",
+        to = "super::municipios::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Municipios2,
+    #[sea_orm(
+        belongs_to = "super::municipios::Entity",
+        from = "Column::MunicipioPrestacaoId",
+        to = "super::municipios::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Municipios1,
 }
 
 impl Related<super::clientes::Entity> for Entity {

@@ -13,6 +13,7 @@ mod m20261010180000_create_municipios;
 mod m20261011140000_regime_tributario_enum;
 mod m20261011180000_documento_serie_numero_automatico;
 mod m20261011210000_documento_partes_localidade;
+mod m20261011230000_documento_municipios;
 // @generated-migrations-mod — `doido generate model` inserts `mod` declarations above this line. Do not remove.
 
 pub struct Migrator;
@@ -36,6 +37,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261011140000_regime_tributario_enum::Migration),
             Box::new(m20261011180000_documento_serie_numero_automatico::Migration),
             Box::new(m20261011210000_documento_partes_localidade::Migration),
+            Box::new(m20261011230000_documento_municipios::Migration),
             // @generated-migrations-list
         ]
     }

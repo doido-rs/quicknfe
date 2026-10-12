@@ -12,6 +12,7 @@ use crate::services::dto::{
     DocumentoDto, DocumentoListDto, ParteExteriorDto, TransmitirDocumentoResponse,
 };
 use crate::services::nfse::{transmitir_documento, TransmitirParams};
+use crate::services::municipio::require_municipio;
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::tenant_scope;
 
@@ -44,7 +45,8 @@ pub struct DocumentoForm {
     pub data_competencia: Option<NaiveDate>,
     #[serde(default)]
     pub serie_numero_automatico: bool,
-    pub codigo_municipio_emissao: String,
+    pub municipio_emissao_id: i64,
+    pub municipio_prestacao_id: i64,
     pub protocolo_autorizacao: Option<String>,
     pub valor_total_servicos_produtos: Decimal,
     pub valor_liquido: Decimal,
@@ -148,6 +150,8 @@ async fn validate_refs(
     if let Some(lid) = form.lote_id {
         tenant_scope::ensure_lote_belongs(db, empresa_id, lid).await?;
     }
+    require_municipio(db, form.municipio_emissao_id).await?;
+    require_municipio(db, form.municipio_prestacao_id).await?;
     Ok(())
 }
 
@@ -234,7 +238,8 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.data_emissao = Set(form.data_emissao);
     record.data_competencia = Set(form.data_competencia);
     record.serie_numero_automatico = Set(i8::from(form.serie_numero_automatico));
-    record.codigo_municipio_emissao = Set(form.codigo_municipio_emissao.clone());
+    record.municipio_emissao_id = Set(form.municipio_emissao_id);
+    record.municipio_prestacao_id = Set(form.municipio_prestacao_id);
     record.protocolo_autorizacao = Set(form.protocolo_autorizacao.clone());
     record.valor_total_servicos_produtos = Set(form.valor_total_servicos_produtos);
     record.valor_liquido = Set(form.valor_liquido);

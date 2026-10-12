@@ -87,6 +87,12 @@ export type FormSectionDef =
       partesLocalidade?: boolean
       partesFieldKeys?: string[]
     }
+  | {
+      type: 'municipios-nota'
+      title: string
+      emissaoFieldKey: string
+      prestacaoFieldKey: string
+    }
   | { type: 'fields'; title: string; fieldKeys: string[]; columns?: 1 | 2 }
 
 export type MenuPlacement = 'sidebar' | 'settings' | 'none'
@@ -152,6 +158,22 @@ export const resources: ResourceDef[] = [
         formOnly: true,
       },
       ...documentoParteLocalidadeFields(),
+      {
+        key: 'municipio_emissao_id',
+        label: 'Município de emissão da nota',
+        type: 'relation',
+        relationResource: 'municipios',
+        required: true,
+        formOnly: true,
+      },
+      {
+        key: 'municipio_prestacao_id',
+        label: 'Município de prestação do serviço',
+        type: 'relation',
+        relationResource: 'municipios',
+        required: true,
+        formOnly: true,
+      },
       { key: 'modelo', label: 'Modelo', required: true },
       {
         key: 'data_competencia',
@@ -192,6 +214,12 @@ export const resources: ResourceDef[] = [
         prestadorFieldKey: 'empresa_id',
         partesTitle: 'Tomador e intermediário',
         partesLocalidade: true,
+      },
+      {
+        type: 'municipios-nota',
+        title: 'Municípios da nota',
+        emissaoFieldKey: 'municipio_emissao_id',
+        prestacaoFieldKey: 'municipio_prestacao_id',
       },
       {
         type: 'fields',

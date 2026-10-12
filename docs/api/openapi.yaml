@@ -1369,7 +1369,8 @@ components:
         - tipo_emissao
         - status
         - data_emissao
-        - codigo_municipio_emissao
+        - municipio_emissao_id
+        - municipio_prestacao_id
         - valor_total_servicos_produtos
         - valor_liquido
       properties:
@@ -1418,8 +1419,12 @@ components:
         data_competencia:
           type: string
           format: date
-        codigo_municipio_emissao:
-          type: string
+        municipio_emissao_id:
+          type: integer
+          description: Município (IBGE) em que a nota foi emitida
+        municipio_prestacao_id:
+          type: integer
+          description: Município em que o serviço foi prestado
         protocolo_autorizacao:
           type: string
         valor_total_servicos_produtos:
@@ -1479,6 +1484,10 @@ components:
         intermediario_id:
           type: integer
           nullable: true
+        municipio_emissao_id:
+          type: integer
+        municipio_prestacao_id:
+          type: integer
         tomador_localidade:
           type: string
         intermediario_localidade:
