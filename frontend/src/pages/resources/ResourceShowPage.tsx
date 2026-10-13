@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { resourceApi } from '@/api/client'
+import { PageTitle } from '@/components/layout/PageTitle'
 import { DocumentoInformacoesComplementaresShowCard } from '@/components/resources/DocumentoInformacoesComplementaresShowCard'
 import { DocumentoTributacaoFederalShowCard } from '@/components/resources/DocumentoTributacaoFederalShowCard'
 import { DocumentoTributacaoMunicipalShowCard } from '@/components/resources/DocumentoTributacaoMunicipalShowCard'
@@ -48,7 +49,12 @@ export function ResourceShowPage() {
   }
 
   if (isLoading) {
-    return <Skeleton className="h-48 w-full" />
+    return (
+      <>
+        <PageTitle>{def.title}</PageTitle>
+        <Skeleton className="h-48 w-full" />
+      </>
+    )
   }
 
   if (isError || !row) {
@@ -57,12 +63,12 @@ export function ResourceShowPage() {
 
   return (
     <div className="space-y-6">
+      <PageTitle>{def.title}</PageTitle>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
             <Link {...resourceListTo(def)}>← Voltar à lista</Link>
           </Button>
-          <h1 className="text-2xl font-semibold tracking-tight">{def.title}</h1>
           <p className="text-sm text-muted-foreground">
             ID {String(row.id)} · {rowLabel(row, def.fields)}
           </p>

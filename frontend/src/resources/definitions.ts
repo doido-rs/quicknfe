@@ -564,7 +564,6 @@ export const resources: ResourceDef[] = [
     key: 'prestadores',
     title: 'Prestadores de serviço',
     menuSection: 'Cadastros',
-    menuPlacement: 'settings',
     path: '/api/prestadores',
     cncLookup: {
       inscricaoFieldKey: 'cpf_cnpj',

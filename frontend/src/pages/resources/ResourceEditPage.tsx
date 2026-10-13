@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { resourceApi } from '@/api/client'
+import { PageTitle } from '@/components/layout/PageTitle'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,7 +56,12 @@ export function ResourceEditPage() {
   }
 
   if (isLoading) {
-    return <Skeleton className="h-48 w-full" />
+    return (
+      <>
+        <PageTitle>{`Editar — ${def.title}`}</PageTitle>
+        <Skeleton className="h-48 w-full" />
+      </>
+    )
   }
 
   if (isError || !row) {
@@ -64,10 +70,10 @@ export function ResourceEditPage() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>{`Editar — ${def.title}`}</PageTitle>
       <Button variant="ghost" size="sm" asChild className="-ml-2">
         <Link {...resourceShowTo(def, recordId)}>← Voltar ao registro</Link>
       </Button>
-      <h1 className="text-2xl font-semibold tracking-tight">Editar — {def.title}</h1>
 
       <Card>
         <CardHeader>

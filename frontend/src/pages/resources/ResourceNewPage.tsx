@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useAuth } from '@/auth/AuthContext'
 import { resourceApi } from '@/api/client'
+import { PageTitle } from '@/components/layout/PageTitle'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -84,10 +85,10 @@ export function ResourceNewPage() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>{`Novo — ${def.title}`}</PageTitle>
       <Button variant="ghost" size="sm" asChild className="-ml-2">
         <Link {...resourceListTo(def)}>← Voltar à lista</Link>
       </Button>
-      <h1 className="text-2xl font-semibold tracking-tight">Novo — {def.title}</h1>
 
       <Card>
         <CardHeader>

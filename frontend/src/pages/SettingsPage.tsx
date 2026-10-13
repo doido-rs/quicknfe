@@ -8,6 +8,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import { PageTitle } from '@/components/layout/PageTitle'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { resourceListTo } from '@/lib/resourcePaths'
 import { settingsResources } from '@/resources/definitions'
@@ -25,12 +26,10 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cadastros de prestadores, tomadores, intermediários, CNA e municípios (IBGE).
-        </p>
-      </div>
+      <PageTitle>Configurações</PageTitle>
+      <p className="text-sm text-muted-foreground">
+        Cadastros de tomadores, intermediários, CNA e municípios (IBGE).
+      </p>
       <ul className="grid gap-3">
         {items.map((r) => {
           const Icon = settingsIcons[r.key]

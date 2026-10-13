@@ -8,14 +8,8 @@ describe('resources', () => {
     expect(sidebarKeys).toContain('documentos')
     expect(sidebarKeys).not.toContain('logs-retorno')
     expect(sidebarKeys).not.toContain('municipios')
-    expect(sidebarKeys).not.toContain('prestadores')
-    expect(settingsKeys).toEqual([
-      'cnas',
-      'municipios',
-      'prestadores',
-      'clientes',
-      'intermediarios',
-    ])
+    expect(sidebarKeys).toContain('prestadores')
+    expect(settingsKeys).toEqual(['cnas', 'municipios', 'clientes', 'intermediarios'])
   })
 
   it('includes core tenant resources', () => {

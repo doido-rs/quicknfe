@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { FileText, TrendingUp, Wallet } from 'lucide-react'
 import { MonthComparisonLineChart } from '@/components/dashboard/MonthComparisonLineChart'
+import { PageTitle } from '@/components/layout/PageTitle'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dashboardApi } from '@/api/dashboard'
@@ -40,6 +41,7 @@ export function DashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
+        <PageTitle>Dashboard</PageTitle>
         <Skeleton className="h-8 w-56" />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -54,7 +56,10 @@ export function DashboardPage() {
 
   if (isError || !data) {
     return (
-      <p className="text-sm text-destructive">Não foi possível carregar o dashboard.</p>
+      <>
+        <PageTitle>Dashboard</PageTitle>
+        <p className="text-sm text-destructive">Não foi possível carregar o dashboard.</p>
+      </>
     )
   }
 
@@ -63,12 +68,10 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Comparativo entre {prevLabel} e {currLabel} (fuso horário local).
-        </p>
-      </div>
+      <PageTitle>Dashboard</PageTitle>
+      <p className="text-sm text-muted-foreground">
+        Comparativo entre {prevLabel} e {currLabel} (fuso horário local).
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard

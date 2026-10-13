@@ -34,7 +34,7 @@ describe('DashboardPage', () => {
     await renderWithProviders({ route: '/app/dashboard' })
 
     expect(await screen.findByRole('heading', { name: /^dashboard$/i })).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(await screen.findByText('12')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
     expect(screen.getByText(/Crescimento acumulado de notas fiscais/i)).toBeInTheDocument()
     expect(screen.getByText(/Crescimento acumulado de faturamento/i)).toBeInTheDocument()

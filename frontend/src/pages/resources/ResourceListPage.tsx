@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { Link } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
 import { resourceApi } from '@/api/client'
+import { PageTitle } from '@/components/layout/PageTitle'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
 import { ResourceDataTable } from '@/components/resources/ResourceDataTable'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,7 @@ export function ResourceListPage() {
   if (isLoading) {
     return (
       <div className="space-y-4">
+        <PageTitle>{def.title}</PageTitle>
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
       </div>
@@ -59,19 +61,19 @@ export function ResourceListPage() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>{def.title}</PageTitle>
       {def.menuPlacement === 'settings' && (
         <Button variant="ghost" size="sm" asChild className="-ml-2">
           <Link {...appSettingsTo}>← Configurações</Link>
         </Button>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{def.title}</h1>
-        {allowCreate && (
+      {allowCreate && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button asChild>
             <Link {...resourceNewTo(def)}>Novo</Link>
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
