@@ -2,14 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { resources, settingsResources, sidebarResources } from './definitions'
 
 describe('resources', () => {
-  it('keeps cadastros in settings menu, not main sidebar', () => {
+  it('sidebar: notas e cadastros operacionais; settings: CNA e municípios', () => {
     const sidebarKeys = sidebarResources().map((r) => r.key)
     const settingsKeys = settingsResources().map((r) => r.key)
     expect(sidebarKeys).toContain('documentos')
     expect(sidebarKeys).not.toContain('logs-retorno')
     expect(sidebarKeys).not.toContain('municipios')
     expect(sidebarKeys).toContain('prestadores')
-    expect(settingsKeys).toEqual(['cnas', 'municipios', 'clientes', 'intermediarios'])
+    expect(sidebarKeys).toContain('clientes')
+    expect(sidebarKeys).toContain('intermediarios')
+    expect(settingsKeys).toEqual(['cnas', 'municipios'])
   })
 
   it('includes core tenant resources', () => {

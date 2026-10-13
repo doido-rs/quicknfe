@@ -7,7 +7,10 @@ use doido::model::sea_orm::prelude::{DateTimeUtc, Decimal};
 
 use crate::models::certificado_digital::ActiveModel as CertificadoActive;
 use crate::models::cliente::ActiveModel as ClienteActive;
-use crate::models::company::ActiveModel as CompanyActive;
+use crate::models::company::{
+    ActiveModel as CompanyActive, Column as CompanyColumn, Entity as CompanyEntity,
+};
+use crate::models::municipio::ActiveModel as MunicipioActive;
 use crate::models::company_usuario::ActiveModel as CompanyMembroActive;
 use crate::models::documento_fiscal::ActiveModel as DocumentoActive;
 use crate::models::empresa::{ActiveModel as EmpresaActive, Entity as EmpresaEntity};
@@ -20,6 +23,9 @@ use crate::models::municipio::{Column as MunicipioColumn, Entity as MunicipioEnt
 use crate::models::tributo_item::ActiveModel as TributoActive;
 
 const CNPJ_EMISSOR: &str = "11222333000199";
+/// Prestador seedado a partir de consulta CNC (Rio de Janeiro / IBGE 3304557).
+const CNPJ_PRESTADOR_BAYAN_CNC: &str = "31041140000131";
+const DEMO_COMPANY_NAME: &str = "QuickNFe Demo";
 const SEED_USER_EMAIL: &str = "admin@quicknfe.local";
 
 fn dec(value: i64) -> Decimal {
@@ -31,6 +37,8 @@ fn dec_frac(int: i64, scale: u32) -> Decimal {
 }
 
 pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
+    seed_prestador_bayan_cnc(db).await?;
+
     if UserEntity::find()
         .filter(crate::models::user::Column::Email.eq(SEED_USER_EMAIL))
         .one(db)
@@ -75,17 +83,90 @@ pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
     Ok(())
 }
 
+async fn ensure_demo_company(
+    db: &DatabaseConnection,
+) -> doido::Result<crate::models::company::Model> {
+    if let Some(existing) = CompanyEntity::find()
+        .filter(CompanyColumn::Nome.eq(DEMO_COMPANY_NAME))
+        .one(db)
+        .await?
+    {
+        return Ok(existing);
+    }
+
+    CompanyActive {
+        nome: Set(DEMO_COMPANY_NAME.into()),
+        ..Default::default()
+    }
+    .insert(db)
+    .await
+    .map_err(Into::into)
+}
+
+async fn ensure_municipio(
+    db: &DatabaseConnection,
+    codigo_ibge: &str,
+    nome: &str,
+    uf: &str,
+) -> doido::Result<crate::models::municipio::Model> {
+    if let Some(existing) = MunicipioEntity::find()
+        .filter(MunicipioColumn::CodigoIbge.eq(codigo_ibge))
+        .one(db)
+        .await?
+    {
+        return Ok(existing);
+    }
+
+    MunicipioActive {
+        codigo_ibge: Set(codigo_ibge.into()),
+        nome: Set(nome.into()),
+        uf: Set(uf.into()),
+        ..Default::default()
+    }
+    .insert(db)
+    .await
+    .map_err(Into::into)
+}
+
+/// Dados espelhados de `InfCad` na consulta CNC (OrigemDados 3, CodigoMunicipio 3304557).
+/// OpcaoSimplesNacional 0 → regime `REGIME_NORMAL` (não optante informado).
+async fn seed_prestador_bayan_cnc(db: &DatabaseConnection) -> doido::Result<()> {
+    if EmpresaEntity::find()
+        .filter(crate::models::empresa::Column::CpfCnpj.eq(CNPJ_PRESTADOR_BAYAN_CNC))
+        .one(db)
+        .await?
+        .is_some()
+    {
+        return Ok(());
+    }
+
+    let company = ensure_demo_company(db).await?;
+    let municipio_rj = ensure_municipio(db, "3304557", "Rio de Janeiro", "RJ").await?;
+    let now: DateTimeUtc = chrono::Utc::now();
+
+    EmpresaActive {
+        company_id: Set(company.id),
+        cpf_cnpj: Set(CNPJ_PRESTADOR_BAYAN_CNC.into()),
+        razao_social: Set("BAYAN CODE DESENVOLVIMENTO DE SOFTWARE LTDA".into()),
+        inscricao_municipal: Set(None),
+        inscricao_estadual: Set(None),
+        regime_tributario: Set("REGIME_NORMAL".into()),
+        municipio_id: Set(municipio_rj.id),
+        criado_em: Set(now),
+        ..Default::default()
+    }
+    .insert(db)
+    .await?;
+
+    Ok(())
+}
+
 async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::models::empresa::Model> {
     let data_emissao: DateTimeUtc = "2026-09-24T17:04:55Z".parse().unwrap();
     let data_recebimento: DateTimeUtc = "2026-09-24T17:05:10Z".parse().unwrap();
     let validade_cert: DateTimeUtc = "2027-12-31T23:59:59Z".parse().unwrap();
 
-    let company = CompanyActive {
-        nome: Set("QuickNFe Demo".into()),
-        ..Default::default()
-    }
-    .insert(db)
-    .await?;
+    let company = ensure_demo_company(db).await?;
 
     let municipio_sp = MunicipioEntity::find()
         .filter(MunicipioColumn::CodigoIbge.eq("3550308"))
@@ -101,6 +182,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         inscricao_estadual: Set(Some("123456789012".into())),
         regime_tributario: Set("SIMPLES_NACIONAL".into()),
         municipio_id: Set(municipio_sp.id),
+        criado_em: Set(chrono::Utc::now()),
         ..Default::default()
     }
     .insert(db)

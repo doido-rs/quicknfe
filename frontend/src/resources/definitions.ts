@@ -614,7 +614,6 @@ export const resources: ResourceDef[] = [
     key: 'clientes',
     title: 'Tomadores de serviço',
     menuSection: 'Cadastros',
-    menuPlacement: 'settings',
     path: '/api/clientes',
     cncLookup: {
       inscricaoFieldKey: 'cpf_cnpj',
@@ -640,7 +639,6 @@ export const resources: ResourceDef[] = [
     key: 'intermediarios',
     title: 'Intermediários',
     menuSection: 'Cadastros',
-    menuPlacement: 'settings',
     path: '/api/intermediarios',
     fields: [
       { key: 'cpf_cnpj', label: 'CPF/CNPJ do intermediário', required: true },

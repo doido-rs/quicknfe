@@ -28,7 +28,7 @@ export function SettingsPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <PageTitle>Configurações</PageTitle>
       <p className="text-sm text-muted-foreground">
-        Cadastros de tomadores, intermediários, CNA e municípios (IBGE).
+        Tabelas de referência: CNA e municípios (IBGE).
       </p>
       <ul className="grid gap-3">
         {items.map((r) => {

@@ -79,6 +79,40 @@ fn agora_iso() -> String {
     Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
+fn cadastro_bayan_rj(inscricao: &str) -> CadastroMunicipal {
+    let now = agora_iso();
+    CadastroMunicipal {
+        origem_dados: "CNC",
+        codigo_municipio: 3_304_557,
+        tipo_ambiente: "HOMOLOGACAO",
+        id: 1,
+        codigo_uf: 33,
+        inf_cad: InfCad {
+            inscricao: inscricao.to_string(),
+            tp_inscricao: "CNPJ",
+            inscricao_municipal: String::new(),
+            data_inicio_inscricao_municipal: now.clone(),
+            data_apenas_inicio_inscricao_municipal: String::new(),
+            razao_social: "BAYAN CODE DESENVOLVIMENTO DE SOFTWARE LTDA".into(),
+            info_endereco: InfoEndereco {
+                cep: "23075-350".into(),
+                logradouro: "RUA IVAN SERPA".into(),
+                numero: "451".into(),
+                complemento: String::new(),
+                bairro: "CAMPO GRANDE".into(),
+            },
+            telefone: "(21)99851-9993".into(),
+            email: "fabiano.paula.martins@gmail.com".into(),
+            situacao_emissao_nfse: "HABILITADO",
+            situacao_cadastral: "1",
+            motivo_situacao_cadastral: "Seed CNC Bayan / sefin-mock",
+        },
+        dh_cadastro: now.clone(),
+        dh_atualizacao: now,
+        opcao_simples_nacional: "NENHUM",
+    }
+}
+
 fn cadastro_demo(inscricao: &str, tp: &'static str, razao: &str, im: &str, cod_mun: i32) -> CadastroMunicipal {
     let now = agora_iso();
     let hoje = Utc::now().format("%Y-%m-%d").to_string();
@@ -147,6 +181,10 @@ pub async fn get_cad(Query(q): Query<ConsultaCadQuery>) -> Response {
                 "9876543",
                 cod_mun,
             )],
+        ),
+        "31041140000131" if cod_mun == 3_304_557 => (
+            "DOCUMENTOS_LOCALIZADOS",
+            vec![cadastro_bayan_rj("31041140000131")],
         ),
         "" => {
             return (
