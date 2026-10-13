@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
+import { DocumentoListTable } from '@/components/resources/DocumentoListTable'
 import { ResourceDataTable } from '@/components/resources/ResourceDataTable'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -91,12 +92,21 @@ export function ResourceListPage() {
           <CardTitle className="text-base">Lista</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ResourceDataTable
-            def={def}
-            rows={rows}
-            allowDelete={allowDelete}
-            onDelete={onDelete}
-          />
+          {def.key === 'documentos' ? (
+            <DocumentoListTable
+              def={def}
+              rows={rows}
+              allowDelete={allowDelete}
+              onDelete={onDelete}
+            />
+          ) : (
+            <ResourceDataTable
+              def={def}
+              rows={rows}
+              allowDelete={allowDelete}
+              onDelete={onDelete}
+            />
+          )}
           {hasNextPage && (
             <div className="flex justify-center">
               <Button

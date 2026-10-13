@@ -3,13 +3,7 @@ import { Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
-import { DocumentoInformacoesComplementaresShowCard } from '@/components/resources/DocumentoInformacoesComplementaresShowCard'
-import { DocumentoTributacaoFederalShowCard } from '@/components/resources/DocumentoTributacaoFederalShowCard'
-import { DocumentoTributacaoMunicipalShowCard } from '@/components/resources/DocumentoTributacaoMunicipalShowCard'
-import { DocumentoValoresShowCard } from '@/components/resources/DocumentoValoresShowCard'
-import { DocumentoMunicipiosShowCard } from '@/components/resources/DocumentoMunicipiosShowCard'
-import { DocumentoPartesShowCard } from '@/components/resources/DocumentoPartesShowCard'
-import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
+import { DocumentoShowView } from '@/components/resources/DocumentoShowView'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { Button } from '@/components/ui/button'
@@ -64,6 +58,30 @@ export function ResourceShowPage() {
     return <Navigate {...resourceListTo(def)} replace />
   }
 
+  if (def.key === 'documentos') {
+    return (
+      <div className="space-y-6">
+        <PageTitle>{def.title}</PageTitle>
+        <DocumentoShowView def={def} recordId={recordId} row={row} />
+        {allowDelete && (
+          <div className="flex justify-end">
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+              Excluir nota fiscal
+            </Button>
+          </div>
+        )}
+        <DeleteConfirmDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          title={`Excluir ${def.title.toLowerCase()}?`}
+          description={`Esta ação não pode ser desfeita. Registro: ${rowLabel(row, def.fields)} (ID ${row.id}).`}
+          pending={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate()}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <PageTitle>{def.title}</PageTitle>
@@ -77,9 +95,6 @@ export function ResourceShowPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-start justify-end gap-2">
-          {def.key === 'documentos' && (
-            <DocumentoXmlDownloadButton documentoId={recordId} row={row} />
-          )}
           <Button variant="outline" asChild>
             <Link {...resourceEditTo(def, recordId)}>Editar</Link>
           </Button>
@@ -110,14 +125,6 @@ export function ResourceShowPage() {
           </dl>
         </CardContent>
       </Card>
-
-      {def.key === 'documentos' && <DocumentoPartesShowCard row={row} />}
-      {def.key === 'documentos' && <DocumentoMunicipiosShowCard row={row} />}
-      {def.key === 'documentos' && <DocumentoValoresShowCard row={row} />}
-      {def.key === 'documentos' && <DocumentoTributacaoMunicipalShowCard row={row} />}
-      {def.key === 'documentos' && (
-        <DocumentoInformacoesComplementaresShowCard row={row} />
-      )}
 
       {resourceNesteds(def).map((nested) => (
         <NestedResourcePanel

@@ -14,18 +14,32 @@ function SectionFields({
   form,
   idPrefix,
   columns = 2,
+  readOnly,
+  relationDisplayLabels,
+  displayRow,
 }: {
   fields: FieldDef[]
   form: UseFormReturn<Record<string, string>>
   idPrefix: string
   columns?: 1 | 2
+  readOnly?: boolean
+  relationDisplayLabels?: Record<string, string>
+  displayRow?: Record<string, unknown>
 }) {
   const gridClass = columns === 1 ? 'grid gap-4' : 'grid gap-4 md:grid-cols-2'
 
   return (
     <div className={gridClass}>
       {fields.map((field) => (
-        <ResourceFieldInput key={field.key} field={field} form={form} idPrefix={idPrefix} />
+        <ResourceFieldInput
+          key={field.key}
+          field={field}
+          form={form}
+          idPrefix={idPrefix}
+          readOnly={readOnly}
+          relationDisplayLabels={relationDisplayLabels}
+          displayRow={displayRow}
+        />
       ))}
     </div>
   )
@@ -36,14 +50,20 @@ function IdentificacaoNotaSection({
   allFields,
   form,
   sectionIndex,
+  readOnly,
+  relationDisplayLabels,
+  displayRow,
 }: {
   section: Extract<FormSectionDef, { type: 'identificacao-nota' }>
   allFields: FieldDef[]
   form: UseFormReturn<Record<string, string>>
   sectionIndex: number
+  readOnly?: boolean
+  relationDisplayLabels?: Record<string, string>
+  displayRow?: Record<string, unknown>
 }) {
   const automatico = form.watch(section.automaticoFieldKey) === 'true'
-  const informarManual = !automatico
+  const informarManual = readOnly || !automatico
   const competencia = fieldsByKeys(allFields, [section.competenciaFieldKey])
   const serie = fieldsByKeys(allFields, [section.serieFieldKey]).map((f) => ({
     ...f,
@@ -74,24 +94,29 @@ function IdentificacaoNotaSection({
               field={field}
               form={form}
               idPrefix={`s${sectionIndex}-comp`}
+              readOnly={readOnly}
+              relationDisplayLabels={relationDisplayLabels}
+              displayRow={displayRow}
             />
           ))}
         </div>
         <div className="grid gap-4 md:col-span-3 sm:grid-cols-2">
-          <div className="flex items-center gap-2 sm:col-span-2">
-            <input
-              id={manualCheckboxId}
-              type="checkbox"
-              className="size-4 shrink-0 rounded border border-input"
-              checked={informarManual}
-              onChange={(e) =>
-                form.setValue(section.automaticoFieldKey, e.target.checked ? 'false' : 'true')
-              }
-            />
-            <Label htmlFor={manualCheckboxId} className="font-normal leading-snug">
-              {section.manualInformLabel}
-            </Label>
-          </div>
+          {!readOnly && (
+            <div className="flex items-center gap-2 sm:col-span-2">
+              <input
+                id={manualCheckboxId}
+                type="checkbox"
+                className="size-4 shrink-0 rounded border border-input"
+                checked={informarManual}
+                onChange={(e) =>
+                  form.setValue(section.automaticoFieldKey, e.target.checked ? 'false' : 'true')
+                }
+              />
+              <Label htmlFor={manualCheckboxId} className="font-normal leading-snug">
+                {section.manualInformLabel}
+              </Label>
+            </div>
+          )}
           {informarManual &&
             [...serie, ...numero].map((field) => (
               <ResourceFieldInput
@@ -99,6 +124,9 @@ function IdentificacaoNotaSection({
                 field={field}
                 form={form}
                 idPrefix={`s${sectionIndex}-num`}
+                readOnly={readOnly}
+                relationDisplayLabels={relationDisplayLabels}
+                displayRow={displayRow}
               />
             ))}
         </div>
@@ -112,11 +140,17 @@ function FormSectionBlock({
   allFields,
   form,
   sectionIndex,
+  readOnly,
+  relationDisplayLabels,
+  displayRow,
 }: {
   section: FormSectionDef
   allFields: FieldDef[]
   form: UseFormReturn<Record<string, string>>
   sectionIndex: number
+  readOnly?: boolean
+  relationDisplayLabels?: Record<string, string>
+  displayRow?: Record<string, unknown>
 }) {
   if (section.type === 'identificacao-nota') {
     return (
@@ -125,6 +159,9 @@ function FormSectionBlock({
         allFields={allFields}
         form={form}
         sectionIndex={sectionIndex}
+        readOnly={readOnly}
+        relationDisplayLabels={relationDisplayLabels}
+        displayRow={displayRow}
       />
     )
   }
@@ -150,6 +187,9 @@ function FormSectionBlock({
               field={field}
               form={form}
               idPrefix={`s${sectionIndex}-mun-em`}
+              readOnly={readOnly}
+              relationDisplayLabels={relationDisplayLabels}
+              displayRow={displayRow}
             />
           ))}
           {prestacao.map((field) => (
@@ -158,6 +198,9 @@ function FormSectionBlock({
               field={field}
               form={form}
               idPrefix={`s${sectionIndex}-mun-pr`}
+              readOnly={readOnly}
+              relationDisplayLabels={relationDisplayLabels}
+              displayRow={displayRow}
             />
           ))}
         </div>
@@ -184,6 +227,9 @@ function FormSectionBlock({
             form={form}
             idPrefix={`s${sectionIndex}-prestador`}
             columns={1}
+            readOnly={readOnly}
+            relationDisplayLabels={relationDisplayLabels}
+            displayRow={displayRow}
           />
         </section>
         <section
@@ -201,6 +247,9 @@ function FormSectionBlock({
               allFields={allFields}
               form={form}
               sectionIndex={sectionIndex}
+              readOnly={readOnly}
+              relationDisplayLabels={relationDisplayLabels}
+              displayRow={displayRow}
             />
           ) : (
             <SectionFields
@@ -208,6 +257,9 @@ function FormSectionBlock({
               form={form}
               idPrefix={`s${sectionIndex}-partes`}
               columns={1}
+              readOnly={readOnly}
+              relationDisplayLabels={relationDisplayLabels}
+              displayRow={displayRow}
             />
           )}
         </section>
@@ -228,6 +280,9 @@ function FormSectionBlock({
         form={form}
         idPrefix={`s${sectionIndex}`}
         columns={section.columns ?? 2}
+        readOnly={readOnly}
+        relationDisplayLabels={relationDisplayLabels}
+        displayRow={displayRow}
       />
     </section>
   )
@@ -243,17 +298,23 @@ export function ResourceFormFields({
   cancelLink,
   onCancel,
   actionsAlign,
+  readOnly,
+  relationDisplayLabels,
+  displayRow,
 }: {
   fields: FieldDef[]
   formSections?: FormSectionDef[]
   form: UseFormReturn<Record<string, string>>
   cncLookup?: CncLookupDef
-  onSubmit: (values: Record<string, string>) => void | Promise<void>
-  submitLabel: string
+  onSubmit?: (values: Record<string, string>) => void | Promise<void>
+  submitLabel?: string
   cancelLink?: ResourceRouteLink
   onCancel?: () => void
   /** Alinha Criar/Cancelar à direita (ex.: notas fiscais). */
   actionsAlign?: 'end'
+  readOnly?: boolean
+  relationDisplayLabels?: Record<string, string>
+  displayRow?: Record<string, unknown>
 }) {
   const {
     handleSubmit,
@@ -284,28 +345,41 @@ export function ResourceFormFields({
     </div>
   )
 
-  const cncBlock = cncLookup ? <CncConsultaField lookup={cncLookup} form={form} /> : null
+  const cncBlock =
+    cncLookup && !readOnly ? <CncConsultaField lookup={cncLookup} form={form} /> : null
+
+  const body = formSections?.length ? (
+    <>
+      {cncBlock && <div className="grid gap-4">{cncBlock}</div>}
+      {formSections.map((section, index) => (
+        <FormSectionBlock
+          key={`${section.type}-${index}`}
+          section={section}
+          allFields={fields}
+          form={form}
+          sectionIndex={index}
+          readOnly={readOnly}
+          relationDisplayLabels={relationDisplayLabels}
+          displayRow={displayRow}
+        />
+      ))}
+    </>
+  ) : null
 
   if (formSections?.length) {
+    if (readOnly) {
+      return <div className="space-y-8">{body}</div>
+    }
     return (
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        {cncBlock && <div className="grid gap-4">{cncBlock}</div>}
-        {formSections.map((section, index) => (
-          <FormSectionBlock
-            key={`${section.type}-${index}`}
-            section={section}
-            allFields={fields}
-            form={form}
-            sectionIndex={index}
-          />
-        ))}
+      <form onSubmit={handleSubmit(onSubmit!)} className="space-y-8">
+        {body}
         {actions}
       </form>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 md:grid-cols-2">
+    <form onSubmit={handleSubmit(onSubmit!)} className="grid gap-4 md:grid-cols-2">
       {cncBlock}
       {fields.map((field) => (
         <ResourceFieldInput key={field.key} field={field} form={form} />

@@ -1,5 +1,4 @@
 import {
-  DOCUMENTO_PARTES,
   EXTERIOR_FIELD_SUFFIXES,
   type LocalidadeParte,
   type ParteLocalidadeFormDef,
@@ -76,8 +75,10 @@ export function buildDocumentoBody(
   }
 
   const dataEmissaoRaw = values.data_emissao?.trim()
-  if (body.data_emissao == null || String(body.data_emissao).trim() === '') {
-    body.data_emissao = dataEmissaoRaw !== '' ? dataEmissaoRaw : new Date().toISOString()
+  if (dataEmissaoRaw) {
+    body.data_emissao = dataEmissaoRaw
+  } else if (body.data_emissao == null || String(body.data_emissao).trim() === '') {
+    body.data_emissao = new Date().toISOString()
   }
 
   if (body.ambiente == null) body.ambiente = Number(values.ambiente) || 2

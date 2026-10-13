@@ -662,3 +662,7 @@ export function resourceNesteds(def: ResourceDef): NestedDef[] {
   if (!def.nested) return []
   return Array.isArray(def.nested) ? def.nested : [def.nested]
 }
+
+export function documentoItensNested(def: ResourceDef): NestedDef | undefined {
+  return resourceNesteds(def).find((n) => n.allowCreate !== false && n.path(0).includes('/itens'))
+}

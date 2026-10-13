@@ -48,7 +48,7 @@ describe('Resource pages', () => {
     })
 
     await renderWithProviders({ route: '/app/clientes' })
-    expect(await screen.findByText('123')).toBeInTheDocument()
+    expect(await screen.findByText('Cliente A')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^novo$/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^ver$/i })).toBeInTheDocument()
   })
@@ -65,7 +65,7 @@ describe('Resource pages', () => {
     })
 
     await renderWithProviders({ route: '/app/clientes/1' })
-    expect(await screen.findByText(/cliente a/i)).toBeInTheDocument()
+    expect(await screen.findAllByText(/cliente a/i)).not.toHaveLength(0)
     expect(screen.getByRole('link', { name: /^editar$/i })).toBeInTheDocument()
   })
 
@@ -94,7 +94,7 @@ describe('Resource pages', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await renderWithProviders({ route: '/app/clientes' })
-    await screen.findByText('123')
+    await screen.findByText('Antigo')
 
     await userEvent.click(screen.getByRole('button', { name: /^excluir$/i }))
     const dialog = await screen.findByRole('alertdialog')
@@ -132,6 +132,7 @@ describe('Resource pages', () => {
     await renderWithProviders({ route: '/app/documentos/9' })
     expect(await screen.findByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /baixar xml/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /assinar nota fiscal/i })).toBeInTheDocument()
   })
 
   it('shows read-only SEFAZ logs on documento show without add form', async () => {

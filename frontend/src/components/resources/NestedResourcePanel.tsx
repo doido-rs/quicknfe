@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   buildCreateBodyWithFiles,
+  buildNestedCreateBody,
   emptyForm,
   rowLabel,
   useResourceFieldForm,
@@ -51,10 +52,10 @@ export function NestedResourcePanel({
           throw new Error(`Selecione o arquivo: ${f.label}`)
         }
       }
-      let body = await buildCreateBodyWithFiles(nested.fields, values, files)
-      if (nested.prepareCreateBody) {
-        body = nested.prepareCreateBody(body)
-      }
+      const hasFiles = nested.fields.some((f) => f.type === 'file')
+      const body = hasFiles
+        ? await buildCreateBodyWithFiles(nested.fields, values, files)
+        : buildNestedCreateBody(nested, values)
       return api.create(body)
     },
     onSuccess: () => {

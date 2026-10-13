@@ -8,10 +8,10 @@ use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity, Model as Documento,
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
-use crate::services::dto::{
-    DocumentoDto, DocumentoListDto, ParteExteriorDto, TransmitirDocumentoResponse,
-};
-use crate::services::nfse::{transmitir_documento, TransmitirParams};
+use crate::services::documento_presentacao::{documento_detalhe, documentos_list_items};
+use crate::services::dto::{DocumentoDto, ParteExteriorDto, TransmitirDocumentoResponse};
+use crate::services::nfse::{assinar_dps_xml_rascunho, montar_dps_xml, transmitir_documento, TransmitirParams};
+use crate::services::pagination::PageResponse;
 use crate::services::municipio::require_municipio;
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::tenant_scope;
@@ -223,11 +223,22 @@ async fn validate_refs(
     Ok(())
 }
 
-fn documento_xml_content(doc: &Documento) -> Option<String> {
-    doc.xml_processado
-        .clone()
-        .or_else(|| doc.xml_assinado.clone())
+fn documento_xml_content(doc: &Documento) -> String {
+    if let Some(xml) = doc
+        .xml_processado
+        .as_ref()
         .filter(|xml| !xml.trim().is_empty())
+    {
+        return xml.clone();
+    }
+    if let Some(xml) = doc
+        .xml_assinado
+        .as_ref()
+        .filter(|xml| !xml.trim().is_empty())
+    {
+        return xml.clone();
+    }
+    montar_dps_xml(doc)
 }
 
 fn xml_download_filename(doc: &Documento) -> String {
@@ -367,11 +378,17 @@ impl ApiDocumentosController {
                 DocColumn::Id,
                 params,
                 |m| m.id,
-                DocumentoListDto::from,
+                |m| m,
             )
             .await,
         ));
-        ctx.json(page)
+        let items = crate::api!(to_response(
+            documentos_list_items(ctx.db(), page.items).await,
+        ));
+        ctx.json(PageResponse {
+            items,
+            next_page_token: page.next_page_token,
+        })
     }
 
     pub async fn show(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -380,7 +397,8 @@ impl ApiDocumentosController {
         let row = crate::api!(scoped(
             tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
-        ctx.json(DocumentoDto::from(row))
+        let detalhe = crate::api!(to_response(documento_detalhe(ctx.db(), row).await));
+        ctx.json(detalhe)
     }
 
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -398,7 +416,8 @@ impl ApiDocumentosController {
         };
         crate::api!(to_response(apply_form(&mut record, &form)));
         let created = crate::api!(db(record.insert(ctx.db()).await));
-        ctx.json(DocumentoDto::from(created))
+        let detalhe = crate::api!(to_response(documento_detalhe(ctx.db(), created).await));
+        ctx.json(detalhe)
     }
 
     pub async fn update(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -418,7 +437,29 @@ impl ApiDocumentosController {
         let mut record: DocActive = existing.into();
         crate::api!(to_response(apply_form(&mut record, &form)));
         let updated = crate::api!(db(record.update(ctx.db()).await));
-        ctx.json(DocumentoDto::from(updated))
+        let detalhe = crate::api!(to_response(documento_detalhe(ctx.db(), updated).await));
+        ctx.json(detalhe)
+    }
+
+    /// Gera/atualiza o XML da DPS com assinatura XML-DSig (elemento `Signature`).
+    pub async fn assinar(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        let existing = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
+        ));
+        let base_xml = existing
+            .xml_assinado
+            .as_ref()
+            .filter(|x| !x.trim().is_empty())
+            .cloned()
+            .unwrap_or_else(|| montar_dps_xml(&existing));
+        let signed = assinar_dps_xml_rascunho(&base_xml);
+        let mut record: DocActive = existing.into();
+        record.xml_assinado = Set(Some(signed));
+        let updated = crate::api!(db(record.update(ctx.db()).await));
+        let detalhe = crate::api!(to_response(documento_detalhe(ctx.db(), updated).await));
+        ctx.json(detalhe)
     }
 
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -438,10 +479,7 @@ impl ApiDocumentosController {
         let row = crate::api!(scoped(
             tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
-        let xml = documento_xml_content(&row).ok_or_else(|| {
-            ApiError::Validation("Esta nota fiscal ainda não possui XML armazenado.".into())
-        });
-        let xml = crate::api!(to_response(xml));
+        let xml = documento_xml_content(&row);
         let filename = xml_download_filename(&row);
         ctx.send_data(
             xml.into_bytes(),

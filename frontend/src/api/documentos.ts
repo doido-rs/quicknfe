@@ -1,4 +1,4 @@
-import { createApiError } from './client'
+import { apiFetch, createApiError } from './client'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -16,11 +16,20 @@ function filenameFromContentDisposition(header: string | null): string | null {
   return plain?.[1]?.trim() ?? null
 }
 
-export function documentoHasXml(row: Record<string, unknown>): boolean {
-  const processed = row.xml_processado
+export function documentoHasXml(_row?: Record<string, unknown>): boolean {
+  return true
+}
+
+export function documentoXmlAssinado(row: Record<string, unknown>): boolean {
   const signed = row.xml_assinado
-  const pick = (value: unknown) => typeof value === 'string' && value.trim().length > 0
-  return pick(processed) || pick(signed)
+  return typeof signed === 'string' && signed.includes('Signature')
+}
+
+export async function assinarDocumento(documentoId: number): Promise<Record<string, unknown>> {
+  return apiFetch<Record<string, unknown>>(`/api/documentos/${documentoId}/assinar`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
 }
 
 export async function downloadDocumentoXml(documentoId: number): Promise<void> {

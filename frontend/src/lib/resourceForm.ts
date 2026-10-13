@@ -119,6 +119,18 @@ export async function buildCreateBodyWithFiles(
   return body
 }
 
+/** Corpo JSON para POST de recurso aninhado (ex.: item da nota). */
+export function buildNestedCreateBody(
+  nested: { fields: FieldDef[]; prepareCreateBody?: (body: Record<string, unknown>) => Record<string, unknown> },
+  values: Record<string, string>,
+): Record<string, unknown> {
+  let body = buildBody(nested.fields, values) as Record<string, unknown>
+  if (nested.prepareCreateBody) {
+    body = nested.prepareCreateBody(body)
+  }
+  return body
+}
+
 export function buildBody(fields: FieldDef[], form: Record<string, string>) {
   return Object.fromEntries(
     fields

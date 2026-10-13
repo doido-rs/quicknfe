@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildCreateBodyWithFiles,
+  buildNestedCreateBody,
   fieldValue,
   fileToBase64Payload,
   formatFieldValue,
@@ -9,6 +10,31 @@ import {
 } from './resourceForm'
 
 describe('resourceForm', () => {
+  it('buildNestedCreateBody copies descricao from descricao_servico', () => {
+    const body = buildNestedCreateBody(
+      {
+        fields: [
+          { key: 'descricao_servico', label: 'Serviço' },
+          { key: 'numero_item', label: 'N', type: 'number' },
+        ],
+        prepareCreateBody: (b) => {
+          const servico = b.descricao_servico
+          if (
+            (b.descricao == null || String(b.descricao).trim() === '') &&
+            servico != null &&
+            String(servico).trim() !== ''
+          ) {
+            b.descricao = String(servico).trim().slice(0, 500)
+          }
+          return b
+        },
+      },
+      { descricao_servico: 'Consultoria', numero_item: '1' },
+    )
+    expect(body.descricao).toBe('Consultoria')
+    expect(body.numero_item).toBe(1)
+  })
+
   it('maps row to form strings', () => {
     const form = rowToForm({ id: 1, nome: 'X', count: 2 }, [
       { key: 'nome', label: 'Nome' },
@@ -25,7 +51,7 @@ describe('resourceForm', () => {
     const row = { municipio: { nome: 'São Paulo', uf: 'SP', codigo_ibge: '3550308' } }
     expect(formatMunicipioRelationLabel(row)).toBe('São Paulo (SP · IBGE 3550308)')
     expect(
-      formatFieldValue(1, { key: 'municipio_id', relationResource: 'municipios' }, row),
+      formatFieldValue(1, { key: 'municipio_id', label: 'Município', relationResource: 'municipios' }, row),
     ).toBe('São Paulo (SP · IBGE 3550308)')
   })
 

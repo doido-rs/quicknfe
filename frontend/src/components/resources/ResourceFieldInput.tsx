@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { ForeignKeyAutocomplete } from '@/components/resources/ForeignKeyAutocomplete'
 import { relationResourceKey } from '@/lib/relations'
+import { readOnlyFieldDisplay } from '@/lib/documentoShowLabels'
 import type { FieldDef } from '@/resources/definitions'
 
 export function ResourceFieldInput({
@@ -13,13 +14,35 @@ export function ResourceFieldInput({
   idPrefix = 'field',
   attachedFile,
   onFileChange,
+  readOnly,
+  relationDisplayLabels,
+  displayRow,
 }: {
   field: FieldDef
   form: UseFormReturn<Record<string, string>>
   idPrefix?: string
   attachedFile?: File
   onFileChange?: (key: string, file: File | null) => void
+  readOnly?: boolean
+  relationDisplayLabels?: Record<string, string>
+  displayRow?: Record<string, unknown>
 }) {
+  if (readOnly) {
+    const raw = form.getValues(field.key)
+    const text = readOnlyFieldDisplay(
+      field,
+      raw ?? '',
+      displayRow ?? {},
+      relationDisplayLabels,
+    )
+    return (
+      <div className="grid gap-1.5">
+        <Label className="text-muted-foreground">{field.label}</Label>
+        <p className="text-sm leading-snug whitespace-pre-wrap">{text || '—'}</p>
+      </div>
+    )
+  }
+
   const relationKey = relationResourceKey(field)
   const scopeField = field.relationScopeFromField
   const scopeRaw = scopeField ? form.watch(scopeField) : ''

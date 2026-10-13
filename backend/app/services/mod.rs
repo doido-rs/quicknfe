@@ -6,6 +6,7 @@ pub mod cna;
 pub mod cnc;
 pub mod dashboard;
 pub mod dto;
+pub mod documento_presentacao;
 pub mod pagination;
 pub mod municipio;
 pub mod nfse;

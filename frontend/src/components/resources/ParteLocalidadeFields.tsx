@@ -15,11 +15,17 @@ function ParteBlock({
   allFields,
   form,
   idPrefix,
+  readOnly,
+  relationDisplayLabels,
+  displayRow,
 }: {
   parte: ParteLocalidadeFormDef
   allFields: FieldDef[]
   form: UseFormReturn<Record<string, string>>
   idPrefix: string
+  readOnly?: boolean
+  relationDisplayLabels?: Record<string, string>
+  displayRow?: Record<string, unknown>
 }) {
   const localidadeField = fieldsByKeys(allFields, [parte.localidadeFieldKey])[0]
   const relationField = fieldsByKeys(allFields, [parte.brasilRelationFieldKey])[0]
@@ -41,6 +47,9 @@ function ParteBlock({
           }}
           form={form}
           idPrefix={`${idPrefix}-loc`}
+          readOnly={readOnly}
+          relationDisplayLabels={relationDisplayLabels}
+          displayRow={displayRow}
         />
       )}
       {localidade === 'brasil' && relationField && (
@@ -48,6 +57,9 @@ function ParteBlock({
           field={relationField}
           form={form}
           idPrefix={`${idPrefix}-br`}
+          readOnly={readOnly}
+          relationDisplayLabels={relationDisplayLabels}
+          displayRow={displayRow}
         />
       )}
       {localidade === 'exterior' && (
@@ -58,6 +70,9 @@ function ParteBlock({
               field={field}
               form={form}
               idPrefix={`${idPrefix}-ext`}
+              readOnly={readOnly}
+              relationDisplayLabels={relationDisplayLabels}
+              displayRow={displayRow}
             />
           ))}
         </div>
@@ -70,10 +85,16 @@ export function ParteLocalidadeFields({
   allFields,
   form,
   sectionIndex,
+  readOnly,
+  relationDisplayLabels,
+  displayRow,
 }: {
   allFields: FieldDef[]
   form: UseFormReturn<Record<string, string>>
   sectionIndex: number
+  readOnly?: boolean
+  relationDisplayLabels?: Record<string, string>
+  displayRow?: Record<string, unknown>
 }) {
   return (
     <div className="space-y-6">
@@ -84,6 +105,9 @@ export function ParteLocalidadeFields({
           allFields={allFields}
           form={form}
           idPrefix={`s${sectionIndex}-${parte.exteriorPrefix}`}
+          readOnly={readOnly}
+          relationDisplayLabels={relationDisplayLabels}
+          displayRow={displayRow}
         />
       ))}
     </div>
