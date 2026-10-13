@@ -3,6 +3,7 @@ import { useAuth } from '@/auth/AuthContext'
 import { AppSidebar } from '@/components/layout/AppSidebar'
 import { PageTitleProvider, usePageTitle } from '@/components/layout/PageTitle'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Toaster } from '@/components/ui/sonner'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -39,6 +40,7 @@ export function AppLayout() {
 
   return (
     <TooltipProvider>
+      <Toaster />
       <PageTitleProvider>
         <SidebarProvider>
           <AppSidebar />

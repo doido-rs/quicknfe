@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { applyCncItemToForm, onlyDigits } from '@/lib/cncConsulta'
 import { resourceApi } from '@/api/client'
 import type { CncLookupDef } from '@/resources/definitions'
+import { toastError, toastSuccess } from '@/lib/toast'
 
 async function codigoIbgeFromMunicipioId(municipioId: string): Promise<number | undefined> {
   const id = Number(municipioId)
@@ -53,7 +54,9 @@ export function CncConsultaField({
       setMessage(null)
       if (data.erros?.length) {
         const txt = data.erros.map((e) => e.descricao ?? e.codigo).filter(Boolean).join('; ')
-        setMessage(txt || 'Consulta CNC rejeitada.')
+        const msg = txt || 'Consulta CNC rejeitada.'
+        setMessage(msg)
+        toastError(msg)
         setChoices(null)
         return
       }
@@ -69,6 +72,7 @@ export function CncConsultaField({
       if (data.itens.length === 1) {
         applyCncItemToForm(form, lookup, data.itens[0]!)
         setMessage('Dados preenchidos a partir do CNC.')
+        toastSuccess('Dados preenchidos a partir do CNC')
         setChoices(null)
         return
       }
@@ -77,7 +81,9 @@ export function CncConsultaField({
     },
     onError: (err) => {
       setChoices(null)
-      setMessage(err instanceof Error ? err.message : 'Falha na consulta CNC.')
+      const msg = err instanceof Error ? err.message : 'Falha na consulta CNC.'
+      setMessage(msg)
+      toastError(msg)
     },
   })
 

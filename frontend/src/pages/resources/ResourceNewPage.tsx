@@ -11,6 +11,7 @@ import { useResourceDef } from '@/hooks/useResourceDef'
 import { buildDocumentoBody } from '@/lib/documentoParteLocalidade'
 import { buildBody, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
+import { toastFromError, toastSuccess } from '@/lib/toast'
 
 export function ResourceNewPage() {
   const def = useResourceDef()
@@ -74,6 +75,7 @@ export function ResourceNewPage() {
     },
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
+      toastSuccess('Registro criado com sucesso')
       const newId = Number(created.id)
       if (Number.isFinite(newId)) {
         navigate(resourceShowTo(def, newId))
@@ -81,6 +83,7 @@ export function ResourceNewPage() {
         navigate(resourceListTo(def))
       }
     },
+    onError: (err) => toastFromError(err, 'Não foi possível criar o registro'),
   })
 
   return (

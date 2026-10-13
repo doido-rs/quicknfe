@@ -11,6 +11,7 @@ import { useResourceDef, useResourceRecordId } from '@/hooks/useResourceDef'
 import { buildDocumentoBody, flattenDocumentoRowToForm } from '@/lib/documentoParteLocalidade'
 import { buildBody, rowToForm, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
+import { toastFromError, toastSuccess } from '@/lib/toast'
 
 export function ResourceEditPage() {
   const def = useResourceDef()
@@ -48,7 +49,9 @@ export function ResourceEditPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
+      toastSuccess('Alterações salvas')
     },
+    onError: (err) => toastFromError(err, 'Não foi possível salvar'),
   })
 
   if (recordId == null) {

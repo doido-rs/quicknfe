@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useResourceDef } from '@/hooks/useResourceDef'
 import { rowLabel } from '@/lib/resourceForm'
 import { appSettingsTo, resourceNewTo } from '@/lib/resourcePaths'
+import { toastFromError, toastSuccess } from '@/lib/toast'
 
 export function ResourceListPage() {
   const def = useResourceDef()
@@ -24,6 +25,8 @@ export function ResourceListPage() {
   const {
     data,
     isLoading,
+    isError,
+    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -42,8 +45,16 @@ export function ResourceListPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
       setDeleteTarget(null)
+      toastSuccess('Registro excluído')
     },
+    onError: (err) => toastFromError(err, 'Não foi possível excluir'),
   })
+
+  useEffect(() => {
+    if (isError) {
+      toastFromError(error, 'Não foi possível carregar a lista')
+    }
+  }, [isError, error])
 
   const onDelete = useCallback((row: Record<string, unknown>) => {
     setDeleteTarget(row)

@@ -19,6 +19,7 @@ import { useResourceDef, useResourceRecordId } from '@/hooks/useResourceDef'
 import { resourceNesteds } from '@/resources/definitions'
 import { fieldValue, formatFieldValue, rowLabel } from '@/lib/resourceForm'
 import { resourceEditTo, resourceListTo } from '@/lib/resourcePaths'
+import { toastFromError, toastSuccess } from '@/lib/toast'
 
 export function ResourceShowPage() {
   const def = useResourceDef()
@@ -40,8 +41,10 @@ export function ResourceShowPage() {
     mutationFn: () => api.remove(recordId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
+      toastSuccess('Registro excluído')
       navigate(resourceListTo(def))
     },
+    onError: (err) => toastFromError(err, 'Não foi possível excluir'),
   })
 
   if (recordId == null) {

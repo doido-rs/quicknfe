@@ -129,13 +129,13 @@ pub async fn empresa_ids_for_company(
 pub fn empresa_id_from_list_query(ctx: &Context) -> Result<Option<i64>, ApiError> {
     #[derive(Debug, Deserialize)]
     struct ListPrestadorQuery {
-        empresa_id: Option<i64>,
+        empresa_id: Option<serde_json::Value>,
     }
     let raw: ListPrestadorQuery = ctx
         .query_params()
         .deserialize()
         .map_err(|e| ApiError::Validation(e.to_string()))?;
-    Ok(raw.empresa_id)
+    crate::services::pagination::parse_opt_i64_from_query(raw.empresa_id, "empresa_id")
 }
 
 pub async fn item_for_tenant(

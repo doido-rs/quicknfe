@@ -45,9 +45,61 @@ pub fn decode_page_token(token: &str) -> Result<i64, ApiError> {
 
 #[derive(Debug, Deserialize)]
 struct ListQueryParams {
-    page_size: Option<u64>,
+    /// Query strings chegam como texto; `doido` pode expor JSON com string ou número.
+    page_size: Option<serde_json::Value>,
     page_token: Option<String>,
     q: Option<String>,
+}
+
+pub fn parse_opt_i64_from_query(
+    value: Option<serde_json::Value>,
+    field: &str,
+) -> Result<Option<i64>, ApiError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    match value {
+        serde_json::Value::Null => Ok(None),
+        serde_json::Value::Number(n) => n
+            .as_i64()
+            .ok_or_else(|| ApiError::Validation(format!("{field} inválido")))
+            .map(Some),
+        serde_json::Value::String(s) => {
+            let s = s.trim();
+            if s.is_empty() {
+                Ok(None)
+            } else {
+                s.parse::<i64>()
+                    .map(Some)
+                    .map_err(|_| ApiError::Validation(format!("{field} inválido")))
+            }
+        }
+        _ => Err(ApiError::Validation(format!("{field} inválido"))),
+    }
+}
+
+fn parse_opt_u64_from_query(value: Option<serde_json::Value>, field: &str) -> Result<Option<u64>, ApiError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    match value {
+        serde_json::Value::Null => Ok(None),
+        serde_json::Value::Number(n) => n
+            .as_u64()
+            .ok_or_else(|| ApiError::Validation(format!("{field} inválido")))
+            .map(Some),
+        serde_json::Value::String(s) => {
+            let s = s.trim();
+            if s.is_empty() {
+                Ok(None)
+            } else {
+                s.parse::<u64>()
+                    .map(Some)
+                    .map_err(|_| ApiError::Validation(format!("{field} inválido")))
+            }
+        }
+        _ => Err(ApiError::Validation(format!("{field} inválido"))),
+    }
 }
 
 pub fn page_params_from_ctx(ctx: &Context) -> Result<PageParams, ApiError> {
@@ -56,7 +108,9 @@ pub fn page_params_from_ctx(ctx: &Context) -> Result<PageParams, ApiError> {
         .deserialize()
         .map_err(|e| ApiError::Validation(e.to_string()))?;
 
-    let page_size = raw.page_size.unwrap_or(DEFAULT_PAGE_SIZE).clamp(1, MAX_PAGE_SIZE);
+    let page_size = parse_opt_u64_from_query(raw.page_size, "page_size")?
+        .unwrap_or(DEFAULT_PAGE_SIZE)
+        .clamp(1, MAX_PAGE_SIZE);
 
     let after_id = match raw.page_token {
         Some(token) if !token.trim().is_empty() => Some(decode_page_token(token.trim())?),
@@ -115,4 +169,28 @@ where
         items: page_rows.into_iter().map(map).collect(),
         next_page_token,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_opt_u64_from_query;
+    use crate::services::api_error::ApiError;
+
+    #[test]
+    fn page_size_accepts_query_string() {
+        let n = parse_opt_u64_from_query(Some(serde_json::json!("20")), "page_size").unwrap();
+        assert_eq!(n, Some(20));
+    }
+
+    #[test]
+    fn page_size_accepts_json_number() {
+        let n = parse_opt_u64_from_query(Some(serde_json::json!(20)), "page_size").unwrap();
+        assert_eq!(n, Some(20));
+    }
+
+    #[test]
+    fn page_size_rejects_invalid() {
+        let err = parse_opt_u64_from_query(Some(serde_json::json!("abc")), "page_size").unwrap_err();
+        assert!(matches!(err, ApiError::Validation(_)));
+    }
 }

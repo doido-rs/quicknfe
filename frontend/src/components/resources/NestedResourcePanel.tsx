@@ -10,6 +10,7 @@ import {
   rowLabel,
   useResourceFieldForm,
 } from '@/lib/resourceForm'
+import { toastFromError, toastSuccess } from '@/lib/toast'
 import type { NestedDef } from '@/resources/definitions'
 
 export function NestedResourcePanel({
@@ -61,9 +62,12 @@ export function NestedResourcePanel({
       reset(emptyForm(nested.fields))
       setFiles({})
       setSubmitError(null)
+      toastSuccess('Registro criado com sucesso')
     },
     onError: (err) => {
-      setSubmitError(err instanceof Error ? err.message : 'Falha ao enviar')
+      const msg = err instanceof Error ? err.message : 'Falha ao enviar'
+      setSubmitError(msg)
+      toastFromError(err, 'Não foi possível criar o registro')
     },
   })
 
