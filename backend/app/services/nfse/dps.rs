@@ -376,6 +376,12 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
         "tpRetISSQN",
         if doc.issqn_retencao == 1 { "2" } else { "1" },
     );
+    if doc.issqn_exigibilidade_suspensa == 1 {
+        push_elem(xml, 10, "tpImunidade", "0");
+    }
+    if doc.issqn_beneficio_municipal == 1 {
+        push_elem(xml, 10, "nBM", "0");
+    }
     if let Some(v) = doc.issqn_aliquota {
         push_elem(xml, 10, "pAliq", &decimal_xml(&v));
     }
@@ -434,7 +440,8 @@ pub mod coverage {
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
-            "pAliq", "vBC", "vISSQN", "CST", "tpRetPisCofins", "vRetCP", "vRetIRRF", "vRetCSLL",
+            "pAliq", "vBC", "vISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins", "vRetCP",
+            "vRetIRRF", "vRetCSLL",
             "infoCompl", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
         ]
         .into_iter()
@@ -551,7 +558,9 @@ mod tests {
     fn montar_dps_contexto_inclui_grupos_principais() {
         use super::super::dps_context::DpsContext;
         use crate::models::empresa::Model as Empresa;
+        use crate::models::item_documento_fiscal::Model as ItemDoc;
         use crate::models::municipio::Model as Municipio;
+        use doido::model::sea_orm::prelude::Decimal;
 
         let municipio = Municipio {
             id: 1,
@@ -581,12 +590,82 @@ mod tests {
             intermediario: None,
             intermediario_municipio: None,
             intermediario_exterior: None,
-            itens: vec![],
+            itens: vec![ItemDoc {
+                id: 1,
+                documento_fiscal_id: 1,
+                numero_item: 1,
+                descricao: "Serviço".into(),
+                descricao_servico: Some("Consultoria".into()),
+                codigo_ncm: None,
+                codigo_tributacao_nacional: Some("010101".into()),
+                cna_id: None,
+                quantidade: Decimal::from(1),
+                valor_unitario: Decimal::from(100),
+                valor_total_bruto: Decimal::from(100),
+                valor_desconto: None,
+            }],
         };
         super::super::rn_validacao::validar_dps_contexto(&ctx).expect("rn");
         let xml = montar_dps_xml_context(&ctx).expect("xml");
         assert!(xml.contains("<prest>"));
         assert!(xml.contains("<valores>"));
         assert!(xml.contains("<cLocEmi>3304557</cLocEmi>"));
+    }
+
+    #[test]
+    fn montar_dps_golden_fixture_principais_tags() {
+        use super::super::dps_context::DpsContext;
+        use crate::models::empresa::Model as Empresa;
+        use crate::models::item_documento_fiscal::Model as ItemDoc;
+        use crate::models::municipio::Model as Municipio;
+        use doido::model::sea_orm::prelude::Decimal;
+
+        let municipio = Municipio {
+            id: 1,
+            codigo_ibge: "3304557".into(),
+            nome: "Rio de Janeiro".into(),
+            uf: "RJ".into(),
+        };
+        let ctx = DpsContext {
+            doc: sample_doc(),
+            prestador: Empresa {
+                id: 1,
+                company_id: 1,
+                cpf_cnpj: "12345678000199".into(),
+                razao_social: "Prestador LTDA".into(),
+                inscricao_municipal: Some("123".into()),
+                inscricao_estadual: None,
+                regime_tributario: "SIMPLES_NACIONAL".into(),
+                municipio_id: 1,
+                criado_em: Utc::now(),
+            },
+            municipio_emissao: municipio.clone(),
+            municipio_prestacao: municipio.clone(),
+            municipio_prestador: municipio,
+            tomador: None,
+            tomador_municipio: None,
+            tomador_exterior: None,
+            intermediario: None,
+            intermediario_municipio: None,
+            intermediario_exterior: None,
+            itens: vec![ItemDoc {
+                id: 1,
+                documento_fiscal_id: 1,
+                numero_item: 1,
+                descricao: "Serviço".into(),
+                descricao_servico: Some("Serviço".into()),
+                codigo_ncm: None,
+                codigo_tributacao_nacional: Some("010101".into()),
+                cna_id: None,
+                quantidade: Decimal::from(1),
+                valor_unitario: Decimal::from(100),
+                valor_total_bruto: Decimal::from(100),
+                valor_desconto: None,
+            }],
+        };
+        let xml = montar_dps_xml_context(&ctx).expect("xml");
+        for tag in ["<tpEmis>", "<cTribNac>", "<xDescServ>", "<tribISSQN>"] {
+            assert!(xml.contains(tag), "missing {tag}");
+        }
     }
 }

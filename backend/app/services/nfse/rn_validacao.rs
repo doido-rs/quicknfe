@@ -57,6 +57,15 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
             "RN: tpAmb deve ser 1 (produção) ou 2 (homologação)".into(),
         ));
     }
+    if ctx.itens.is_empty() && doc.valor_total_servicos_produtos > Decimal::ZERO {
+        return Err(ApiError::Validation(
+            "RN: nota com valor da operação exige ao menos um item de serviço".into(),
+        ));
+    }
+    let _ = dps_rn::load_rn_dps_rows(
+        &std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".."),
+    )
+    .map_err(|e| ApiError::Internal(format!("RN layout indisponível: {e}")))?;
     Ok(())
 }
 
@@ -75,6 +84,7 @@ mod tests {
     fn minimal_ctx() -> DpsContext {
         use crate::models::documento_fiscal::Model as Documento;
         use crate::models::empresa::Model as Empresa;
+        use crate::models::item_documento_fiscal::Model as ItemDoc;
         use crate::models::municipio::Model as Municipio;
 
         let municipio = Municipio {
@@ -154,7 +164,20 @@ mod tests {
             intermediario: None,
             intermediario_municipio: None,
             intermediario_exterior: None,
-            itens: vec![],
+            itens: vec![ItemDoc {
+                id: 1,
+                documento_fiscal_id: 1,
+                numero_item: 1,
+                descricao: "Serviço".into(),
+                descricao_servico: Some("Serviço".into()),
+                codigo_tributacao_nacional: Some("010101".into()),
+                codigo_ncm: None,
+                cna_id: None,
+                quantidade: Decimal::from(1),
+                valor_unitario: Decimal::from(100),
+                valor_total_bruto: Decimal::from(100),
+                valor_desconto: None,
+            }],
         }
     }
 

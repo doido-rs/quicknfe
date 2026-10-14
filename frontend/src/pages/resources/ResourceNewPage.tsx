@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useResourceDef } from '@/hooks/useResourceDef'
 import { buildDocumentoBody } from '@/lib/documentoParteLocalidade'
+import { todayApiDate } from '@/lib/dateFormat'
 import { buildBody, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
 import { applyItensToDocumentoBody } from '@/lib/documentoItens'
@@ -44,7 +45,7 @@ export function ResourceNewPage() {
   useEffect(() => {
     if (def.key !== 'documentos') return
     if (!form.getValues('data_competencia')) {
-      form.setValue('data_competencia', new Date().toISOString().slice(0, 10))
+      form.setValue('data_competencia', todayApiDate())
     }
   }, [def.key, form])
 

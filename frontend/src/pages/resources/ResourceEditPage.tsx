@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate } from '@tanstack/react-router'
 import { GuardedLink } from '@/components/navigation/GuardedLink'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
+import { useRegisterUnsavedSave, useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
@@ -36,6 +37,12 @@ export function ResourceEditPage() {
     }
   }, [row, def.fields, form])
 
+  const {
+    handleSubmit,
+    formState: { isDirty },
+  } = form
+  useUnsavedFormGuard(isDirty)
+
   const updateMutation = useMutation({
     mutationFn: (values: Record<string, string>) => {
       const body =
@@ -55,6 +62,24 @@ export function ResourceEditPage() {
     },
     onError: (err) => toastFromError(err, 'Não foi possível salvar'),
   })
+
+  const saveFromDialog = useCallback((): Promise<boolean> => {
+    return new Promise((resolve) => {
+      void handleSubmit(
+        async (values) => {
+          try {
+            await updateMutation.mutateAsync(values)
+            resolve(true)
+          } catch {
+            resolve(false)
+          }
+        },
+        () => resolve(false),
+      )()
+    })
+  }, [handleSubmit, updateMutation])
+
+  useRegisterUnsavedSave(saveFromDialog)
 
   if (recordId == null) {
     return <Navigate {...resourceListTo(def)} replace />

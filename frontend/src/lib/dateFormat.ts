@@ -32,6 +32,12 @@ export function parseDateFormat(value: unknown): DateFormatPreference {
 }
 
 /** Extract YYYY-MM-DD from API / ISO strings. */
+/** Data local de hoje em `YYYY-MM-DD` (form/API). */
+export function todayApiDate(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
 export function normalizeApiDateToForm(value: unknown): string {
   if (value == null || value === '') return ''
   const s = String(value).trim()

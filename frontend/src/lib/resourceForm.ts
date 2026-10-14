@@ -71,8 +71,9 @@ export function formatFieldValue(
   row?: Record<string, unknown>,
   dateFormat?: DateFormatPreference,
 ): string {
-  if (field?.type === 'date' && dateFormat) {
-    return formatDateForDisplay(value, dateFormat)
+  if (dateFormat && (field?.type === 'date' || (typeof value === 'string' && value.includes('T')))) {
+    const formatted = formatDateForDisplay(value, dateFormat)
+    if (formatted !== '—') return formatted
   }
   if (field?.relationResource === 'municipios' && row) {
     const fromNested = formatMunicipioRelationLabel(row)

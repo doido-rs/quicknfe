@@ -380,6 +380,7 @@ paths:
         '204':
           description: Deleted
 
+  # Certificado `tipo`: enum A1 | A3 | PFX | PEM (see AGENTS.md)
   /api/prestadores/{prestador_id}/certificados:
     parameters:
       - name: prestador_id
@@ -1358,6 +1359,7 @@ components:
       properties:
         tipo:
           type: string
+          enum: [A1, A3, PFX, PEM]
         caminho_arquivo:
           type: string
           description: Caminho no servidor (alternativa ao upload)

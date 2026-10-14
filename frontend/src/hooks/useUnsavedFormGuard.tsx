@@ -1,11 +1,13 @@
 import { useBlocker } from '@tanstack/react-router'
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   createContext,
   useContext,
   useSyncExternalStore,
   type ReactNode,
 } from 'react'
+
+export type UnsavedSaveHandler = () => Promise<boolean>
 
 type UnsavedStore = {
   subscribe: (listener: () => void) => () => void
@@ -43,21 +45,58 @@ function createUnsavedStore(): UnsavedStore {
   }
 }
 
-const UnsavedChangesContext = createContext<UnsavedStore | null>(null)
+type UnsavedProviderValue = {
+  store: UnsavedStore
+  saveHandlerRef: React.MutableRefObject<UnsavedSaveHandler | null>
+  subscribeSaveHandler: (listener: () => void) => () => void
+  getSaveHandlerSnapshot: () => UnsavedSaveHandler | null
+  notifySaveHandler: () => void
+}
+
+const UnsavedChangesContext = createContext<UnsavedProviderValue | null>(null)
 
 export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
   const store = useMemo(() => createUnsavedStore(), [])
+  const saveHandlerRef = useRef<UnsavedSaveHandler | null>(null)
+  const saveHandlerListeners = useMemo(() => new Set<() => void>(), [])
+  const notifySaveHandlerRef = useRef<() => void>(() => {})
+  notifySaveHandlerRef.current = () => {
+    for (const l of saveHandlerListeners) l()
+  }
+  const subscribeSaveHandler = useCallback(
+    (listener: () => void) => {
+      saveHandlerListeners.add(listener)
+      return () => saveHandlerListeners.delete(listener)
+    },
+    [saveHandlerListeners],
+  )
+  const getSaveHandlerSnapshot = useCallback(() => saveHandlerRef.current, [])
+  const value = useMemo(
+    () => ({
+      store,
+      saveHandlerRef,
+      subscribeSaveHandler,
+      getSaveHandlerSnapshot,
+      notifySaveHandler: () => notifySaveHandlerRef.current(),
+    }),
+    [store, subscribeSaveHandler, getSaveHandlerSnapshot],
+  )
+
   return (
-    <UnsavedChangesContext.Provider value={store}>{children}</UnsavedChangesContext.Provider>
+    <UnsavedChangesContext.Provider value={value}>{children}</UnsavedChangesContext.Provider>
   )
 }
 
-function useUnsavedStore() {
+function useUnsavedProviderValue() {
   const ctx = useContext(UnsavedChangesContext)
   if (!ctx) {
     throw new Error('useUnsavedFormGuard must be used within UnsavedChangesProvider')
   }
   return ctx
+}
+
+function useUnsavedStore() {
+  return useUnsavedProviderValue().store
 }
 
 export function useGlobalUnsavedDirty() {
@@ -74,6 +113,26 @@ export function useUnsavedFormGuard(isDirty: boolean) {
     store.setDirty(id, isDirty)
     return () => store.setDirty(id, false)
   }, [id, isDirty, store])
+}
+
+/** Registra callback de salvar (ex.: página de edição) para o diálogo de navegação. */
+export function useRegisterUnsavedSave(handler: UnsavedSaveHandler | null) {
+  const ctx = useUnsavedProviderValue()
+  useEffect(() => {
+    ctx.saveHandlerRef.current = handler
+    ctx.notifySaveHandler()
+    return () => {
+      if (ctx.saveHandlerRef.current === handler) {
+        ctx.saveHandlerRef.current = null
+        ctx.notifySaveHandler()
+      }
+    }
+  }, [handler, ctx])
+}
+
+export function useOptionalUnsavedSave(): UnsavedSaveHandler | null {
+  const { subscribeSaveHandler, getSaveHandlerSnapshot } = useUnsavedProviderValue()
+  return useSyncExternalStore(subscribeSaveHandler, getSaveHandlerSnapshot, getSaveHandlerSnapshot)
 }
 
 export type UnsavedBlockerState =
@@ -125,10 +184,17 @@ export function useGuardedNavigate() {
 
   const cancelNavigation = useCallback(() => setPending(null), [])
 
+  const confirmSavedAndLeave = useCallback(() => {
+    const run = pending
+    setPending(null)
+    run?.()
+  }, [pending])
+
   return {
     requestNavigation,
     pendingConfirmation: pending != null,
     confirmDiscard,
     cancelNavigation,
+    confirmSavedAndLeave,
   }
 }

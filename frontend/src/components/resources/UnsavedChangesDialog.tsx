@@ -1,13 +1,4 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { UnsavedConfirmDialog } from '@/components/resources/UnsavedConfirmDialog'
 import { useUnsavedNavigationBlocker } from '@/hooks/useUnsavedFormGuard'
 
 export function UnsavedChangesDialog() {
@@ -18,25 +9,12 @@ export function UnsavedChangesDialog() {
   }
 
   return (
-    <AlertDialog open onOpenChange={(open) => !open && blocker.reset()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Alterações não salvas</AlertDialogTitle>
-          <AlertDialogDescription>
-            Existem alterações que ainda não foram salvas. Deseja sair e descartar as alterações?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={blocker.reset}>Continuar editando</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              blocker.proceed()
-            }}
-          >
-            Descartar e sair
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <UnsavedConfirmDialog
+      open
+      onOpenChange={(open) => !open && blocker.reset()}
+      onContinueEditing={blocker.reset}
+      onDiscard={blocker.proceed}
+      onSavedAndLeave={blocker.proceed}
+    />
   )
 }

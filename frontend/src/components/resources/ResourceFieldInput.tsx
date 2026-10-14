@@ -208,7 +208,13 @@ export function ResourceFieldInput({
         id={inputId}
         readOnly={field.readOnly}
         className={field.readOnly ? 'bg-muted' : undefined}
-        type={field.type === 'number' ? 'number' : 'text'}
+        type={
+          field.inputType === 'password'
+            ? 'password'
+            : field.type === 'number'
+              ? 'number'
+              : 'text'
+        }
         {...form.register(field.key, { required: field.required && !field.readOnly })}
       />
     </div>

@@ -5,6 +5,8 @@ import {
   UnsavedChangesProvider,
   useGlobalUnsavedDirty,
   useGuardedNavigate,
+  useOptionalUnsavedSave,
+  useRegisterUnsavedSave,
   useUnsavedFormGuard,
 } from '@/hooks/useUnsavedFormGuard'
 
@@ -49,5 +51,18 @@ describe('useUnsavedFormGuard', () => {
       result.current.nav.confirmDiscard()
     })
     expect(ran).toBe(true)
+  })
+
+  it('exposes registered save handler', async () => {
+    const saveFn = async () => true
+    const { result: regRef } = renderHook(
+      () => {
+        useRegisterUnsavedSave(saveFn)
+        return useOptionalUnsavedSave()
+      },
+      { wrapper },
+    )
+    await waitFor(() => expect(regRef.current).toBe(saveFn))
+    expect(await regRef.current!()).toBe(true)
   })
 })

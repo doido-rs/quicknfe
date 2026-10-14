@@ -1,15 +1,6 @@
 import { Link, useNavigate, type LinkProps } from '@tanstack/react-router'
+import { UnsavedConfirmDialog } from '@/components/resources/UnsavedConfirmDialog'
 import { useGuardedNavigate } from '@/hooks/useUnsavedFormGuard'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 
 type GuardedLinkProps = LinkProps & {
   children: React.ReactNode
@@ -18,8 +9,13 @@ type GuardedLinkProps = LinkProps & {
 
 export function GuardedLink({ children, onClick, ...props }: GuardedLinkProps) {
   const navigate = useNavigate()
-  const { requestNavigation, pendingConfirmation, confirmDiscard, cancelNavigation } =
-    useGuardedNavigate()
+  const {
+    requestNavigation,
+    pendingConfirmation,
+    confirmDiscard,
+    cancelNavigation,
+    confirmSavedAndLeave,
+  } = useGuardedNavigate()
 
   return (
     <>
@@ -39,20 +35,13 @@ export function GuardedLink({ children, onClick, ...props }: GuardedLinkProps) {
       >
         {children}
       </Link>
-      <AlertDialog open={pendingConfirmation} onOpenChange={(open) => !open && cancelNavigation()}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Alterações não salvas</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja sair sem salvar? As alterações serão perdidas.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelNavigation}>Continuar editando</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDiscard}>Descartar e sair</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <UnsavedConfirmDialog
+        open={pendingConfirmation}
+        onOpenChange={(open) => !open && cancelNavigation()}
+        onContinueEditing={cancelNavigation}
+        onDiscard={confirmDiscard}
+        onSavedAndLeave={confirmSavedAndLeave}
+      />
     </>
   )
 }

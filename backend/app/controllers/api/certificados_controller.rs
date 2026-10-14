@@ -8,6 +8,7 @@ use crate::models::certificado_digital::{
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::certificado_arquivo::gravar_certificado_pfx;
+use crate::services::certificado_tipo::validar_certificado_tipo;
 use crate::services::dto::{encode_certificado_senha, CertificadoDto};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::tenant_scope;
@@ -90,6 +91,7 @@ impl ApiCertificadosController {
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
+        crate::api!(to_response(validar_certificado_tipo(&form.tipo)));
         let caminho = crate::api!(to_response(
             caminho_from_form(&form, prestador_id).and_then(|p| {
                 p.ok_or(ApiError::Validation(
@@ -129,6 +131,7 @@ impl ApiCertificadosController {
             tenant_scope::certificado_for_tenant(ctx.db(), prestador_id, id).await,
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
+        crate::api!(to_response(validar_certificado_tipo(&form.tipo)));
         let caminho = crate::api!(to_response(caminho_from_form(&form, prestador_id)));
         let mut record: CertActive = existing.into();
         record.tipo = Set(form.tipo);

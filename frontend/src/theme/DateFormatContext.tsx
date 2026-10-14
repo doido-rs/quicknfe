@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthContext'
 import { apiFetch } from '@/api/client'
 import {
@@ -25,6 +26,7 @@ interface DateFormatContextValue {
 const DateFormatContext = createContext<DateFormatContextValue | null>(null)
 
 export function DateFormatProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const { me } = useAuth()
   const userId = me?.user.id
   const fromApi = me?.user.date_format
@@ -52,12 +54,14 @@ export function DateFormatProvider({ children }: { children: ReactNode }) {
         void apiFetch<{ date_format?: string }>('/api/me', {
           method: 'PATCH',
           body: JSON.stringify({ date_format: pref }),
-        }).catch(() => {
-          /* localStorage already updated */
         })
+          .then(() => queryClient.invalidateQueries({ queryKey: ['me'] }))
+          .catch(() => {
+            /* localStorage already updated */
+          })
       }
     },
-    [userId],
+    [userId, queryClient],
   )
 
   const value = useMemo(() => ({ preference, setPreference }), [preference, setPreference])

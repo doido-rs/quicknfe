@@ -11,6 +11,7 @@ import {
   REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS,
   TRIBUTACAO_ISSQN_OPTIONS,
 } from '@/lib/documentoTributacaoIssqn'
+import { CERTIFICADO_TIPO_OPTIONS } from '@/lib/certificadoTipo'
 import { REGIME_TRIBUTARIO_OPTIONS } from '@/lib/regimeTributario'
 
 const SIM_NAO_OPTIONS = [
@@ -77,6 +78,8 @@ export interface FieldDef {
   defaultValue?: string
   /** Oculta na ficha de detalhes (campos só do formulário). */
   formOnly?: boolean
+  /** Para `type: 'text'`: renderiza `<input type="password">`. */
+  inputType?: 'password'
 }
 
 /** Seção do formulário (layout); campos continuam em `fields` para API/CRUD. */
@@ -616,7 +619,14 @@ export const resources: ResourceDef[] = [
       path: (prestadorId) => `/api/prestadores/${prestadorId}/certificados`,
       createButtonLabel: 'Enviar certificado',
       fields: [
-        { key: 'tipo', label: 'Tipo (ex.: A1)', required: true },
+        {
+          key: 'tipo',
+          label: 'Tipo de certificado',
+          type: 'enum',
+          enumOptions: [...CERTIFICADO_TIPO_OPTIONS],
+          defaultValue: 'A1',
+          required: true,
+        },
         {
           key: 'arquivo',
           label: 'Arquivo do certificado',
@@ -625,7 +635,12 @@ export const resources: ResourceDef[] = [
           required: true,
           fileUploadAs: { base64Key: 'arquivo_base64', nameKey: 'arquivo_nome' },
         },
-        { key: 'senha', label: 'Senha do certificado', required: true },
+        {
+          key: 'senha',
+          label: 'Senha do certificado',
+          required: true,
+          inputType: 'password',
+        },
         { key: 'data_validade', label: 'Validade', type: 'date', required: true },
       ],
     },

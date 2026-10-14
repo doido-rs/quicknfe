@@ -74,6 +74,7 @@ Forms are **not** hand-written per screen. They share:
 | Property | Purpose |
 |----------|---------|
 | `type` | `text`, `number`, `date`, `textarea`, `relation`, `enum`, `file`, `boolean` |
+| `type: 'enum'` | Fixed set via `enumOptions` (`{ value, label }[]`); renders a **select**, not free text. Example: certificado nested `tipo` — see [Certificado digital](#2-certificado-digital-nested-under-prestador). |
 | `type: 'date'` | Calendar dates only (competência, emissão, validade certificado, `data_registro`, …). **Display and edit** must follow the user’s [date format preference](#user-preferences--date-format); wire/API values stay ISO — see that section. |
 | `required` | HTML/RHF validation on relation and inputs |
 | `defaultValue` | Initial string in `emptyForm` |
@@ -121,7 +122,7 @@ Fields remain in flat `fields[]` for API mapping; sections control UX:
 **Expected UX when implemented:**
 
 1. **Dirty detection** — compare current values to last saved baseline (e.g. `react-hook-form` `formState.isDirty` after `reset` from server defaults on edit; empty defaults on create). Include nested/draft panels in the same dirty signal where they hold unpublished data.
-2. **In-app navigation** — intercept TanStack Router transitions (sidebar, “Voltar”, list links, breadcrumbs) and show a confirm dialog: stay, save (if applicable), or discard and leave.
+2. **In-app navigation** — intercept TanStack Router transitions (sidebar, “Voltar”, list links, breadcrumbs) and show a confirm dialog: stay, **Salvar** (when edit page registered a save handler), or discard and leave.
 3. **Cancel actions** — “Cancelar” / back links follow the same rule (confirm if dirty), not silent navigation.
 4. **Browser leave** — optional `beforeunload` prompt when dirty (standard browser wording).
 5. **After successful submit** — clear dirty state (`reset` with new baseline) then allow navigation (including post-create redirect to show).
@@ -195,7 +196,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 ### List and show (documentos)
 
 - **List** (`DocumentoListTable`): data (competência/emissão), prestador, tomador, intermediário, valor, situação; API list DTO adds `*_razao_social` (`documento_presentacao.rs`).
-- **Show** (`DocumentoShowView`): same sections as edit, read-only; **Assinar nota fiscal**, **Baixar XML**, Editar; nested itens + logs SEFAZ.
+- **Show** (`DocumentoShowView`): same sections as edit, read-only; **Assinar nota fiscal**, **Transmitir SEFIN**, **Baixar XML**, Editar; nested itens (+ tributos) + logs SEFAZ.
 
 ---
 
@@ -237,11 +238,18 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 ### 2. Certificado digital (nested under prestador)
 
-**Purpose**: Store A1 PFX for mTLS (CNC, NFSe transmission).
+**Purpose**: Store digital certificate files (typically **A1** PFX) for mTLS (CNC, NFSe transmission) and XML-DSig.
 
-**UI**: Nested panel on prestador **show** — file field `.pfx,.p12` → `arquivo_base64` + `arquivo_nome`, senha, validade.
+**UI**: Nested panel on prestador **show** (`NestedResourcePanel` on prestador show).
 
-**API**: `/api/prestadores/{prestador_id}/certificados` CRUD.
+| Field | `FieldDef` | Notes |
+|-------|------------|--------|
+| `tipo` | **`type: 'enum'`** + `enumOptions` | **Must be a select**, not a plain text input. Allowed values match DB check constraint: `A1`, `A3`, `PFX`, `PEM`. Default UX: preselect `A1` when creating (most uploads are A1 `.pfx`/`.p12`). |
+| `arquivo` | `type: 'file'`, `accept: '.pfx,.p12'`, `fileUploadAs` | POST body: `arquivo_base64` + `arquivo_nome` |
+| `senha` | `text` (password in UI) | Encrypted server-side |
+| `data_validade` | `type: 'date'` | User [date format](#user-preferences--date-format); API `YYYY-MM-DD` |
+
+**API**: `/api/prestadores/{prestador_id}/certificados` CRUD — `tipo` is a string enum on the wire (one of the values above).
 
 **Workflow**: Upload on show/edit prestador after prestador exists; CNC in **dev mock** may work without cert; production CNC/SEFIN require valid cert on prestador.
 
@@ -350,7 +358,7 @@ Use this as the **checklist** when completing XML generation against `layout_dps
 | **Tributação municipal (ISSQN)** | ISSQN, exigibilidade, retenção, benefícios, BC/alíquota/valor | Form section *Tributação Municipal*: `trib_issqn`, `reg_esp_trib_issqn`, flags `issqn_*`, `issqn_aliquota`, `issqn_base_calculo`, `issqn_valor` |
 | **Tributação federal** | PIS/COFINS/CSLL, retenções federais | Form section *Tributação Federal*: `cst_pis_cofins`, `tp_ret_pis_cofins_csll`, `valor_irrf`, `valor_contrib_sociais_retidas`, `valor_contrib_previdenciaria_retida` |
 | **Informações complementares** | Campos adicionais / B2B / RT | `numero_doc_responsabilidade_tecnica`, `documento_referencia`, `informacoes_complementares`, `numero_pedido_ordem_b2b` |
-| **Assinatura** | XML-DSig | `assinar_dps_xml_rascunho` → `xml_assinado` (stub today; must comply with layout/XSD) |
+| **Assinatura** | XML-DSig | `assinar_dps_xml_rascunho` → `xml_assinado` (PFX A1 when cert available; dev stub without cert) |
 | **Pós-transmissão** | NFSe processada, chave, protocolo | `xml_processado`, `chave_acesso`, `codigo_verificacao`, `protocolo_autorizacao`, `status`; logs em `logs-retorno` |
 
 **Relations loaded at XML build time (expected):** for a complete DPS, the builder should resolve the documento row plus prestador, optional tomador/intermediário, municípios, and all `itens` (with CNA codes)—not only scalar columns on `documentos_fiscais`.
@@ -472,6 +480,8 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 | Form core | `frontend/src/lib/resourceForm.ts`, `ResourceFormFields.tsx`, `ResourceFieldInput.tsx` |
 | Date format | `frontend/src/lib/dateFormat.ts`, `frontend/src/theme/DateFormatContext.tsx`, `SettingsPage.tsx` → Preferências; `users.date_format`, `session_controller` `update_me` |
 | Item tributos UI | `ItemTributosPanel.tsx`, `NestedResourcePanel` + `definitions.ts` `itemTributos` |
+| Certificado enum | `frontend/src/lib/certificadoTipo.ts`, `backend/app/services/certificado_tipo.rs` |
+| Unsaved + Salvar | `UnsavedConfirmDialog.tsx`, `useRegisterUnsavedSave`, `ResourceEditPage.tsx` |
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
@@ -482,4 +492,4 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard (sidebar `GuardedLink` + router blocker). DPS: committed `layout_dps.xlsx`; `montar_dps_xml_context` + `dps_layout`/`dps_rn` + `validar_dps_contexto` + XML-DSig (A1 when cert available). User date format (`DMY`/`MDY`/`YMD`) via API + UI. DPS mandatory-field coverage still partial — see `layout_cobertura_parcial`.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, certificado `tipo` enum (UI + API validation), tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard with **Salvar** on edit (`UnsavedConfirmDialog`). DPS: committed `layout_dps.xlsx`; `montar_dps_xml_context` + `dps_layout`/`dps_rn` + `validar_dps_contexto` (incl. itens obrigatórios) + XML-DSig (A1 when cert available). User date format (`DMY`/`MDY`/`YMD`) via API + UI + `todayApiDate()` for defaults. DPS mandatory-field coverage still partial — tracked by `layout_cobertura_parcial` / `montar_dps_golden_fixture_principais_tags`.*
