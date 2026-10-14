@@ -32,6 +32,28 @@ export async function assinarDocumento(documentoId: number): Promise<Record<stri
   })
 }
 
+export type TransmitirDocumentoResponse = {
+  sucesso?: boolean
+  http_status?: number
+  id_dps?: string
+  chave_acesso?: string
+}
+
+export async function transmitirDocumento(
+  documentoId: number,
+  certificadoId?: number,
+): Promise<TransmitirDocumentoResponse> {
+  return apiFetch<TransmitirDocumentoResponse>(
+    `/api/documentos/${documentoId}/transmitir`,
+    {
+      method: 'POST',
+      body: JSON.stringify(
+        certificadoId != null ? { certificado_id: certificadoId } : {},
+      ),
+    },
+  )
+}
+
 export async function downloadDocumentoXml(documentoId: number): Promise<void> {
   const res = await fetch(`${API_BASE}/api/documentos/${documentoId}/xml`, {
     credentials: 'include',

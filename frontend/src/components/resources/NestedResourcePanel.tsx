@@ -12,6 +12,7 @@ import {
   useResourceFieldForm,
 } from '@/lib/resourceForm'
 import { toastFromError, toastSuccess } from '@/lib/toast'
+import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
 import type { NestedDef } from '@/resources/definitions'
 
 export function NestedResourcePanel({
@@ -26,7 +27,12 @@ export function NestedResourcePanel({
   const api = resourceApi<Record<string, unknown>>(path)
   const queryClient = useQueryClient()
   const form = useResourceFieldForm(nested.fields)
-  const { handleSubmit, reset } = form
+  const {
+    handleSubmit,
+    reset,
+    formState: { isDirty },
+  } = form
+  useUnsavedFormGuard(allowCreate && isDirty)
   const [files, setFiles] = useState<Record<string, File | undefined>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, Navigate } from '@tanstack/react-router'
+import { Navigate } from '@tanstack/react-router'
+import { GuardedLink } from '@/components/navigation/GuardedLink'
 import { useEffect } from 'react'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
@@ -47,8 +48,9 @@ export function ResourceEditPage() {
       }
       return api.update(recordId!, body)
     },
-    onSuccess: () => {
+    onSuccess: (_data, values) => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
+      form.reset(values)
       toastSuccess('Alterações salvas')
     },
     onError: (err) => toastFromError(err, 'Não foi possível salvar'),
@@ -75,7 +77,7 @@ export function ResourceEditPage() {
     <div className="space-y-4">
       <PageTitle>{`Editar — ${def.title}`}</PageTitle>
       <Button variant="ghost" size="sm" asChild className="-ml-2">
-        <Link {...resourceShowTo(def, recordId)}>← Voltar ao registro</Link>
+        <GuardedLink {...resourceShowTo(def, recordId)}>← Voltar ao registro</GuardedLink>
       </Button>
 
       <Card>

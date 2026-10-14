@@ -589,6 +589,41 @@ paths:
         '204':
           description: Deleted
 
+  /api/documentos/{id}/assinar:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      tags: [Documentos]
+      summary: Assinar DPS (XML-DSig)
+      operationId: assinarDocumento
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          description: Documento com xml_assinado atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoDto'
+
+  /api/documentos/{id}/xml:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Documentos]
+      summary: Download XML (processado, assinado ou rascunho DPS)
+      operationId: downloadDocumentoXml
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          description: XML da nota fiscal
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+
   /api/documentos/{id}/transmitir:
     parameters:
       - $ref: '#/components/parameters/IdPath'

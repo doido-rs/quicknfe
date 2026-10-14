@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo } from 'react'
 import { DocumentoAssinarButton } from '@/components/resources/DocumentoAssinarButton'
+import { DocumentoTransmitirButton } from '@/components/resources/DocumentoTransmitirButton'
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
@@ -49,6 +50,7 @@ export function DocumentoShowView({
         </div>
         <div className="flex flex-wrap items-start justify-end gap-2">
           <DocumentoAssinarButton documentoId={recordId} row={row} />
+          <DocumentoTransmitirButton documentoId={recordId} row={row} />
           <DocumentoXmlDownloadButton documentoId={recordId} row={row} />
           <Button variant="outline" asChild>
             <Link {...resourceEditTo(def, recordId)}>Editar</Link>

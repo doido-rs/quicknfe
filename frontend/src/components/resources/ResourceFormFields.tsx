@@ -1,4 +1,5 @@
-import { Link } from '@tanstack/react-router'
+import { GuardedLink } from '@/components/navigation/GuardedLink'
+import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -318,12 +319,14 @@ export function ResourceFormFields({
 }) {
   const {
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isDirty },
   } = form
+
+  useUnsavedFormGuard(!readOnly && isDirty)
 
   const cancelButton = cancelLink ? (
     <Button type="button" variant="outline" asChild>
-      <Link {...cancelLink}>Cancelar</Link>
+      <GuardedLink {...cancelLink}>Cancelar</GuardedLink>
     </Button>
   ) : onCancel ? (
     <Button type="button" variant="outline" onClick={onCancel}>

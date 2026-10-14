@@ -100,11 +100,11 @@ Fields remain in flat `fields[]` for API mapping; sections control UX:
 
 **Actions**: `submitLabel`, `cancelLink`, `actionsAlign: 'end'` (notas fiscais align Criar/Cancelar to the right).
 
-### Unsaved changes — required behavior (not implemented yet)
+### Unsaved changes — required behavior
 
 **Product rule (all editable forms):** the user must **not** leave the form—with unsaved edits—by closing the flow, using Cancel/back links, sidebar navigation, in-app route changes, or browser tab close/reload—unless they **save successfully** or **explicitly confirm discarding** changes.
 
-**Status:** documented requirement only; **not implemented in the codebase today**. New work should plan for this guard rather than adding one-off bypasses.
+**Status:** implemented via `UnsavedChangesProvider`, `useUnsavedFormGuard`, TanStack Router `useBlocker`, and `GuardedLink` on resource create/edit flows (including nested panels and documento draft itens).
 
 **Scope — every form that mutates data:**
 
@@ -253,7 +253,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 | Montar rascunho XML | — | — | `montar_dps_xml(documento)` — **partial** stub; must converge on `layout_dps.xlsx` |
 | Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | Inserts XML-DSig stub into `xml_assinado` |
 | Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
-| Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | *Not wired in frontend* | mTLS + optional `certificado_id`; updates doc/logs |
+| Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | mTLS + optional `certificado_id`; updates doc/logs |
 
 Transmission implementation lives in `backend/app/services/nfse/` (ambiente URLs, resposta parsing, logs).
 
@@ -426,4 +426,4 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/XML, draft itens on create, tributação municipal/federal form sections, cursor pagination, Sonner toasts. DPS: `layout_dps.xlsx` documented as schema source; XML builder still partial vs full layout. Planned: global unsaved-changes navigation guard on all forms (documented, not built).*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML, draft itens on create, tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard. DPS: root `layout_dps.xlsx` (Anexo I NFS-e Nacional v1.01); `montar_dps_xml_context` emits identificação, prestador, partes, serviço, valores, ISSQN, federal, complementares; RN gate + XML-DSig (A1 when cert available). Item tributos API remains without dedicated UI resource.*

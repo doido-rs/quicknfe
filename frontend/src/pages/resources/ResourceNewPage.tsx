@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, Navigate, useNavigate } from '@tanstack/react-router'
+import { Navigate, useNavigate } from '@tanstack/react-router'
+import { GuardedLink } from '@/components/navigation/GuardedLink'
+import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/auth/AuthContext'
 import { resourceApi } from '@/api/client'
@@ -65,9 +67,8 @@ export function ResourceNewPage() {
     })
   }, [def.key, empresaId, form])
 
-  if (def.allowCreate === false) {
-    return <Navigate {...resourceListTo(def)} replace />
-  }
+  const formDirty = form.formState.isDirty || draftItens.length > 0
+  useUnsavedFormGuard(formDirty)
 
   const createMutation = useMutation({
     mutationFn: async (values: Record<string, string>) => {
@@ -92,9 +93,11 @@ export function ResourceNewPage() {
       }
       return created
     },
-    onSuccess: (created) => {
+    onSuccess: (created, _vars, _ctx) => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
       toastSuccess('Registro criado com sucesso')
+      form.reset(form.getValues())
+      setDraftItens([])
       const newId = Number(created.id)
       if (Number.isFinite(newId)) {
         navigate(resourceShowTo(def, newId))
@@ -105,11 +108,15 @@ export function ResourceNewPage() {
     onError: (err) => toastFromError(err, 'Não foi possível criar o registro'),
   })
 
+  if (def.allowCreate === false) {
+    return <Navigate {...resourceListTo(def)} replace />
+  }
+
   return (
     <div className="space-y-4">
       <PageTitle>{`Novo — ${def.title}`}</PageTitle>
       <Button variant="ghost" size="sm" asChild className="-ml-2">
-        <Link {...resourceListTo(def)}>← Voltar à lista</Link>
+        <GuardedLink {...resourceListTo(def)}>← Voltar à lista</GuardedLink>
       </Button>
 
       <Card>

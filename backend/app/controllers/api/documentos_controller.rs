@@ -10,7 +10,12 @@ use crate::models::documento_fiscal::{
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
 use crate::services::documento_presentacao::{documento_detalhe, documentos_list_items};
 use crate::services::dto::{DocumentoDto, ParteExteriorDto, TransmitirDocumentoResponse};
-use crate::services::nfse::{assinar_dps_xml_rascunho, montar_dps_xml, transmitir_documento, TransmitirParams};
+use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEntity};
+use crate::services::dto::decode_certificado_senha;
+use crate::services::nfse::{
+    assinar_dps_xml_rascunho, load_dps_context, montar_dps_xml_context,
+    transmitir_documento, validar_dps_contexto, TransmitirParams,
+};
 use crate::services::pagination::PageResponse;
 use crate::services::municipio::require_municipio;
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
@@ -223,22 +228,39 @@ async fn validate_refs(
     Ok(())
 }
 
-fn documento_xml_content(doc: &Documento) -> String {
+async fn documento_xml_content(
+    db: &doido::model::sea_orm::DatabaseConnection,
+    doc: &Documento,
+) -> Result<String, ApiError> {
     if let Some(xml) = doc
         .xml_processado
         .as_ref()
         .filter(|xml| !xml.trim().is_empty())
     {
-        return xml.clone();
+        return Ok(xml.clone());
     }
     if let Some(xml) = doc
         .xml_assinado
         .as_ref()
         .filter(|xml| !xml.trim().is_empty())
     {
-        return xml.clone();
+        return Ok(xml.clone());
     }
-    montar_dps_xml(doc)
+    let ctx = load_dps_context(db, doc.clone()).await?;
+    validar_dps_contexto(&ctx)?;
+    montar_dps_xml_context(&ctx)
+}
+
+async fn ultimo_certificado_empresa(
+    db: &doido::model::sea_orm::DatabaseConnection,
+    empresa_id: i64,
+) -> Result<Option<crate::models::certificado_digital::Model>, ApiError> {
+    CertEntity::find()
+        .filter(CertColumn::EmpresaId.eq(empresa_id))
+        .order_by_desc(CertColumn::CriadoEm)
+        .one(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))
 }
 
 fn xml_download_filename(doc: &Documento) -> String {
@@ -448,13 +470,34 @@ impl ApiDocumentosController {
         let existing = crate::api!(scoped(
             tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
-        let base_xml = existing
+        let dps_ctx = crate::api!(to_response(
+            load_dps_context(ctx.db(), existing.clone()).await,
+        ));
+        crate::api!(to_response(validar_dps_contexto(&dps_ctx)));
+        let base_xml = if existing
             .xml_assinado
             .as_ref()
-            .filter(|x| !x.trim().is_empty())
-            .cloned()
-            .unwrap_or_else(|| montar_dps_xml(&existing));
-        let signed = assinar_dps_xml_rascunho(&base_xml);
+            .is_some_and(|x| !x.trim().is_empty())
+        {
+            existing.xml_assinado.clone().unwrap()
+        } else {
+            crate::api!(to_response(montar_dps_xml_context(&dps_ctx)))
+        };
+        let cert = crate::api!(to_response(
+            ultimo_certificado_empresa(ctx.db(), existing.empresa_id).await,
+        ));
+        let senha_owned = cert
+            .as_ref()
+            .map(|c| decode_certificado_senha(&c.senha_encriptada));
+        let caminho = cert
+            .as_ref()
+            .and_then(|c| c.caminho_arquivo.as_deref());
+        let senha = senha_owned.as_deref();
+        let signed = crate::api!(to_response(assinar_dps_xml_rascunho(
+            &base_xml,
+            caminho,
+            senha,
+        )));
         let mut record: DocActive = existing.into();
         record.xml_assinado = Set(Some(signed));
         let updated = crate::api!(db(record.update(ctx.db()).await));
@@ -479,7 +522,7 @@ impl ApiDocumentosController {
         let row = crate::api!(scoped(
             tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
-        let xml = documento_xml_content(&row);
+        let xml = crate::api!(to_response(documento_xml_content(ctx.db(), &row).await));
         let filename = xml_download_filename(&row);
         ctx.send_data(
             xml.into_bytes(),

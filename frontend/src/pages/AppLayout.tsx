@@ -6,6 +6,8 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { Toaster } from '@/components/ui/sonner'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { UnsavedChangesDialog } from '@/components/resources/UnsavedChangesDialog'
+import { UnsavedChangesProvider } from '@/hooks/useUnsavedFormGuard'
 
 function AppTopBar() {
   const title = usePageTitle()
@@ -42,15 +44,18 @@ export function AppLayout() {
     <TooltipProvider>
       <Toaster />
       <PageTitleProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <AppTopBar />
-            <main className="flex-1 p-4 md:p-6">
-              <Outlet />
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
+        <UnsavedChangesProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <AppTopBar />
+              <main className="flex-1 p-4 md:p-6">
+                <Outlet />
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+          <UnsavedChangesDialog />
+        </UnsavedChangesProvider>
       </PageTitleProvider>
     </TooltipProvider>
   )

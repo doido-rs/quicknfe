@@ -133,6 +133,7 @@ describe('Resource pages', () => {
     expect(await screen.findByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /baixar xml/i })).toBeEnabled()
     expect(screen.getByRole('button', { name: /assinar nota fiscal/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /transmitir sefin/i })).toBeInTheDocument()
   })
 
   it('shows read-only SEFAZ logs on documento show without add form', async () => {
