@@ -1,99 +1,89 @@
-//! Regras de negócio importadas da aba `RN DPS_NFS-e` do layout oficial.
+//! Regras de negócio importadas de `layout_dps.csv` (RN DPS + RN recepção).
 
-use std::fs;
-use std::io::Cursor;
 use std::path::Path;
 
-use calamine::{Reader, Xlsx};
+use super::dps_layout_csv::{
+    column_index, column_index_contains, find_layout_header, get_field, read_csv_records,
+};
 
-const RN_SHEET: &str = "RN DPS_NFS-e";
-const RN_RECEPCAO_SHEET: &str = "RN_RECEPCAO_DPS";
+const RN_CSV: &str = "layout_dps.csv";
+const SHEET_RN_DPS: &str = "RN DPS_NFS-e";
+const SHEET_RN_RECEPCAO: &str = "RN_RECEPCAO_DPS";
 
 #[derive(Debug, Clone)]
 pub struct RnRow {
     pub xml_path: String,
     pub campo: String,
     pub descricao: String,
+    pub aplic: String,
+    pub efeito: String,
+    pub cod_erro: String,
+    pub msg_erro: String,
+}
+
+fn load_rn_rows_filtered(repo_root: &Path, origem: Option<&str>) -> Result<Vec<RnRow>, String> {
+    let path = repo_root.join(RN_CSV);
+    let records = read_csv_records(&path)?;
+    let (header_idx, headers) = find_layout_header(&records)
+        .ok_or_else(|| format!("cabeçalho RN ausente em {}", path.display()))?;
+
+    let idx_origem = column_index(&headers, "ORIGEM");
+    let idx_path = column_index_contains(&headers, "CAMINHO");
+    let idx_campo = column_index(&headers, "CAMPO");
+    // Colunas após re-export: descrição costuma ser a 4ª coluna de negócio; usamos nomes quando existirem.
+    let idx_aplic = column_index(&headers, "APLIC.");
+    let idx_efeito = column_index(&headers, "EFEITO");
+    let idx_cod = column_index_contains(&headers, "CÓD");
+    let idx_msg = column_index_contains(&headers, "MSG");
+
+    let desc_fallback = 4usize;
+
+    let mut rows = Vec::new();
+    for rec in records.iter().skip(header_idx + 1) {
+        if let Some(o) = origem {
+            if idx_origem.is_some() {
+                let sheet = get_field(rec, idx_origem);
+                if sheet != o {
+                    continue;
+                }
+            }
+        }
+
+        let xml_path = get_field(rec, idx_path);
+        let campo = get_field(rec, idx_campo);
+        if xml_path.is_empty() && campo.is_empty() {
+            continue;
+        }
+        let descricao = idx_campo
+            .and_then(|c| rec.get(c + 1))
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| get_field(rec, Some(desc_fallback)));
+
+        rows.push(RnRow {
+            xml_path,
+            campo,
+            descricao,
+            aplic: get_field(rec, idx_aplic),
+            efeito: get_field(rec, idx_efeito),
+            cod_erro: get_field(rec, idx_cod),
+            msg_erro: get_field(rec, idx_msg),
+        });
+    }
+    Ok(rows)
 }
 
 pub fn load_rn_dps_rows(repo_root: &Path) -> Result<Vec<RnRow>, String> {
-    let path = repo_root.join("layout_dps.xlsx");
-    let bytes = fs::read(&path).map_err(|e| format!("ler layout: {e}"))?;
-    let cursor = Cursor::new(bytes);
-    let mut workbook: Xlsx<_> = Xlsx::new(cursor).map_err(|e| format!("xlsx: {e}"))?;
-    let range = workbook
-        .worksheet_range(RN_SHEET)
-        .map_err(|e| format!("aba {RN_SHEET}: {e}"))?;
-
-    let mut rows = Vec::new();
-    for (i, row) in range.rows().enumerate() {
-        if i == 0 {
-            continue;
-        }
-        let cells: Vec<String> = row.iter().map(cell_to_string).collect();
-        if cells.is_empty() {
-            continue;
-        }
-        let xml_path = cells.first().cloned().unwrap_or_default();
-        let campo = cells.get(1).cloned().unwrap_or_default();
-        if xml_path.is_empty() && campo.is_empty() {
-            continue;
-        }
-        let descricao = cells.get(3).cloned().unwrap_or_default();
-        rows.push(RnRow {
-            xml_path,
-            campo,
-            descricao,
-        });
-    }
-    Ok(rows)
+    load_rn_rows_filtered(repo_root, Some(SHEET_RN_DPS))
 }
 
 pub fn load_rn_recepcao_rows(repo_root: &Path) -> Result<Vec<RnRow>, String> {
-    let path = repo_root.join("layout_dps.xlsx");
-    let bytes = fs::read(&path).map_err(|e| format!("ler layout: {e}"))?;
-    let cursor = Cursor::new(bytes);
-    let mut workbook: Xlsx<_> = Xlsx::new(cursor).map_err(|e| format!("xlsx: {e}"))?;
-    let range = workbook
-        .worksheet_range(RN_RECEPCAO_SHEET)
-        .map_err(|e| format!("aba {RN_RECEPCAO_SHEET}: {e}"))?;
-
-    let mut rows = Vec::new();
-    for (i, row) in range.rows().enumerate() {
-        if i == 0 {
-            continue;
-        }
-        let cells: Vec<String> = row.iter().map(cell_to_string).collect();
-        if cells.is_empty() {
-            continue;
-        }
-        let xml_path = cells.first().cloned().unwrap_or_default();
-        let campo = cells.get(1).cloned().unwrap_or_default();
-        if xml_path.is_empty() && campo.is_empty() {
-            continue;
-        }
-        let descricao = cells.get(3).cloned().unwrap_or_default();
-        rows.push(RnRow {
-            xml_path,
-            campo,
-            descricao,
-        });
-    }
-    Ok(rows)
+    load_rn_rows_filtered(repo_root, Some(SHEET_RN_RECEPCAO))
 }
 
-fn cell_to_string(cell: &calamine::Data) -> String {
-    match cell {
-        calamine::Data::String(s) => s.trim().to_string(),
-        calamine::Data::Float(f) => f.to_string(),
-        calamine::Data::Int(i) => i.to_string(),
-        calamine::Data::Bool(b) => b.to_string(),
-        calamine::Data::Empty
-        | calamine::Data::Error(_)
-        | calamine::Data::DateTime(_)
-        | calamine::Data::DateTimeIso(_)
-        | calamine::Data::DurationIso(_) => String::new(),
-    }
+/// Todas as linhas RN (ambas abas) — útil para motor de regras incremental.
+pub fn load_rn_all_rows(repo_root: &Path) -> Result<Vec<RnRow>, String> {
+    load_rn_rows_filtered(repo_root, None)
 }
 
 #[cfg(test)]

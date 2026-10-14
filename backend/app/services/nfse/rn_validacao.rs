@@ -3,7 +3,9 @@
 use doido::model::sea_orm::prelude::Decimal;
 
 use super::dps_context::DpsContext;
+use super::dps_presenca;
 use super::dps_rn;
+use super::dps_rn_engine;
 use crate::services::api_error::ApiError;
 
 /// Valida documento + contexto carregado (espelha RN críticas do leiaute / formulário).
@@ -14,10 +16,10 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
             "RN: valor da operação (vServ) deve ser positivo".into(),
         ));
     }
-    if doc.serie.trim().is_empty() {
+    if doc.serie_numero_automatico == 0 && doc.serie.trim().is_empty() {
         return Err(ApiError::Validation("RN: série da DPS é obrigatória".into()));
     }
-    if doc.numero_documento <= 0 {
+    if doc.serie_numero_automatico == 0 && doc.numero_documento <= 0 {
         return Err(ApiError::Validation(
             "RN: número da DPS deve ser positivo".into(),
         ));
@@ -62,10 +64,11 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
             "RN: nota com valor da operação exige ao menos um item de serviço".into(),
         ));
     }
-    let _ = dps_rn::load_rn_dps_rows(
-        &std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".."),
-    )
-    .map_err(|e| ApiError::Internal(format!("RN layout indisponível: {e}")))?;
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    dps_rn::load_rn_dps_rows(&root)
+        .map_err(|e| ApiError::Internal(format!("RN layout indisponível: {e}")))?;
+    dps_presenca::validar_presenca_repo(ctx)?;
+    dps_rn_engine::validar_rn_csv_incremental(ctx)?;
     Ok(())
 }
 
@@ -77,11 +80,8 @@ pub fn validar_rn_workbook_disponivel() -> Result<(), ApiError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+pub fn minimal_dps_context() -> DpsContext {
     use chrono::Utc;
-
-    fn minimal_ctx() -> DpsContext {
         use crate::models::documento_fiscal::Model as Documento;
         use crate::models::empresa::Model as Empresa;
         use crate::models::item_documento_fiscal::Model as ItemDoc;
@@ -179,16 +179,20 @@ mod tests {
                 valor_desconto: None,
             }],
         }
-    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 
     #[test]
     fn rn_aceita_contexto_minimo() {
-        validar_dps_contexto(&minimal_ctx()).expect("ok");
+        validar_dps_contexto(&minimal_dps_context()).expect("ok");
     }
 
     #[test]
     fn rn_rejeita_valor_zero() {
-        let mut ctx = minimal_ctx();
+        let mut ctx = minimal_dps_context();
         ctx.doc.valor_total_servicos_produtos = Decimal::ZERO;
         assert!(validar_dps_contexto(&ctx).is_err());
     }

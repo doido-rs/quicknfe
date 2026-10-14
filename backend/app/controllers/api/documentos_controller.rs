@@ -483,20 +483,39 @@ impl ApiDocumentosController {
         } else {
             crate::api!(to_response(montar_dps_xml_context(&dps_ctx)))
         };
-        let cert = crate::api!(to_response(
+        let cert_opt = crate::api!(to_response(
             ultimo_certificado_empresa(ctx.db(), existing.empresa_id).await,
         ));
-        let senha_owned = cert
-            .as_ref()
-            .map(|c| decode_certificado_senha(&c.senha_encriptada));
-        let caminho = cert
-            .as_ref()
-            .and_then(|c| c.caminho_arquivo.as_deref());
-        let senha = senha_owned.as_deref();
+        let cert = crate::api!(to_response(
+            cert_opt.ok_or_else(|| {
+                ApiError::Validation(
+                    "Cadastre um certificado digital A1 (PFX) no prestador antes de assinar a nota."
+                        .into(),
+                )
+            }),
+        ));
+        if cert.data_validade < chrono::Utc::now() {
+            crate::api!(to_response(Err(ApiError::Validation(
+                "Certificado digital expirado. Envie um certificado A1 válido no prestador."
+                    .into(),
+            ))));
+        }
+        let caminho = crate::api!(to_response(
+            cert.caminho_arquivo
+                .as_deref()
+                .filter(|s| !s.trim().is_empty())
+                .ok_or_else(|| {
+                    ApiError::Validation(
+                        "Arquivo do certificado não encontrado. Reenvie o certificado A1 no prestador."
+                            .into(),
+                    )
+                }),
+        ));
+        let senha_owned = decode_certificado_senha(&cert.senha_encriptada);
         let signed = crate::api!(to_response(assinar_dps_xml_rascunho(
             &base_xml,
-            caminho,
-            senha,
+            Some(caminho),
+            Some(&senha_owned),
         )));
         let mut record: DocActive = existing.into();
         record.xml_assinado = Set(Some(signed));

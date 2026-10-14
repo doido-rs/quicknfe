@@ -1,4 +1,4 @@
-//! Montagem do XML da DPS (NFS-e Nacional) alinhada ao `layout_dps.xlsx`.
+//! Montagem do XML da DPS (NFS-e Nacional) alinhada ao `layout_dps_leaiute.csv`.
 
 use super::dps_context::{
     cpf_cnpj_tag, decimal_xml, gerar_id_inf_dps, only_digits, ParteExterior, DpsContext,
@@ -440,7 +440,8 @@ pub mod coverage {
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
-            "pAliq", "vBC", "vISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins", "vRetCP",
+            "pAliq", "vBC", "vISSQN", "tpRetISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins",
+            "vRetCP",
             "vRetIRRF", "vRetCSLL",
             "infoCompl", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
         ]
@@ -538,7 +539,7 @@ mod tests {
             "cobertura completa inesperada neste teste: {hit}/{total}"
         );
         // Baseline documentado (Phase 4): aumentar `min_ratio` conforme o builder evolui.
-        let min_ratio = 0.22_f64;
+        let min_ratio = 0.24_f64;
         let ratio = hit as f64 / total as f64;
         assert!(
             ratio >= min_ratio,
@@ -549,9 +550,15 @@ mod tests {
 
     #[test]
     fn assinar_insere_signature() {
-        let raw = r#"<?xml version="1.0"?><DPS><infDPS Id="DPS1"/></DPS>"#;
-        let signed = super::super::assinatura::assinar_dps_xml_rascunho(raw, None, None).unwrap();
-        assert!(signed.contains("<Signature"));
+        let pfx = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-sign.pfx");
+        let raw = r#"<?xml version="1.0"?><DPS xmlns="http://www.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
+        let signed = super::super::assinatura::assinar_dps_xml_rascunho(
+            raw,
+            Some(pfx.to_str().unwrap()),
+            Some("test123"),
+        )
+        .unwrap();
+        assert!(signed.contains("<SignatureValue>"));
     }
 
     #[test]

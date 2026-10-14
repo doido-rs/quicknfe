@@ -359,11 +359,11 @@ When implementing or reviewing DPS mapping:
 7. Cross-check **namespace and root element**: today `montar_dps_xml` uses root **`DPS`**, namespace **`http://www.gov.br/nfse`**, wrapper **`infDPS`** with `Id` (see `backend/app/services/nfse/dps.rs`). National paths in CSV often prefix `NFSe/infNFSe/DPS/…` — keep reconciliation documented.
 8. Extend **`montar_dps_xml`** to emit **all mandatory leiaute nodes**, loading prestador, tomador/intermediário, municípios IBGE, itens + CNA as required.
 
-**Backend loaders:** `dps_layout.rs` and `dps_rn.rs` may still read **`layout_dps.xlsx`** until migrated — **new work and tests must treat the repo-root CSVs as source of truth**; point loaders at `layout_dps_leaiute.csv` / `layout_dps.csv` when touching those modules.
+**Backend loaders:** `dps_layout.rs` and `dps_rn.rs` read **`layout_dps_leaiute.csv`** / **`layout_dps.csv`** (regenerate via [`scripts/export_layout_dps_csv.py`](scripts/export_layout_dps_csv.py) — see [`docs/nfse/layout-dps-csv.md`](docs/nfse/layout-dps-csv.md)). Presença mapeada: [`docs/nfse/dps-presenca-mapped.md`](docs/nfse/dps-presenca-mapped.md).
 
 **Current implementation gap:** `montar_dps_xml_context` serializa os grupos principais; ainda faltam campos obrigatórios do leiaute `infDPS` (cobertura parcial — teste `layout_cobertura_parcial` em `nfse/dps.rs`).
 
-**RN / recepção:** critical checks in `validar_dps_contexto` before assinar/transmitir, fed from **`layout_dps.csv`** (today via `dps_rn.rs` + xlsx). **Mandatory leiaute fields** must be **presence-validated** per [Mandatory XML field presence](#mandatory-xml-field-presence) using **`layout_dps_leaiute.csv`** as coverage grows.
+**RN / recepção:** critical checks in `validar_dps_contexto` before assinar/transmitir (`dps_rn.rs`, `dps_presenca.rs`, `dps_rn_engine.rs`). **Mandatory leiaute fields** mapped in QuickNFe are **presence-validated** per [Mandatory XML field presence](#mandatory-xml-field-presence).
 
 ### Runtime configuration (SEFIN / ambiente)
 
@@ -539,4 +539,4 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, certificado `tipo` enum (UI + API validation), tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard with **Salvar** on edit (`UnsavedConfirmDialog`). DPS: canonical **`layout_dps_leaiute.csv`** + **`layout_dps.csv`** at repo root; `montar_dps_xml_context` + `dps_layout`/`dps_rn` (xlsx loaders pending CSV migration) + `validar_dps_contexto`. **Agent policy:** mandatory `infDPS` leiaute fields must be **presence-validated** before assinar/transmitir (`layout_cobertura_parcial`); **assinar** requires prestador **certificado A1** for real XML-DSig. User date format (`DMY`/`MDY`/`YMD`) via API + UI + `todayApiDate()`. Doido **0.0.32-test1**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, certificado `tipo` enum (UI + API validation), tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard with **Salvar** on edit (`UnsavedConfirmDialog`). DPS: **`layout_dps_leaiute.csv`** + **`layout_dps.csv`**; CSV loaders; `dps_presenca` + incremental `dps_rn_engine`; **assinar** exige certificado A1 (XML-DSig real). User date format (`DMY`/`MDY`/`YMD`). Doido **0.0.32-test1**.*

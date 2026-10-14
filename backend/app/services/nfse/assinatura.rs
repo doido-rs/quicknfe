@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 
 use crate::services::api_error::ApiError;
 
-/// Assina a DPS. Com `caminho_pfx`/`senha`, gera XML-DSig real; senão, stub vazio (dev).
+/// Assina a DPS com certificado A1 PFX (XML-DSig enveloped sobre `infDPS`).
 pub fn assinar_dps_xml_rascunho(
     xml_rascunho: &str,
     caminho_pfx: Option<&str>,
@@ -22,9 +22,11 @@ pub fn assinar_dps_xml_rascunho(
         return Ok(xml_rascunho.to_string());
     }
 
-    let Some(caminho) = caminho_pfx.filter(|s| !s.trim().is_empty()) else {
-        return Ok(stub_signature(xml_rascunho));
-    };
+    let caminho = caminho_pfx.filter(|s| !s.trim().is_empty()).ok_or_else(|| {
+        ApiError::Validation(
+            "certificado digital A1 (PFX) é obrigatório para assinar a DPS".into(),
+        )
+    })?;
     let senha = senha_pfx.unwrap_or("");
 
     let pfx_bytes = fs::read(caminho).map_err(|e| {
@@ -39,18 +41,6 @@ pub fn assinar_dps_xml_rascunho(
         .ok_or_else(|| ApiError::Validation("PFX sem certificado".into()))?;
 
     assinar_com_chave(xml_rascunho, &pkey, &cert)
-}
-
-fn stub_signature(xml_rascunho: &str) -> String {
-    if xml_rascunho.contains("</DPS>") {
-        return xml_rascunho.replace(
-            "</DPS>",
-            "  <Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"/>\n</DPS>",
-        );
-    }
-    format!(
-        "{xml_rascunho}\n<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"/>"
-    )
 }
 
 fn assinar_com_chave(xml: &str, pkey: &PKey<openssl::pkey::Private>, cert: &X509) -> Result<String, ApiError> {
@@ -144,11 +134,25 @@ fn base64_sha256(data: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
-    fn stub_quando_sem_certificado() {
+    fn rejeita_sem_certificado() {
         let xml = r#"<DPS><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
-        let out = assinar_dps_xml_rascunho(xml, None, None).unwrap();
-        assert!(out.contains("<Signature"));
+        assert!(assinar_dps_xml_rascunho(xml, None, None).is_err());
+    }
+
+    #[test]
+    fn assina_com_pfx_fixture() {
+        let pfx = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-sign.pfx");
+        let xml = r#"<?xml version="1.0"?><DPS xmlns="http://www.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
+        let out = assinar_dps_xml_rascunho(
+            xml,
+            Some(pfx.to_str().unwrap()),
+            Some("test123"),
+        )
+        .unwrap();
+        assert!(out.contains("<SignatureValue>"));
+        assert!(out.contains("<X509Certificate>"));
     }
 }
