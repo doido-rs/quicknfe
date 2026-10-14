@@ -4,6 +4,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AuthProvider } from './auth/AuthContext.tsx'
 import { router } from './router/routeTree.tsx'
+import { DateFormatProvider } from './theme/DateFormatContext.tsx'
 import { ThemeProvider } from './theme/ThemeContext.tsx'
 import './index.css'
 
@@ -18,7 +19,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <RouterProvider router={router} />
+          <DateFormatProvider>
+            <RouterProvider router={router} />
+          </DateFormatProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

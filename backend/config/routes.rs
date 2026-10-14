@@ -21,6 +21,7 @@ pub fn router() -> axum::Router {
         post!("/tenant/prestador", TenantController::switch_prestador);
 
         get!("/api/me", ApiSessionController::me);
+        patch!("/api/me", ApiSessionController::update_me);
         get!("/api/dashboard", ApiDashboardController::show);
         get!("/api/prestadores", ApiPrestadoresController::index);
         post!("/api/prestadores", ApiPrestadoresController::create);

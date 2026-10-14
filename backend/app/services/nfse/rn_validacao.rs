@@ -3,6 +3,7 @@
 use doido::model::sea_orm::prelude::Decimal;
 
 use super::dps_context::DpsContext;
+use super::dps_rn;
 use crate::services::api_error::ApiError;
 
 /// Valida documento + contexto carregado (espelha RN críticas do leiaute / formulário).
@@ -56,6 +57,13 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
             "RN: tpAmb deve ser 1 (produção) ou 2 (homologação)".into(),
         ));
     }
+    Ok(())
+}
+
+/// Garante que o workbook RN está presente (sanity para CI / deploy).
+pub fn validar_rn_workbook_disponivel() -> Result<(), ApiError> {
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    dps_rn::load_rn_dps_rows(&root).map_err(|e| ApiError::Internal(format!("RN layout: {e}")))?;
     Ok(())
 }
 
@@ -160,5 +168,10 @@ mod tests {
         let mut ctx = minimal_ctx();
         ctx.doc.valor_total_servicos_produtos = Decimal::ZERO;
         assert!(validar_dps_contexto(&ctx).is_err());
+    }
+
+    #[test]
+    fn rn_workbook_carrega() {
+        validar_rn_workbook_disponivel().expect("layout rn");
     }
 }

@@ -7,6 +7,7 @@ mod compactacao;
 mod dps;
 pub mod dps_context;
 mod dps_layout;
+mod dps_rn;
 mod resposta;
 mod rn_validacao;
 mod transmissao;

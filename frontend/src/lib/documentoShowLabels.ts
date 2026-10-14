@@ -1,3 +1,4 @@
+import type { DateFormatPreference } from '@/lib/dateFormat'
 import { formatFieldValue } from '@/lib/resourceForm'
 import type { FieldDef } from '@/resources/definitions'
 
@@ -42,8 +43,9 @@ export function readOnlyFieldDisplay(
   formValue: string,
   row: Record<string, unknown>,
   relationLabels?: Record<string, string>,
+  dateFormat?: DateFormatPreference,
 ): string {
   const fromRelation = relationLabels?.[field.key]
   if (fromRelation) return fromRelation
-  return formatFieldValue(formValue, field, row)
+  return formatFieldValue(formValue, field, row, dateFormat)
 }

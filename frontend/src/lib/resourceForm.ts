@@ -1,4 +1,9 @@
 import { useForm, type UseFormReturn } from 'react-hook-form'
+import {
+  formatDateForDisplay,
+  normalizeApiDateToForm,
+  type DateFormatPreference,
+} from '@/lib/dateFormat'
 import type { FieldDef } from '../resources/definitions'
 
 export function fieldValue(row: Record<string, unknown>, key: string): unknown {
@@ -29,8 +34,8 @@ function formStringValue(raw: unknown, field: FieldDef): string {
     return 'false'
   }
   if (raw == null) return ''
-  if (field.type === 'date' && typeof raw === 'string' && raw.includes('T')) {
-    return raw.slice(0, 10)
+  if (field.type === 'date') {
+    return normalizeApiDateToForm(raw)
   }
   return String(raw)
 }
@@ -64,7 +69,11 @@ export function formatFieldValue(
   value: unknown,
   field?: FieldDef,
   row?: Record<string, unknown>,
+  dateFormat?: DateFormatPreference,
 ): string {
+  if (field?.type === 'date' && dateFormat) {
+    return formatDateForDisplay(value, dateFormat)
+  }
   if (field?.relationResource === 'municipios' && row) {
     const fromNested = formatMunicipioRelationLabel(row)
     if (fromNested) return fromNested

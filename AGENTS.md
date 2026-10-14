@@ -251,8 +251,8 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 | Step | API | UI today | Notes |
 |------|-----|----------|--------|
-| Montar rascunho XML | — | — | `montar_dps_xml(documento)` — **partial** stub; must converge on `layout_dps.xlsx` |
-| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | Inserts XML-DSig stub into `xml_assinado` |
+| Montar rascunho XML | — | — | `montar_dps_xml_context` (identificação, prestador, partes, serviço, valores/tributos); cobertura obrigatória `infDPS` rastreada em `layout_cobertura_parcial` |
+| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | XML-DSig enveloped (PFX A1 quando certificado disponível; stub dev sem cert) |
 | Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
 | Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | mTLS + optional `certificado_id`; updates doc/logs |
 
@@ -262,7 +262,7 @@ Transmission implementation lives in `backend/app/services/nfse/` (ambiente URLs
 
 - Fields: número, descrição serviço, **CNA** relation, quantidade, valores.
 - CNA list is read-only catalog; item create stores `codigo_tributacao_nacional` from CNA row.
-- Optional nested **tributos** per item exist in API (`/api/itens/{item_id}/tributos`) — not exposed as main UI resource in definitions.
+- Nested **tributos** per item: API `/api/itens/{item_id}/tributos`; UI expandível em **Itens da nota** no show da nota (`ItemTributosPanel`).
 
 ### 5. Logs de retorno (SEFAZ)
 
@@ -310,7 +310,9 @@ When implementing or reviewing DPS mapping:
 7. Cross-check **namespace and root element** against the builder: today `montar_dps_xml` uses root **`DPS`**, namespace **`http://www.gov.br/nfse`**, wrapper **`infDPS`** with `Id` (see `backend/app/services/nfse/dps.rs`). Reconcile with `CAMINHO NO XML` in the leiaute sheet (national root may document `NFS-e` / DPS subtrees — follow the spreadsheet version bundled in this repo).
 8. Extend **`montar_dps_xml`** (and signing/transmission) to emit **all mandatory nodes** (`OCOR.` 1-1 / 1-n per leiaute), loading related entities (prestador, tomador, intermediário, municípios IBGE, itens + CNA) as required.
 
-**Current implementation gap:** `montar_dps_xml` only outputs a minimal subset (`tpAmb`, `dhEmi`, `dCompet`, `serie`, `nDPS`, `vServ`). Treat everything else in the table below as **specified by layout + form**, but **not yet serialized** to XML until the builder is completed.
+**Current implementation gap:** `montar_dps_xml_context` serializa os grupos principais (identificação, prestador, tomador/intermediário quando informados, serviço, valores/ISSQN/federal). Ainda faltam campos obrigatórios do leiaute `infDPS` (cobertura parcial — ver teste `layout_cobertura_parcial` em `nfse/dps.rs`). **Root XML:** emissor usa `<DPS xmlns="http://www.gov.br/nfse">` + `infDPS`; o xlsx documenta caminhos sob `NFSe/infNFSe/DPS/…` — manter reconciliação documentada ao evoluir homologação.
+
+**RN / recepção:** linhas das abas `RN DPS_NFS-e` e `RN_RECEPCAO_DPS` são carregadas de `layout_dps.xlsx` (`dps_rn.rs`); validações de negócio críticas em `validar_dps_contexto` antes de assinar/transmitir.
 
 ### Runtime configuration (SEFIN / ambiente)
 
@@ -408,7 +410,7 @@ Separator may be `/` or `-` as long as it is consistent per pattern; agents shou
 
 - **Where:** hub **Configurações** (`/app/configuracoes`) — section **Preferências** (alongside CNA/municípios links), or equivalent “Minha conta / Preferências” reachable from the authenticated shell.
 - **Control:** labeled select (or radio group) “Formato de data” with the options above; short hint that lists and forms will use the chosen format.
-- **Persistence (target):** field on the user/session payload from **`GET /api/me`** (e.g. `date_format` or nested `preferences.date_format`), updated via **`PATCH /api/me`** or dedicated preferences endpoint. Until backend exists, **`localStorage`** keyed by user id is acceptable for frontend-only bootstrap; migrating to server preference must not change API date fields.
+- **Persistence:** `users.date_format` (`DMY` | `MDY` | `YMD`) em **`GET /api/me`** (`user.date_format`) e **`PATCH /api/me`**; `DateFormatProvider` sincroniza API + **`localStorage`** por user id.
 
 ### Data contract (unchanged)
 
@@ -427,7 +429,7 @@ Separator may be `/` or `-` as long as it is consistent per pattern; agents shou
 5. **New screens:** any new date column or field goes through the same helpers; add Vitest cases for DMY/MDY/YMD round-trip and API boundary (`YYYY-MM-DD`).
 6. **Backend (when persisting preference):** optional column or JSON on `users` / `companies_usuarios`; include in `MeDto`; validate enum on PATCH. No change to documento or certificado date columns.
 
-**Status:** product rule and architecture documented here; **centralized user-configurable formatting is not fully implemented** — today many paths still expose ISO date substrings or browser-native date inputs. New work should implement the shared layer rather than add one-off formatters.
+**Status:** **implemented** — `frontend/src/lib/dateFormat.ts`, `DateFormatProvider` (`frontend/src/theme/DateFormatContext.tsx`), Preferências em Configurações, `ResourceFieldInput`/`documentoListFormat`/show labels; API `date_format` persistido no usuário.
 
 ---
 
@@ -444,7 +446,7 @@ Core routes in `backend/config/routes.rs`:
 - Integration: **`GET /api/cnc/cad`**
 - Certificados under prestadores
 
-OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verify routes.rs when in doubt).
+OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH /api/me`); conferir `routes.rs` ao adicionar rotas.
 
 ---
 
@@ -468,7 +470,8 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 |------|--------|
 | Resource definitions | `frontend/src/resources/definitions.ts` |
 | Form core | `frontend/src/lib/resourceForm.ts`, `ResourceFormFields.tsx`, `ResourceFieldInput.tsx` |
-| Date format (target) | `frontend/src/lib/dateFormat.ts`, `DateFormatProvider`, Configurações → Preferências; `GET/PATCH /api/me` preference field |
+| Date format | `frontend/src/lib/dateFormat.ts`, `frontend/src/theme/DateFormatContext.tsx`, `SettingsPage.tsx` → Preferências; `users.date_format`, `session_controller` `update_me` |
+| Item tributos UI | `ItemTributosPanel.tsx`, `NestedResourcePanel` + `definitions.ts` `itemTributos` |
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
@@ -479,4 +482,4 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML, draft itens on create, tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard. DPS: root `layout_dps.xlsx` (Anexo I NFS-e Nacional v1.01); `montar_dps_xml_context` + RN + XML-DSig (A1 when cert available). Item tributos API without dedicated UI resource. **Planned / partial:** per-user date format preference applied uniformly to all date fields (see User preferences — date format).*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard (sidebar `GuardedLink` + router blocker). DPS: committed `layout_dps.xlsx`; `montar_dps_xml_context` + `dps_layout`/`dps_rn` + `validar_dps_contexto` + XML-DSig (A1 when cert available). User date format (`DMY`/`MDY`/`YMD`) via API + UI. DPS mandatory-field coverage still partial — see `layout_cobertura_parcial`.*

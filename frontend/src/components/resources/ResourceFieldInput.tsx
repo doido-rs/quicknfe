@@ -5,7 +5,12 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { ForeignKeyAutocomplete } from '@/components/resources/ForeignKeyAutocomplete'
 import { relationResourceKey } from '@/lib/relations'
+import {
+  formDateToDisplay,
+  parseDateFromDisplay,
+} from '@/lib/dateFormat'
 import { readOnlyFieldDisplay } from '@/lib/documentoShowLabels'
+import { useDateFormat } from '@/theme/DateFormatContext'
 import type { FieldDef } from '@/resources/definitions'
 
 export function ResourceFieldInput({
@@ -27,6 +32,8 @@ export function ResourceFieldInput({
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
 }) {
+  const { preference: dateFormat } = useDateFormat()
+
   if (readOnly) {
     const raw = form.getValues(field.key)
     const text = readOnlyFieldDisplay(
@@ -34,6 +41,7 @@ export function ResourceFieldInput({
       raw ?? '',
       displayRow ?? {},
       relationDisplayLabels,
+      dateFormat,
     )
     return (
       <div className="grid gap-1.5">
@@ -123,6 +131,35 @@ export function ResourceFieldInput({
 
   const inputId = `${idPrefix}-${field.key}`
 
+  if (field.type === 'date') {
+    const ymd = form.watch(field.key) ?? ''
+    const displayValue = formDateToDisplay(ymd, dateFormat)
+    return (
+      <div className="grid gap-2">
+        <Label htmlFor={inputId}>{field.label}</Label>
+        <Input
+          id={inputId}
+          readOnly={field.readOnly}
+          className={field.readOnly ? 'bg-muted' : undefined}
+          type="text"
+          inputMode="numeric"
+          placeholder={
+            dateFormat === 'DMY' ? 'DD/MM/AAAA' : dateFormat === 'MDY' ? 'MM/DD/AAAA' : 'AAAA-MM-DD'
+          }
+          value={displayValue}
+          onChange={(e) => {
+            const parsed = parseDateFromDisplay(e.target.value, dateFormat)
+            form.setValue(field.key, parsed ?? e.target.value, { shouldDirty: true })
+          }}
+          onBlur={(e) => {
+            const parsed = parseDateFromDisplay(e.target.value, dateFormat)
+            if (parsed) form.setValue(field.key, parsed, { shouldDirty: true })
+          }}
+        />
+      </div>
+    )
+  }
+
   if (field.type === 'textarea') {
     return (
       <div className="grid gap-2 md:col-span-2">
@@ -171,7 +208,7 @@ export function ResourceFieldInput({
         id={inputId}
         readOnly={field.readOnly}
         className={field.readOnly ? 'bg-muted' : undefined}
-        type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+        type={field.type === 'number' ? 'number' : 'text'}
         {...form.register(field.key, { required: field.required && !field.readOnly })}
       />
     </div>

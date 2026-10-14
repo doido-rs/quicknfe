@@ -60,6 +60,7 @@ impl RegisterableAuthUser for Model {
         let now = chrono::Utc::now();
         let record = ActiveModel {
             email: Set(email),
+            date_format: Set("DMY".into()),
             password_digest: Set(password_digest),
             created_at: Set(now),
             updated_at: Set(now),

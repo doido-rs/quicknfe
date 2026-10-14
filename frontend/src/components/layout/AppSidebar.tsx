@@ -1,4 +1,5 @@
-import { Link, useRouterState } from '@tanstack/react-router'
+import { useRouterState } from '@tanstack/react-router'
+import { GuardedLink } from '@/components/navigation/GuardedLink'
 import {
   Building2,
   FileText,
@@ -119,10 +120,10 @@ export function AppSidebar() {
                   isActive={pathname === '/app/dashboard' || pathname === '/app'}
                   tooltip="Dashboard"
                 >
-                  <Link {...appDashboardTo}>
+                  <GuardedLink {...appDashboardTo}>
                     <LayoutDashboard />
                     <span>Dashboard</span>
-                  </Link>
+                  </GuardedLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -140,10 +141,10 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={r.key}>
                       <SidebarMenuButton asChild isActive={isActive} tooltip={r.title}>
-                        <Link {...listTo}>
+                        <GuardedLink {...listTo}>
                           <ResourceIcon resourceKey={r.key} />
                           <span>{r.title}</span>
-                        </Link>
+                        </GuardedLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )
@@ -159,10 +160,10 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={settingsActive} tooltip="Configurações">
-                    <Link {...appSettingsTo}>
+                    <GuardedLink {...appSettingsTo}>
                       <Settings />
                       <span>Configurações</span>
-                    </Link>
+                    </GuardedLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

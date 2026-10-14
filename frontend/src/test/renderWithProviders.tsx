@@ -4,6 +4,7 @@ import { render, type RenderOptions } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { AuthProvider } from '../auth/AuthContext'
 import { routeTree } from '../router/routeTree'
+import { DateFormatProvider } from '../theme/DateFormatContext'
 import { ThemeProvider } from '../theme/ThemeContext'
 
 export type RenderWithProvidersOptions = RenderOptions & { route?: string }
@@ -41,7 +42,9 @@ export async function renderWithProviders(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <RouterProvider router={router} />
+          <DateFormatProvider>
+            <RouterProvider router={router} />
+          </DateFormatProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>,

@@ -1,3 +1,5 @@
+import type { DateFormatPreference } from '@/lib/dateFormat'
+import { formatDateForDisplay } from '@/lib/dateFormat'
 import { formatBrl } from '@/lib/format'
 import { fieldValue } from '@/lib/resourceForm'
 
@@ -14,16 +16,16 @@ export function documentoStatusLabel(status: unknown): string {
   return STATUS_LABELS[key] ?? key
 }
 
-export function documentoListDate(row: Record<string, unknown>): string {
+export function documentoListDate(
+  row: Record<string, unknown>,
+  dateFormat: DateFormatPreference,
+): string {
   const competencia = fieldValue(row, 'data_competencia')
   if (competencia != null && String(competencia).trim()) {
-    const s = String(competencia)
-    return s.includes('T') ? s.slice(0, 10) : s
+    return formatDateForDisplay(competencia, dateFormat)
   }
   const emissao = fieldValue(row, 'data_emissao')
-  if (emissao == null || emissao === '') return '—'
-  const s = String(emissao)
-  return s.includes('T') ? s.slice(0, 10) : s
+  return formatDateForDisplay(emissao, dateFormat)
 }
 
 export function documentoListValor(row: Record<string, unknown>): string {

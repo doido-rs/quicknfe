@@ -13,6 +13,7 @@ import {
 } from '@/lib/resourceForm'
 import { toastFromError, toastSuccess } from '@/lib/toast'
 import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
+import { ItemTributosPanel } from '@/components/resources/ItemTributosPanel'
 import type { NestedDef } from '@/resources/definitions'
 
 export function NestedResourcePanel({
@@ -113,9 +114,22 @@ export function NestedResourcePanel({
           {rows.length === 0 && !allowCreate && (
             <li className="list-none pl-0 text-muted-foreground">Nenhum registro.</li>
           )}
-          {rows.map((r) => (
-            <li key={String(r.id)}>{rowLabel(r, nested.fields)}</li>
-          ))}
+          {rows.map((r) => {
+            const id = Number(r.id)
+            const label = rowLabel(r, nested.fields)
+            return (
+              <li key={String(r.id)} className="space-y-1">
+                <span>{label}</span>
+                {nested.itemTributos && Number.isFinite(id) && (
+                  <ItemTributosPanel
+                    itemId={id}
+                    itemLabel={label}
+                    def={nested.itemTributos}
+                  />
+                )}
+              </li>
+            )
+          })}
         </ul>
       </CardContent>
     </Card>

@@ -110,6 +110,12 @@ export type FormSectionDef =
 
 export type MenuPlacement = 'sidebar' | 'settings' | 'none'
 
+export type ItemTributosDef = {
+  label?: string
+  path: (itemId: number) => string
+  fields: FieldDef[]
+}
+
 export interface NestedDef {
   label: string
   path: (parentId: number) => string
@@ -119,6 +125,8 @@ export interface NestedDef {
   allowCreate?: boolean
   /** Ajusta o JSON antes do POST (ex.: preencher `descricao` a partir da descrição do serviço). */
   prepareCreateBody?: (body: Record<string, unknown>) => Record<string, unknown>
+  /** Tributos por linha de item (ex.: itens da nota). */
+  itemTributos?: ItemTributosDef
 }
 
 export interface ResourceDef {
@@ -488,6 +496,18 @@ export const resources: ResourceDef[] = [
           { key: 'valor_unitario', label: 'Valor unitário', type: 'number', defaultValue: '0' },
           { key: 'valor_total_bruto', label: 'Total bruto', type: 'number', defaultValue: '0' },
         ],
+        itemTributos: {
+          label: 'Tributos do item',
+          path: (itemId) => `/api/itens/${itemId}/tributos`,
+          fields: [
+            { key: 'tipo_imposto', label: 'Tipo imposto', required: true },
+            { key: 'cst_csosn', label: 'CST/CSOSN' },
+            { key: 'base_calculo', label: 'Base cálculo', type: 'number' },
+            { key: 'aliquota', label: 'Alíquota', type: 'number' },
+            { key: 'valor_imposto', label: 'Valor imposto', type: 'number' },
+            { key: 'iss_retido', label: 'ISS retido (0/1)', type: 'number' },
+          ],
+        },
       },
       {
         label: 'Logs de retorno (SEFAZ)',

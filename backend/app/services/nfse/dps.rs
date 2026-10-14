@@ -76,6 +76,7 @@ fn append_identificacao(xml: &mut String, ctx: &DpsContext, competencia: &str) {
     push_elem(xml, 4, "nDPS", &doc.numero_documento.to_string());
     push_elem(xml, 4, "dCompet", competencia);
     push_elem(xml, 4, "tpEmit", "1");
+    push_elem(xml, 4, "tpEmis", &doc.tipo_emissao.to_string());
     push_elem(
         xml,
         4,
@@ -429,7 +430,7 @@ pub mod coverage {
     /// Tags de elemento (`campo`) que o builder emite hoje (fases 3A–3H).
     pub fn emitted_tags() -> HashSet<&'static str> {
         [
-            "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "cLocEmi",
+            "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "tpEmis", "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
@@ -523,9 +524,20 @@ mod tests {
     #[test]
     fn layout_cobertura_parcial() {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
-        let (hit, total, _missing) = coverage::coverage_report(&root).expect("layout");
-        assert!(hit > 0);
-        assert!(total > hit, "cobertura parcial esperada: {hit}/{total}");
+        let (hit, total, missing) = coverage::coverage_report(&root).expect("layout");
+        assert!(hit > 0, "nenhum campo obrigatório coberto");
+        assert!(
+            total > hit,
+            "cobertura completa inesperada neste teste: {hit}/{total}"
+        );
+        // Baseline documentado (Phase 4): aumentar `min_ratio` conforme o builder evolui.
+        let min_ratio = 0.22_f64;
+        let ratio = hit as f64 / total as f64;
+        assert!(
+            ratio >= min_ratio,
+            "cobertura {hit}/{total} ({ratio:.1}%) abaixo do mínimo {min_ratio:.0}% — faltam: {}",
+            missing.len()
+        );
     }
 
     #[test]

@@ -141,6 +141,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeResponse'
+    patch:
+      tags: [Session]
+      summary: Update current user preferences
+      operationId: patchMe
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeForm'
+      responses:
+        '200':
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
 
   /api/empresa:
     get:
@@ -1107,12 +1126,22 @@ components:
           format: int64
         email:
           type: string
+        date_format:
+          type: string
+          enum: [DMY, MDY, YMD]
+          description: User calendar date display preference
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    UpdateMeForm:
+      type: object
+      properties:
+        date_format:
+          type: string
+          enum: [DMY, MDY, YMD]
     EmpresaPublic:
       type: object
       properties:

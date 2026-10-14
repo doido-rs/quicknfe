@@ -17,6 +17,7 @@ import {
 } from '@/lib/documentoListFormat'
 import { resourceEditTo, resourceShowTo } from '@/lib/resourcePaths'
 import type { ResourceDef } from '@/resources/definitions'
+import { useDateFormat } from '@/theme/DateFormatContext'
 
 type Row = Record<string, unknown>
 
@@ -31,6 +32,7 @@ export function DocumentoListTable({
   allowDelete: boolean
   onDelete: (row: Row) => void
 }) {
+  const { preference } = useDateFormat()
   return (
     <Table>
       <TableHeader>
@@ -60,7 +62,7 @@ export function DocumentoListTable({
             return (
               <TableRow key={String(row.id)}>
                 <TableCell className="whitespace-nowrap tabular-nums">
-                  {documentoListDate(row)}
+                  {documentoListDate(row, preference)}
                 </TableCell>
                 <TableCell className="max-w-[12rem] truncate">
                   {documentoParteListLabel(row.prestador_razao_social)}

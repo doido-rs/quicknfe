@@ -1,15 +1,22 @@
 use doido::controller::controller;
-use doido::model::sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use chrono::Utc;
 
 use crate::auth::tenant::{self, COMPANY_ID_KEY, PRESTADOR_ID_KEY};
 use crate::models::company::Entity as CompanyEntity;
 use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEntity};
 use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity};
-use crate::services::api_error::{db, require_user};
+use crate::models::user::ActiveModel as UserActive;
+use crate::services::api_error::{db, json_body, require_user, ApiError};
 use crate::services::dto::{
-    empresas_public, empresa_public, CompanyMembership, CompanyPublic, MeResponse, UserPublic,
+    empresas_public, empresa_public, CompanyMembership, CompanyPublic, MeResponse, UpdateMeForm,
+    UserPublic,
 };
 use crate::services::api_error::to_response;
+
+fn valid_date_format(s: &str) -> bool {
+    matches!(s, "DMY" | "MDY" | "YMD")
+}
 
 pub struct ApiSessionController;
 
@@ -89,5 +96,23 @@ impl ApiSessionController {
             prestador_ativo,
             papel,
         })
+    }
+
+    pub async fn update_me(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let user = crate::api!(require_user(ctx).await);
+        let form: UpdateMeForm = crate::api!(json_body(ctx).await);
+        if let Some(df) = form.date_format {
+            if !valid_date_format(&df) {
+                crate::api!(to_response(Err::<(), ApiError>(ApiError::Validation(
+                    "date_format must be DMY, MDY, or YMD".into(),
+                ))));
+            }
+            let mut record: UserActive = user.into();
+            record.date_format = Set(df);
+            record.updated_at = Set(Utc::now());
+            let updated = crate::api!(db(record.update(ctx.db()).await));
+            return ctx.json(UserPublic::from(updated));
+        }
+        ctx.json(UserPublic::from(user))
     }
 }

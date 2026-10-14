@@ -18,10 +18,16 @@ use crate::models::municipio::Model as Municipio;
 use crate::models::tributo_item::Model as Tributo;
 use crate::models::user::Model as User;
 
+#[derive(Serialize, Deserialize)]
+pub struct UpdateMeForm {
+    pub date_format: Option<String>,
+}
+
 #[derive(Serialize)]
 pub struct UserPublic {
     pub id: i64,
     pub email: String,
+    pub date_format: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -31,6 +37,7 @@ impl From<User> for UserPublic {
         Self {
             id: u.id,
             email: u.email,
+            date_format: u.date_format,
             created_at: u.created_at,
             updated_at: u.updated_at,
         }

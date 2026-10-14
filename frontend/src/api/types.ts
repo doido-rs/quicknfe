@@ -1,6 +1,9 @@
+export type DateFormatPreference = 'DMY' | 'MDY' | 'YMD'
+
 export interface UserPublic {
   id: number
   email: string
+  date_format?: DateFormatPreference
 }
 
 export interface CompanyPublic {
