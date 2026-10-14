@@ -74,6 +74,7 @@ Forms are **not** hand-written per screen. They share:
 | Property | Purpose |
 |----------|---------|
 | `type` | `text`, `number`, `date`, `textarea`, `relation`, `enum`, `file`, `boolean` |
+| `type: 'date'` | Calendar dates only (competência, emissão, validade certificado, `data_registro`, …). **Display and edit** must follow the user’s [date format preference](#user-preferences--date-format); wire/API values stay ISO — see that section. |
 | `required` | HTML/RHF validation on relation and inputs |
 | `defaultValue` | Initial string in `emptyForm` |
 | `readOnly` | Excluded from API body; shown disabled or as text |
@@ -377,6 +378,56 @@ Use this as the **checklist** when completing XML generation against `layout_dps
 - **Toasts**: Sonner in `AppLayout`; mutations use `toastSuccess` / `toastFromError`.
 - **Theme**: light/dark toggle in top bar.
 - **Delete**: list tables → confirm dialog → `DELETE` + toast.
+- **Date format (user preference)**: see [User preferences — date format](#user-preferences--date-format); applies to every date field in the UI.
+
+---
+
+## User preferences — date format
+
+Users choose how **calendar dates** (day/month/year) are shown in inputs and read-only text across the app. This is independent of **theme** and independent of **API/XML** formats (those stay canonical).
+
+### Product rule
+
+- One **per-user** setting controls formatting for **all** date surfaces: resource forms (`FieldDef` `type: 'date'`), read-only show/detail, list columns (e.g. documento competência/emissão), nested panels (itens, certificados, logs), dashboard widgets, and any custom cards that render a date.
+- Do **not** format dates ad hoc (`slice(0, 10)`, `toLocaleDateString` per screen, or hard-coded `DD/MM/YYYY`) outside the shared date layer.
+- **Date-time** values (e.g. `data_emissao` with time, SEFAZ timestamps, `dhEmi` in DPS) may show an optional time portion; the **date part** still follows the user’s date format. Full ISO/RFC3339 remains the source for API and XML.
+
+### Supported display formats
+
+Store an enum-like code on the user preference; map to display/parsing patterns:
+
+| Preference value | Display example | Notes |
+|------------------|-----------------|--------|
+| `DMY` | `14/10/2026` | Default for Brazil (dia/mês/ano) |
+| `MDY` | `10/14/2026` | US-style |
+| `YMD` | `2026-10-14` | ISO-style display (not necessarily the same as API transport) |
+
+Separator may be `/` or `-` as long as it is consistent per pattern; agents should implement via one options table, not scattered strings.
+
+### Configuration UX
+
+- **Where:** hub **Configurações** (`/app/configuracoes`) — section **Preferências** (alongside CNA/municípios links), or equivalent “Minha conta / Preferências” reachable from the authenticated shell.
+- **Control:** labeled select (or radio group) “Formato de data” with the options above; short hint that lists and forms will use the chosen format.
+- **Persistence (target):** field on the user/session payload from **`GET /api/me`** (e.g. `date_format` or nested `preferences.date_format`), updated via **`PATCH /api/me`** or dedicated preferences endpoint. Until backend exists, **`localStorage`** keyed by user id is acceptable for frontend-only bootstrap; migrating to server preference must not change API date fields.
+
+### Data contract (unchanged)
+
+| Layer | Format |
+|-------|--------|
+| JSON API request/response | `YYYY-MM-DD` for date fields; date-time fields as ISO 8601 / RFC3339 strings from the backend |
+| Form state (`react-hook-form`) | **Canonical string** `YYYY-MM-DD` for `type: 'date'` when submitting via `buildBody` / `buildDocumentoBody` (convert from display format on blur/submit) |
+| DPS / SEFIN XML | National layout types (`dCompet`, `dhEmi`, …) — no user formatting |
+
+### Implementation notes for agents
+
+1. **Single module:** e.g. `frontend/src/lib/dateFormat.ts` — `formatDateForDisplay(isoOrYmd, preference)`, `parseDateFromDisplay(text, preference)`, `normalizeApiDateToForm(value)` (existing logic in `resourceForm.ts` for `T`-suffix may move here).
+2. **Context:** e.g. `DateFormatProvider` next to `ThemeProvider` / `AuthProvider`, reading preference from `me` + localStorage fallback; expose `useDateFormat()`.
+3. **Inputs:** `ResourceFieldInput` for `type: 'date'` — show/edit using the user format (text + mask or locale-aware picker); never rely on raw `<input type="date">` alone if it ignores the product format.
+4. **Read-only:** `readOnlyFieldDisplay`, documento list helpers (`documentoListDate`, etc.), show cards, and log tables must call `formatDateForDisplay`, not slice ISO strings.
+5. **New screens:** any new date column or field goes through the same helpers; add Vitest cases for DMY/MDY/YMD round-trip and API boundary (`YYYY-MM-DD`).
+6. **Backend (when persisting preference):** optional column or JSON on `users` / `companies_usuarios`; include in `MeDto`; validate enum on PATCH. No change to documento or certificado date columns.
+
+**Status:** product rule and architecture documented here; **centralized user-configurable formatting is not fully implemented** — today many paths still expose ISO date substrings or browser-native date inputs. New work should implement the shared layer rather than add one-off formatters.
 
 ---
 
@@ -405,8 +456,9 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 4. **Scoped relations**: tomador/intermediário must keep `relationScopeFromField: 'empresa_id'`.
 5. **Tests**: frontend Vitest (`frontend/src/**/*.test.ts`, `ResourceCrud.test.tsx`); backend `cargo test`; integration `make test-integration` (MySQL).
 6. **Minimal diffs**: match existing patterns (`NestedResourcePanel`, `buildNestedCreateBody`, resource pages).
-7. **Unsaved changes (planned)**: all editable forms must eventually guard navigation when dirty; see [Unsaved changes — required behavior (not implemented yet)](#unsaved-changes--required-behavior-not-implemented-yet). Do not implement ad-hoc “leave anyway” without product alignment.
-8. **DPS layout**: treat root **`layout_dps.xlsx`** as the schema source of truth (tab **`LEIAUTE DPS_NFS-e`** for XML); align forms, DB, validation RNs, and `montar_dps_xml`—see [DPS XML layout](#dps-xml-layout-layout_dpsxlsx).
+7. **Unsaved changes**: guard navigation when dirty on all mutating forms; see [Unsaved changes — required behavior](#unsaved-changes--required-behavior). Do not bypass with ad-hoc “leave anyway” flows.
+8. **Date format**: all calendar dates in the UI use the user preference via shared helpers; see [User preferences — date format](#user-preferences--date-format). API and XML stay ISO/`YYYY-MM-DD`.
+9. **DPS layout**: treat root **`layout_dps.xlsx`** as the schema source of truth (tab **`LEIAUTE DPS_NFS-e`** for XML); align forms, DB, validation RNs, and `montar_dps_xml`—see [DPS XML layout](#dps-xml-layout-layout_dpsxlsx).
 
 ---
 
@@ -416,6 +468,7 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 |------|--------|
 | Resource definitions | `frontend/src/resources/definitions.ts` |
 | Form core | `frontend/src/lib/resourceForm.ts`, `ResourceFormFields.tsx`, `ResourceFieldInput.tsx` |
+| Date format (target) | `frontend/src/lib/dateFormat.ts`, `DateFormatProvider`, Configurações → Preferências; `GET/PATCH /api/me` preference field |
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
@@ -426,4 +479,4 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML, draft itens on create, tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard. DPS: root `layout_dps.xlsx` (Anexo I NFS-e Nacional v1.01); `montar_dps_xml_context` emits identificação, prestador, partes, serviço, valores, ISSQN, federal, complementares; RN gate + XML-DSig (A1 when cert available). Item tributos API remains without dedicated UI resource.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML, draft itens on create, tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard. DPS: root `layout_dps.xlsx` (Anexo I NFS-e Nacional v1.01); `montar_dps_xml_context` + RN + XML-DSig (A1 when cert available). Item tributos API without dedicated UI resource. **Planned / partial:** per-user date format preference applied uniformly to all date fields (see User preferences — date format).*
