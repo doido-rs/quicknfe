@@ -7,7 +7,7 @@ This document describes what the system implements today, how the **resource-dri
 QuickNFe is a multi-tenant web app for **NFSe (Nota Fiscal de Serviço eletrônica)** lifecycle management in Brazil:
 
 - Cadastros: prestadores (emitters), tomadores (`clientes`), intermediários, municípios (IBGE), CNA (código tributação nacional).
-- **Notas fiscais** (`documentos`): structured form aligned with DPS/NFSe data (competência, partes, municípios, valores, ISSQN, PIS/COFINS federal panel).
+- **Notas fiscais** (`documentos`): structured form aligned with the **DPS XML layout** defined in `layout_dps.xlsx` (competência, partes, municípios, valores, ISSQN, PIS/COFINS federal panel, itens).
 - **Itens** per nota, **certificados digitais** per prestador, **lotes** and **logs de retorno (SEFAZ)**.
 - Outbound **CNC** (cadastro nacional consult) and **SEFIN Nacional** transmission (backend), with local mock/dev paths.
 
@@ -246,9 +246,11 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 ### 3. NFSe / DPS — XML, assinatura, download, transmissão
 
+**Schema authority:** the full DPS tree (tags, order, cardinality, types) is defined in **`layout_dps.xlsx`**. See [DPS XML layout (`layout_dps.xlsx`)](#dps-xml-layout-layout_dpsxlsx) for setup, logical groups, and how UI/DB map into XML.
+
 | Step | API | UI today | Notes |
 |------|-----|----------|--------|
-| Montar rascunho XML | — | — | `montar_dps_xml(documento)` server-side |
+| Montar rascunho XML | — | — | `montar_dps_xml(documento)` — **partial** stub; must converge on `layout_dps.xlsx` |
 | Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | Inserts XML-DSig stub into `xml_assinado` |
 | Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
 | Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | *Not wired in frontend* | mTLS + optional `certificado_id`; updates doc/logs |
@@ -265,6 +267,99 @@ Transmission implementation lives in `backend/app/services/nfse/` (ambiente URLs
 
 - Nested under documento: **read-only** (`allowCreate: false`).
 - Populated by transmission/processing backend paths; display código, mensagem, correção, data.
+
+---
+
+## DPS XML layout (`layout_dps.xlsx`)
+
+### Role of the spreadsheet
+
+**`layout_dps.xlsx` is the canonical source layout for the DPS XML schema** (NFS-e Nacional — Declaração de Prestação de Serviços). It defines the official field list: XML tag names, hierarchy (groups/blocos), occurrence (1-1, 0-1, 1-n), data types, sizes, and business rules.
+
+- **Do not invent DPS tags** in code without a matching row/concept in `layout_dps.xlsx`.
+- **UI form sections**, **`DocumentoForm` / DB columns**, **item (serviço) fields**, and **`montar_dps_xml`** must stay aligned with this layout over time.
+- When the national layout version changes, update the spreadsheet first, then trace impacts through migrations, forms, and XML builder.
+
+**Repository location:** **`layout_dps.xlsx`** at the **repository root** (`/layout_dps.xlsx`). Optional mirror or docs link: `docs/nfse/layout_dps.xlsx` — the root file is authoritative if both exist.
+
+### Workbook structure (tabs)
+
+The file ships **five worksheets**; use them together when mapping UI, validation, and XML:
+
+| Sheet | Purpose |
+|-------|---------|
+| **`LEIAUTE DPS_NFS-e`** | **Primary XML schema layout** — one row per field: `CAMINHO NO XML`, `CAMPO`, element type (`ELE`), `TIPO`, `OCOR.` (cardinality), `TAM.`, `DESCRIÇÃO`, notas. Start here for tag names and tree order (root includes `NFS-e` / DPS branches per national leiaute). |
+| **`RN DPS_NFS-e`** | Business rules per XML path/campo (applicability, effect, error codes/messages, nível da regra, emissores). Use for server-side validation before/after building XML. |
+| **`RN_RECEPCAO_DPS`** | Reception rules when SEFIN accepts a DPS (certificado, reject codes such as E1200, etc.). Align with transmission error handling and `logs-retorno`. |
+| **`MUN.INCID_INFO.SERV.`** | CNA / **lista nacional de serviços**, localidade de incidência (LI), grupos de informações específicas por subitem, `infoComplem` — ties to **CNA** catalog and item-level detail groups. |
+| **`EXPORTACAO_EMISSÃO_NFS-e`** | Exportação / comércio exterior scenarios (tomador, intermediário, LP, TribISSQN, comex fields). Maps to tomador/intermediário **exterior** and ISSQN export rules. |
+
+**Header row on `LEIAUTE DPS_NFS-e`:** `#`, `CAMINHO NO XML`, `CAMPO`, `ELE`, `TIPO`, `OCOR.`, `TAM.`, `DESCRIÇÃO`, `NOTAS EXPLICATIVAS`.
+
+### How to read and use the workbook (setup)
+
+When implementing or reviewing DPS mapping:
+
+1. Open **`layout_dps.xlsx`** at the repo root.
+2. Build or verify XML against sheet **`LEIAUTE DPS_NFS-e`** (path + campo + occurrence + type).
+3. Implement validations from **`RN DPS_NFS-e`** and **`RN_RECEPCAO_DPS`** (reject/alert codes documented in sheet columns).
+4. For **CNA / serviço / LI / grupos específicos**, cross **`MUN.INCID_INFO.SERV.`** with app **itens** (`cna_id`, `descricao_servico`) and CNA table.
+5. For **tomador/intermediário exterior** and export ISSQN, cross **`EXPORTACAO_EMISSÃO_NFS-e`** with `tomador_localidade` / `intermediario_localidade` and tributação ISSQN fields.
+6. For each row, record **QuickNFe data source** (DB column, relation, item field, or computed).
+7. Cross-check **namespace and root element** against the builder: today `montar_dps_xml` uses root **`DPS`**, namespace **`http://www.gov.br/nfse`**, wrapper **`infDPS`** with `Id` (see `backend/app/services/nfse/dps.rs`). Reconcile with `CAMINHO NO XML` in the leiaute sheet (national root may document `NFS-e` / DPS subtrees — follow the spreadsheet version bundled in this repo).
+8. Extend **`montar_dps_xml`** (and signing/transmission) to emit **all mandatory nodes** (`OCOR.` 1-1 / 1-n per leiaute), loading related entities (prestador, tomador, intermediário, municípios IBGE, itens + CNA) as required.
+
+**Current implementation gap:** `montar_dps_xml` only outputs a minimal subset (`tpAmb`, `dhEmi`, `dCompet`, `serie`, `nDPS`, `vServ`). Treat everything else in the table below as **specified by layout + form**, but **not yet serialized** to XML until the builder is completed.
+
+### Runtime configuration (SEFIN / ambiente)
+
+These settings must stay consistent with **`tpAmb`** on each documento (field `ambiente`, default `2` in forms):
+
+| Setting | Where | Purpose |
+|---------|--------|---------|
+| `settings.sefin.ambiente` | `backend/config/development.yml`, `production.yml`, `test.yml` | Global SEFIN mode: **1** produção, **2** homologação / produção restrita |
+| `settings.sefin.base_url` | Same; override with env **`SEFIN_BASE_URL`** | SEFIN Nacional API base (no trailing slash) |
+| `settings.cnc.base_url` | Same; override with **`CNC_BASE_URL`** | CNC consulta (localhost mock skips mTLS) |
+| Documento `ambiente` | DB / `DocumentoForm` | Must match `settings.sefin.ambiente` for transmission (`AmbienteNfse::ensure_matches_config`) |
+| Documento `tipo_emissao` | DB / form default `1` | Emission type per national rules (see layout sheet) |
+| Certificado A1 | Nested under prestador | mTLS for CNC (non-mock) and SEFIN transmission |
+
+**Development defaults:**
+
+- Homologation API: `https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional` (or local mock via `SEFIN_BASE_URL`).
+- CNC: `https://adn.producaorestrita.nfse.gov.br/cnc/consulta` or `http://127.0.0.1:8090/cnc/consulta` for mock.
+
+**Endpoints derived in code** (`ambiente.rs`): `{base_url}/nfse` (emissão), `{base_url}/dps/{id}` (consulta DPS).
+
+### Full logical DPS layout ↔ QuickNFe mapping
+
+Use this as the **checklist** when completing XML generation against `layout_dps.xlsx`. Exact tag names and nesting must match the spreadsheet row-for-row; names here follow common NFS-e Nacional groupings and link to existing app data.
+
+| Layout group (logical) | Primary XML area (per `layout_dps.xlsx`) | QuickNFe source |
+|--------------------------|-------------------------------------------|-----------------|
+| **Identificação DPS** | `infDPS`: ambiente, emissão, competência, série, número, tipo emissão, etc. | `documentos_fiscais`: `ambiente`, `data_emissao`, `data_competencia`, `serie`, `numero_documento`, `tipo_emissao`, `modelo`; auto série/número via `serie_numero_automatico` |
+| **Prestador** | Dados do emitente/prestador de serviço | `empresa_id` → `empresas` / prestador: `cpf_cnpj`, `razao_social`, `inscricao_municipal`, `regime_tributario`, município IBGE |
+| **Tomador** | Tomador do serviço (Brasil, exterior ou omitido) | `tomador_localidade` + `cliente_id` → `clientes`, or `tomador_exterior` JSON; CNC may prefill cadastro |
+| **Intermediário** | Intermediário (opcional) | `intermediario_localidade` + `intermediario_id` or `intermediario_exterior` |
+| **Localidade / município** | Município emissão e prestação | `municipio_emissao_id`, `municipio_prestacao_id` → `municipios.codigo_ibge`, nome, UF |
+| **Serviço / itens** | Discriminação do serviço (1..n linhas) | Nested **itens**: `numero_item`, `descricao` / `descricao_servico`, `cna_id` → `codigo_tributacao_nacional`, `quantidade`, `valor_unitario`, `valor_total_bruto` |
+| **Valores da operação** | Totais, descontos, líquido, valor intermediário | `valor_total_servicos_produtos`, `desconto_incondicionado`, `desconto_condicionado`, `valor_liquido`, `valor_recebido_intermediario`; draft itens on create feed totals via `applyItensToDocumentoBody` |
+| **Tributação municipal (ISSQN)** | ISSQN, exigibilidade, retenção, benefícios, BC/alíquota/valor | Form section *Tributação Municipal*: `trib_issqn`, `reg_esp_trib_issqn`, flags `issqn_*`, `issqn_aliquota`, `issqn_base_calculo`, `issqn_valor` |
+| **Tributação federal** | PIS/COFINS/CSLL, retenções federais | Form section *Tributação Federal*: `cst_pis_cofins`, `tp_ret_pis_cofins_csll`, `valor_irrf`, `valor_contrib_sociais_retidas`, `valor_contrib_previdenciaria_retida` |
+| **Informações complementares** | Campos adicionais / B2B / RT | `numero_doc_responsabilidade_tecnica`, `documento_referencia`, `informacoes_complementares`, `numero_pedido_ordem_b2b` |
+| **Assinatura** | XML-DSig | `assinar_dps_xml_rascunho` → `xml_assinado` (stub today; must comply with layout/XSD) |
+| **Pós-transmissão** | NFSe processada, chave, protocolo | `xml_processado`, `chave_acesso`, `codigo_verificacao`, `protocolo_autorizacao`, `status`; logs em `logs-retorno` |
+
+**Relations loaded at XML build time (expected):** for a complete DPS, the builder should resolve the documento row plus prestador, optional tomador/intermediário, municípios, and all `itens` (with CNA codes)—not only scalar columns on `documentos_fiscais`.
+
+### Agent workflow for DPS changes
+
+1. Locate or add the field in root **`layout_dps.xlsx`** — row on **`LEIAUTE DPS_NFS-e`**; check **`RN DPS_NFS-e`** / **`RN_RECEPCAO_DPS`** for rules and error codes.
+2. Add or update **DB migration** + **`DocumentoForm`** / item forms if persistence is required.
+3. Expose in **`frontend/src/resources/definitions.ts`** (and `buildDocumentoBody` / `flattenDocumentoRowToForm` when applicable).
+4. Map the field in **`montar_dps_xml`** (or dedicated module per layout version).
+5. Add/adjust tests in `backend/app/services/nfse/dps.rs` and documento API tests.
+6. Re-run transmission against homologation or mock after changing mandatory nodes.
 
 ---
 
@@ -311,6 +406,7 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 5. **Tests**: frontend Vitest (`frontend/src/**/*.test.ts`, `ResourceCrud.test.tsx`); backend `cargo test`; integration `make test-integration` (MySQL).
 6. **Minimal diffs**: match existing patterns (`NestedResourcePanel`, `buildNestedCreateBody`, resource pages).
 7. **Unsaved changes (planned)**: all editable forms must eventually guard navigation when dirty; see [Unsaved changes — required behavior (not implemented yet)](#unsaved-changes--required-behavior-not-implemented-yet). Do not implement ad-hoc “leave anyway” without product alignment.
+8. **DPS layout**: treat root **`layout_dps.xlsx`** as the schema source of truth (tab **`LEIAUTE DPS_NFS-e`** for XML); align forms, DB, validation RNs, and `montar_dps_xml`—see [DPS XML layout](#dps-xml-layout-layout_dpsxlsx).
 
 ---
 
@@ -323,9 +419,11 @@ OpenAPI: `docs/api/openapi.yaml` (may lag newest routes like `assinar` — verif
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
+| DPS layout spec | `layout_dps.xlsx` (repo root; sheets LEIAUTE / RN / CNA / export); `nfse/dps.rs` (XML builder) |
+| SEFIN/CNC config | `backend/config/development.yml`, `production.yml`, env `SEFIN_BASE_URL`, `CNC_BASE_URL` |
 | Routes | `backend/config/routes.rs` |
 | Tenant | `backend/app/auth/tenant.rs`, `tenant_scope.rs`, `AuthContext.tsx` |
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/XML, draft itens on create, tributação municipal/federal form sections, cursor pagination, Sonner toasts. Planned: global unsaved-changes navigation guard on all forms (documented, not built).*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/XML, draft itens on create, tributação municipal/federal form sections, cursor pagination, Sonner toasts. DPS: `layout_dps.xlsx` documented as schema source; XML builder still partial vs full layout. Planned: global unsaved-changes navigation guard on all forms (documented, not built).*
