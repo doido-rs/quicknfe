@@ -7,7 +7,7 @@ This document describes what the system implements today, how the **resource-dri
 QuickNFe is a multi-tenant web app for **NFSe (Nota Fiscal de Serviço eletrônica)** lifecycle management in Brazil:
 
 - Cadastros: prestadores (emitters), tomadores (`clientes`), intermediários, municípios (IBGE), CNA (código tributação nacional).
-- **Notas fiscais** (`documentos`): structured form aligned with the **DPS XML layout** defined in `layout_dps.xlsx` (competência, partes, municípios, valores, ISSQN, PIS/COFINS federal panel, itens).
+- **Notas fiscais** (`documentos`): structured form aligned with the **DPS XML layout** in `layout_dps_leaiute.csv` + `layout_dps.csv` (competência, partes, municípios, valores, ISSQN, PIS/COFINS federal panel, itens).
 - **Itens** per nota, **certificados digitais** per prestador, **lotes** and **logs de retorno (SEFAZ)**.
 - Outbound **CNC** (cadastro nacional consult) and **SEFIN Nacional** transmission (backend), with local mock/dev paths.
 
@@ -251,20 +251,50 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 **API**: `/api/prestadores/{prestador_id}/certificados` CRUD — `tipo` is a string enum on the wire (one of the values above).
 
-**Workflow**: Upload on show/edit prestador after prestador exists; CNC in **dev mock** may work without cert; production CNC/SEFIN require valid cert on prestador.
+**Workflow**: Upload on show/edit prestador after prestador exists; CNC in **dev mock** may work without cert; **assinar DPS**, production CNC, and SEFIN require valid cert on prestador (see [Certificado para assinatura XML](#certificado-para-assinatura-xml)).
 
 ### 3. NFSe / DPS — XML, assinatura, download, transmissão
 
-**Schema authority:** the full DPS tree (tags, order, cardinality, types) is defined in **`layout_dps.xlsx`**. See [DPS XML layout (`layout_dps.xlsx`)](#dps-xml-layout-layout_dpsxlsx) for setup, logical groups, and how UI/DB map into XML.
+**Schema authority:** the DPS XML tree and rules are defined by **`layout_dps_leaiute.csv`** (structure) and **`layout_dps.csv`** (business/reception rules). See [DPS XML layout (CSV)](#dps-xml-layout-csv) for setup, logical groups, and how UI/DB map into XML.
 
 | Step | API | UI today | Notes |
 |------|-----|----------|--------|
 | Montar rascunho XML | — | — | `montar_dps_xml_context` (identificação, prestador, partes, serviço, valores/tributos); cobertura obrigatória `infDPS` rastreada em `layout_cobertura_parcial` |
-| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | XML-DSig enveloped (PFX A1 quando certificado disponível; stub dev sem cert) |
+| Validar DPS | — (before assinar/transmitir) | — | **Product rule:** every **mandatory** `infDPS` field from **`layout_dps_leaiute.csv`** must pass **presence** validation; conditional rules from **`layout_dps.csv`** — see [Mandatory XML field presence](#mandatory-xml-field-presence) |
+| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | XML-DSig enveloped com **certificado A1 PFX** do prestador — **obrigatório**; ver [Certificado para assinatura XML](#certificado-para-assinatura-xml) |
 | Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
 | Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | mTLS + optional `certificado_id`; updates doc/logs |
 
 Transmission implementation lives in `backend/app/services/nfse/` (ambiente URLs, resposta parsing, logs).
+
+### Mandatory XML field presence
+
+**Product rule:** before **Assinar nota fiscal** or **Transmitir SEFIN**, the backend must validate that **all required DPS XML fields** have a present, non-empty value in the data that backs the XML (and that the builder can emit the corresponding node when the field is mandatory in the leiaute).
+
+| Source of “required” | Meaning |
+|----------------------|---------|
+| **`layout_dps_leaiute.csv`** (leiaute) | Rows under `NFSe/infNFSe/DPS/infDPS/` with `OCOR.` **1-1**, **1-n**, or **1..n** on elements **`E`**, **`A`**, or **`ID`** (see `dps_layout::mandatory_infdps_fields` or CSV loader equivalent) |
+| **`layout_dps.csv`** (RN) | Applicability **Obrig.** / effect **Rej.** (and related columns) per `CAMINHO NO XML` / `CAMPO`; tomador exterior, exportação, recepção SEFIN, etc. |
+
+**Validation expectations for agents:**
+
+1. **Presence, not optional omission** — empty string, missing relation, zero items when `1-n` serviço lines are required, or absent JSON for exterior parties must **fail** with `ApiError::Validation` (clear message referencing layout path or form field where possible).
+2. **Single pipeline** — run the same checks from `validar_dps_contexto` (and extensions) on **`POST …/assinar`** and **`POST …/transmitir`** after `load_dps_context`; do not sign or transmit when mandatory data is missing.
+3. **Grow toward full leiaute coverage** — today `validar_dps_contexto` covers critical RN/form rules and `layout_cobertura_parcial` tracks XML tag emission gaps; **target state** is mandatory **presence** for every leiaute-required field that QuickNFe owns (DB, computed, or nested itens), aligned with `montar_dps_xml_context`.
+4. **Tests** — add/adjust cases in `nfse/rn_validacao.rs`, `nfse/dps.rs` (`layout_cobertura_parcial`, golden tags), and documento API tests when new mandatory fields are mapped.
+
+### Certificado para assinatura XML
+
+**Product rule:** **Assinar nota fiscal** requires a **valid digital certificate** on the active prestador (nested **certificados digitais** — typically **A1** `.pfx`/`.p12` with senha and `data_validade`).
+
+| Requirement | Detail |
+|-------------|--------|
+| **When** | Every successful **`POST /api/documentos/{id}/assinar`** must produce **real XML-DSig** (enveloped signature over `infDPS`) using the prestador’s PFX private key — not an empty `<Signature/>` placeholder. |
+| **Which cert** | Latest certificado for the documento’s `empresa_id` (prestador), or explicit `certificado_id` when the API supports choosing among multiples (same pattern as transmissão). |
+| **Failure modes** | No cert on prestador, unreadable file, wrong senha, or expired cert → **4xx validation** with actionable message; UI should direct the user to upload certificado on prestador show. |
+| **Dev vs prod** | Local **CNC mock** (localhost) may omit mTLS; **signing and SEFIN** still require a real cert for homologation/production paths. Do not treat “stub signature” as acceptable for flows that reach SEFIN. |
+
+Implementation: `ultimo_certificado_empresa` + `assinar_dps_xml_rascunho` in `nfse/assinatura.rs` (`documentos_controller::assinar`).
 
 ### 4. Itens da nota
 
@@ -279,48 +309,61 @@ Transmission implementation lives in `backend/app/services/nfse/` (ambiente URLs
 
 ---
 
-## DPS XML layout (`layout_dps.xlsx`)
+## DPS XML layout (CSV)
 
-### Role of the spreadsheet
+### Role of the CSV files
 
-**`layout_dps.xlsx` is the canonical source layout for the DPS XML schema** (NFS-e Nacional — Declaração de Prestação de Serviços). It defines the official field list: XML tag names, hierarchy (groups/blocos), occurrence (1-1, 0-1, 1-n), data types, sizes, and business rules.
+**The canonical definition of DPS XML in this repository is two CSV files at the repo root** (NFS-e Nacional — Declaração de Prestação de Serviços):
 
-- **Do not invent DPS tags** in code without a matching row/concept in `layout_dps.xlsx`.
-- **UI form sections**, **`DocumentoForm` / DB columns**, **item (serviço) fields**, and **`montar_dps_xml`** must stay aligned with this layout over time.
-- When the national layout version changes, update the spreadsheet first, then trace impacts through migrations, forms, and XML builder.
+| File | Purpose |
+|------|---------|
+| **`layout_dps_leaiute.csv`** | **XML leiaute (structure)** — one row per field under the national tree: `CAMINHO NO XML`, `CAMPO`, `ELE`, `TIPO`, `OCOR.` (cardinality), `TAM.`, `DESCRIÇÃO`, notas. Use for tag names, hierarchy, order, types, and **mandatory presence** (`OCOR.` 1-1 / 1-n / 1..n on `E` / `A` / `ID`). Primary input for `montar_dps_xml` and coverage tests (`layout_cobertura_parcial`). |
+| **`layout_dps.csv`** | **Business and reception rules (RN)** — rules keyed by `CAMINHO NO XML` and/or `CAMPO`, with applicability (`APLIC.`), effect (`EFEITO`), `CÓD. ERRO`, `MSG. ERRO`, rule level, and emissor/reception columns. Use for server-side validation in `validar_dps_contexto` and alignment with SEFIN reject codes in `logs-retorno`. |
 
-**Repository location:** **`layout_dps.xlsx`** at the **repository root** (`/layout_dps.xlsx`). Optional mirror or docs link: `docs/nfse/layout_dps.xlsx` — the root file is authoritative if both exist.
+Together they replace the former monolithic **`layout_dps.xlsx`** workflow: **structure in leiaute CSV, constraints in `layout_dps.csv`**.
 
-### Workbook structure (tabs)
+- **Do not invent DPS tags** without a matching row (or explicit group) in **`layout_dps_leaiute.csv`**.
+- **UI form sections**, **`DocumentoForm` / DB columns**, **item (serviço) fields**, **`montar_dps_xml`**, and **validators** must stay aligned with these CSVs over time.
+- When the national layout version changes, **refresh the CSVs first** (export from the official SNNFSe workbook if needed), then trace impacts through migrations, forms, and XML builder.
+- Upstream **`.xlsx`** files are optional **sources for regenerating CSVs only** — they are not authoritative in git unless explicitly re-exported into the two CSV paths below.
 
-The file ships **five worksheets**; use them together when mapping UI, validation, and XML:
+**Repository location (authoritative):**
 
-| Sheet | Purpose |
-|-------|---------|
-| **`LEIAUTE DPS_NFS-e`** | **Primary XML schema layout** — one row per field: `CAMINHO NO XML`, `CAMPO`, element type (`ELE`), `TIPO`, `OCOR.` (cardinality), `TAM.`, `DESCRIÇÃO`, notas. Start here for tag names and tree order (root includes `NFS-e` / DPS branches per national leiaute). |
-| **`RN DPS_NFS-e`** | Business rules per XML path/campo (applicability, effect, error codes/messages, nível da regra, emissores). Use for server-side validation before/after building XML. |
-| **`RN_RECEPCAO_DPS`** | Reception rules when SEFIN accepts a DPS (certificado, reject codes such as E1200, etc.). Align with transmission error handling and `logs-retorno`. |
-| **`MUN.INCID_INFO.SERV.`** | CNA / **lista nacional de serviços**, localidade de incidência (LI), grupos de informações específicas por subitem, `infoComplem` — ties to **CNA** catalog and item-level detail groups. |
-| **`EXPORTACAO_EMISSÃO_NFS-e`** | Exportação / comércio exterior scenarios (tomador, intermediário, LP, TribISSQN, comex fields). Maps to tomador/intermediário **exterior** and ISSQN export rules. |
+- `/layout_dps_leaiute.csv` — leiaute / XML schema rows (filename uses `leaiute`; treat as *leiaute*).
+- `/layout_dps.csv` — RN and reception rules (and any national rows not stored in the leiaute file).
 
-**Header row on `LEIAUTE DPS_NFS-e`:** `#`, `CAMINHO NO XML`, `CAMPO`, `ELE`, `TIPO`, `OCOR.`, `TAM.`, `DESCRIÇÃO`, `NOTAS EXPLICATIVAS`.
+### National workbook content (mapped to CSV)
 
-### How to read and use the workbook (setup)
+The national package may still ship multiple worksheets; map them into the two CSVs when exporting:
+
+| National worksheet (source) | Target in repo |
+|----------------------------|----------------|
+| **`LEIAUTE DPS_NFS-e`** | **`layout_dps_leaiute.csv`** — full structural leiaute including `NFSe/…` and `…/infDPS/…` paths |
+| **`RN DPS_NFS-e`**, **`RN_RECEPCAO_DPS`** | **`layout_dps.csv`** — business and reception rules |
+| **`MUN.INCID_INFO.SERV.`**, **`EXPORTACAO_EMISSÃO_NFS-e`**, CNA/LI/export rows | Either CSV row set that owns that concern, or dedicated sections within **`layout_dps.csv`** — document the mapping in commit messages when exporting |
+
+**Expected leiaute header row (`layout_dps_leaiute.csv`):** `#`, `CAMINHO NO XML`, `CAMPO`, `ELE`, `TIPO`, `OCOR.`, `TAM.`, `DESCRIÇÃO`, `NOTAS EXPLICATIVAS`.
+
+**Typical RN header row (`layout_dps.csv`):** `#`, `CAMINHO NO XML`, `CAMPO`, rule description columns, `APLIC.`, `EFEITO`, `CÓD. ERRO`, `MSG. ERRO`, nível da regra, emissor/reception flags.
+
+### How to read and use the CSVs (setup)
 
 When implementing or reviewing DPS mapping:
 
-1. Open **`layout_dps.xlsx`** at the repo root.
-2. Build or verify XML against sheet **`LEIAUTE DPS_NFS-e`** (path + campo + occurrence + type).
-3. Implement validations from **`RN DPS_NFS-e`** and **`RN_RECEPCAO_DPS`** (reject/alert codes documented in sheet columns).
-4. For **CNA / serviço / LI / grupos específicos**, cross **`MUN.INCID_INFO.SERV.`** with app **itens** (`cna_id`, `descricao_servico`) and CNA table.
-5. For **tomador/intermediário exterior** and export ISSQN, cross **`EXPORTACAO_EMISSÃO_NFS-e`** with `tomador_localidade` / `intermediario_localidade` and tributação ISSQN fields.
-6. For each row, record **QuickNFe data source** (DB column, relation, item field, or computed).
-7. Cross-check **namespace and root element** against the builder: today `montar_dps_xml` uses root **`DPS`**, namespace **`http://www.gov.br/nfse`**, wrapper **`infDPS`** with `Id` (see `backend/app/services/nfse/dps.rs`). Reconcile with `CAMINHO NO XML` in the leiaute sheet (national root may document `NFS-e` / DPS subtrees — follow the spreadsheet version bundled in this repo).
-8. Extend **`montar_dps_xml`** (and signing/transmission) to emit **all mandatory nodes** (`OCOR.` 1-1 / 1-n per leiaute), loading related entities (prestador, tomador, intermediário, municípios IBGE, itens + CNA) as required.
+1. Open **`layout_dps_leaiute.csv`** and filter paths under **`NFSe/infNFSe/DPS/infDPS/`** for emission scope (QuickNFe builds standalone **`DPS`** / `infDPS`; reconcile paths with `backend/app/services/nfse/dps.rs`).
+2. Build or verify XML against leiaute rows (**path + campo + `OCOR.` + `TIPO`**).
+3. Cross **`layout_dps.csv`** for **Obrig./Rej.** rules and error codes before assinar/transmitir.
+4. For **CNA / serviço / LI / grupos específicos**, use RN rows referencing `cTribNac`, `MUN.INCID_INFO.SERV.`, etc., plus app **itens** (`cna_id`, `descricao_servico`) and the **CNA** catalog.
+5. For **tomador/intermediário exterior** and export ISSQN, use RN/export rows with `tomador_localidade` / `intermediario_localidade` and tributação ISSQN form fields.
+6. For each leiaute row, record **QuickNFe data source** (DB column, relation, item field, or computed).
+7. Cross-check **namespace and root element**: today `montar_dps_xml` uses root **`DPS`**, namespace **`http://www.gov.br/nfse`**, wrapper **`infDPS`** with `Id` (see `backend/app/services/nfse/dps.rs`). National paths in CSV often prefix `NFSe/infNFSe/DPS/…` — keep reconciliation documented.
+8. Extend **`montar_dps_xml`** to emit **all mandatory leiaute nodes**, loading prestador, tomador/intermediário, municípios IBGE, itens + CNA as required.
 
-**Current implementation gap:** `montar_dps_xml_context` serializa os grupos principais (identificação, prestador, tomador/intermediário quando informados, serviço, valores/ISSQN/federal). Ainda faltam campos obrigatórios do leiaute `infDPS` (cobertura parcial — ver teste `layout_cobertura_parcial` em `nfse/dps.rs`). **Root XML:** emissor usa `<DPS xmlns="http://www.gov.br/nfse">` + `infDPS`; o xlsx documenta caminhos sob `NFSe/infNFSe/DPS/…` — manter reconciliação documentada ao evoluir homologação.
+**Backend loaders:** `dps_layout.rs` and `dps_rn.rs` may still read **`layout_dps.xlsx`** until migrated — **new work and tests must treat the repo-root CSVs as source of truth**; point loaders at `layout_dps_leaiute.csv` / `layout_dps.csv` when touching those modules.
 
-**RN / recepção:** linhas das abas `RN DPS_NFS-e` e `RN_RECEPCAO_DPS` são carregadas de `layout_dps.xlsx` (`dps_rn.rs`); validações de negócio críticas em `validar_dps_contexto` antes de assinar/transmitir.
+**Current implementation gap:** `montar_dps_xml_context` serializa os grupos principais; ainda faltam campos obrigatórios do leiaute `infDPS` (cobertura parcial — teste `layout_cobertura_parcial` em `nfse/dps.rs`).
+
+**RN / recepção:** critical checks in `validar_dps_contexto` before assinar/transmitir, fed from **`layout_dps.csv`** (today via `dps_rn.rs` + xlsx). **Mandatory leiaute fields** must be **presence-validated** per [Mandatory XML field presence](#mandatory-xml-field-presence) using **`layout_dps_leaiute.csv`** as coverage grows.
 
 ### Runtime configuration (SEFIN / ambiente)
 
@@ -332,7 +375,7 @@ These settings must stay consistent with **`tpAmb`** on each documento (field `a
 | `settings.sefin.base_url` | Same; override with env **`SEFIN_BASE_URL`** | SEFIN Nacional API base (no trailing slash) |
 | `settings.cnc.base_url` | Same; override with **`CNC_BASE_URL`** | CNC consulta (localhost mock skips mTLS) |
 | Documento `ambiente` | DB / `DocumentoForm` | Must match `settings.sefin.ambiente` for transmission (`AmbienteNfse::ensure_matches_config`) |
-| Documento `tipo_emissao` | DB / form default `1` | Emission type per national rules (see layout sheet) |
+| Documento `tipo_emissao` | DB / form default `1` | Emission type per national rules (see `layout_dps_leaiute.csv`) |
 | Certificado A1 | Nested under prestador | mTLS for CNC (non-mock) and SEFIN transmission |
 
 **Development defaults:**
@@ -344,9 +387,9 @@ These settings must stay consistent with **`tpAmb`** on each documento (field `a
 
 ### Full logical DPS layout ↔ QuickNFe mapping
 
-Use this as the **checklist** when completing XML generation against `layout_dps.xlsx`. Exact tag names and nesting must match the spreadsheet row-for-row; names here follow common NFS-e Nacional groupings and link to existing app data.
+Use this as the **checklist** when completing XML generation against **`layout_dps_leaiute.csv`**. Exact tag names and nesting must match the leiaute CSV row-for-row; names here follow common NFS-e Nacional groupings and link to existing app data.
 
-| Layout group (logical) | Primary XML area (per `layout_dps.xlsx`) | QuickNFe source |
+| Layout group (logical) | Primary XML area (per `layout_dps_leaiute.csv`) | QuickNFe source |
 |--------------------------|-------------------------------------------|-----------------|
 | **Identificação DPS** | `infDPS`: ambiente, emissão, competência, série, número, tipo emissão, etc. | `documentos_fiscais`: `ambiente`, `data_emissao`, `data_competencia`, `serie`, `numero_documento`, `tipo_emissao`, `modelo`; auto série/número via `serie_numero_automatico` |
 | **Prestador** | Dados do emitente/prestador de serviço | `empresa_id` → `empresas` / prestador: `cpf_cnpj`, `razao_social`, `inscricao_municipal`, `regime_tributario`, município IBGE |
@@ -358,19 +401,21 @@ Use this as the **checklist** when completing XML generation against `layout_dps
 | **Tributação municipal (ISSQN)** | ISSQN, exigibilidade, retenção, benefícios, BC/alíquota/valor | Form section *Tributação Municipal*: `trib_issqn`, `reg_esp_trib_issqn`, flags `issqn_*`, `issqn_aliquota`, `issqn_base_calculo`, `issqn_valor` |
 | **Tributação federal** | PIS/COFINS/CSLL, retenções federais | Form section *Tributação Federal*: `cst_pis_cofins`, `tp_ret_pis_cofins_csll`, `valor_irrf`, `valor_contrib_sociais_retidas`, `valor_contrib_previdenciaria_retida` |
 | **Informações complementares** | Campos adicionais / B2B / RT | `numero_doc_responsabilidade_tecnica`, `documento_referencia`, `informacoes_complementares`, `numero_pedido_ordem_b2b` |
-| **Assinatura** | XML-DSig | `assinar_dps_xml_rascunho` → `xml_assinado` (PFX A1 when cert available; dev stub without cert) |
+| **Assinatura** | XML-DSig | `assinar_dps_xml_rascunho` → `xml_assinado` (**PFX A1 required** — see [Certificado para assinatura XML](#certificado-para-assinatura-xml)) |
 | **Pós-transmissão** | NFSe processada, chave, protocolo | `xml_processado`, `chave_acesso`, `codigo_verificacao`, `protocolo_autorizacao`, `status`; logs em `logs-retorno` |
 
 **Relations loaded at XML build time (expected):** for a complete DPS, the builder should resolve the documento row plus prestador, optional tomador/intermediário, municípios, and all `itens` (with CNA codes)—not only scalar columns on `documentos_fiscais`.
 
 ### Agent workflow for DPS changes
 
-1. Locate or add the field in root **`layout_dps.xlsx`** — row on **`LEIAUTE DPS_NFS-e`**; check **`RN DPS_NFS-e`** / **`RN_RECEPCAO_DPS`** for rules and error codes.
+1. Locate or add the field in **`layout_dps_leaiute.csv`**; check **`layout_dps.csv`** for RN/reception rules and error codes.
 2. Add or update **DB migration** + **`DocumentoForm`** / item forms if persistence is required.
 3. Expose in **`frontend/src/resources/definitions.ts`** (and `buildDocumentoBody` / `flattenDocumentoRowToForm` when applicable).
 4. Map the field in **`montar_dps_xml`** (or dedicated module per layout version).
 5. Add/adjust tests in `backend/app/services/nfse/dps.rs` and documento API tests.
 6. Re-run transmission against homologation or mock after changing mandatory nodes.
+7. Wire **presence validation** for any new mandatory leiaute field into `validar_dps_contexto` (or a dedicated validator called from assinar/transmitir).
+8. Ensure **assinar** rejects missing/invalid certificado per [Certificado para assinatura XML](#certificado-para-assinatura-xml).
 
 ---
 
@@ -468,7 +513,9 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 6. **Minimal diffs**: match existing patterns (`NestedResourcePanel`, `buildNestedCreateBody`, resource pages).
 7. **Unsaved changes**: guard navigation when dirty on all mutating forms; see [Unsaved changes — required behavior](#unsaved-changes--required-behavior). Do not bypass with ad-hoc “leave anyway” flows.
 8. **Date format**: all calendar dates in the UI use the user preference via shared helpers; see [User preferences — date format](#user-preferences--date-format). API and XML stay ISO/`YYYY-MM-DD`.
-9. **DPS layout**: treat root **`layout_dps.xlsx`** as the schema source of truth (tab **`LEIAUTE DPS_NFS-e`** for XML); align forms, DB, validation RNs, and `montar_dps_xml`—see [DPS XML layout](#dps-xml-layout-layout_dpsxlsx).
+9. **DPS layout**: treat root **`layout_dps_leaiute.csv`** (XML structure) and **`layout_dps.csv`** (RN/reception) as the schema source of truth; align forms, DB, validation, and `montar_dps_xml`—see [DPS XML layout (CSV)](#dps-xml-layout-csv).
+10. **DPS mandatory presence**: validate **all** leiaute-required `infDPS` fields for **presence** before assinar/transmitir; extend `validar_dps_contexto` / `dps_layout` as mapping grows—see [Mandatory XML field presence](#mandatory-xml-field-presence).
+11. **DPS signing cert**: **Assinar** must use prestador **certificado digital** (A1 PFX) for real XML-DSig; never rely on stub signatures for SEFIN-bound notas—see [Certificado para assinatura XML](#certificado-para-assinatura-xml).
 
 ---
 
@@ -485,11 +532,11 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
-| DPS layout spec | `layout_dps.xlsx` (repo root; sheets LEIAUTE / RN / CNA / export); `nfse/dps.rs` (XML builder) |
+| DPS layout spec | `layout_dps_leaiute.csv`, `layout_dps.csv` (repo root); `nfse/dps.rs` (XML builder), `nfse/dps_layout.rs`, `nfse/dps_rn.rs`, `nfse/rn_validacao.rs`, `nfse/assinatura.rs` |
 | SEFIN/CNC config | `backend/config/development.yml`, `production.yml`, env `SEFIN_BASE_URL`, `CNC_BASE_URL` |
 | Routes | `backend/config/routes.rs` |
 | Tenant | `backend/app/auth/tenant.rs`, `tenant_scope.rs`, `AuthContext.tsx` |
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, certificado `tipo` enum (UI + API validation), tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard with **Salvar** on edit (`UnsavedConfirmDialog`). DPS: committed `layout_dps.xlsx`; `montar_dps_xml_context` + `dps_layout`/`dps_rn` + `validar_dps_contexto` (incl. itens obrigatórios) + XML-DSig (A1 when cert available). User date format (`DMY`/`MDY`/`YMD`) via API + UI + `todayApiDate()` for defaults. DPS mandatory-field coverage still partial — tracked by `layout_cobertura_parcial` / `montar_dps_golden_fixture_principais_tags`.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, certificado `tipo` enum (UI + API validation), tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard with **Salvar** on edit (`UnsavedConfirmDialog`). DPS: canonical **`layout_dps_leaiute.csv`** + **`layout_dps.csv`** at repo root; `montar_dps_xml_context` + `dps_layout`/`dps_rn` (xlsx loaders pending CSV migration) + `validar_dps_contexto`. **Agent policy:** mandatory `infDPS` leiaute fields must be **presence-validated** before assinar/transmitir (`layout_cobertura_parcial`); **assinar** requires prestador **certificado A1** for real XML-DSig. User date format (`DMY`/`MDY`/`YMD`) via API + UI + `todayApiDate()`. Doido **0.0.32-test1**.*
