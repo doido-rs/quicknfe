@@ -9,7 +9,7 @@ QuickNFe is a multi-tenant web app for **NFSe (Nota Fiscal de Serviço eletrôni
 - Cadastros: prestadores (emitters), tomadores (`clientes`), intermediários, municípios (IBGE), CNA (código tributação nacional).
 - **Notas fiscais** (`documentos`): structured form aligned with the **DPS XML layout** in `layout_dps_leaiute.csv` + `layout_dps.csv` (competência, partes, municípios, valores, ISSQN, PIS/COFINS federal panel, itens).
 - **Itens** per nota, **certificados digitais** per prestador, **lotes** and **logs de retorno (SEFAZ)**.
-- Outbound **CNC** (cadastro nacional consult) and **SEFIN Nacional** transmission (backend), with local mock/dev paths.
+- Outbound **CNC** (cadastro nacional consult) and **SEFIN Nacional** transmission (backend), with local mock/dev paths. **Assinar** and **transmitir** are synchronous HTTP today; the **target** is background jobs (see [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture)).
 
 Stack: Rust/Doido backend (MySQL), React/Vite frontend (Bun), TanStack Query/Router, shadcn/ui. See `docs/architecture/stack.md` and `docs/README.md` for harness, CI, MCP/OAuth notes.
 
@@ -261,11 +261,64 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 |------|-----|----------|--------|
 | Montar rascunho XML | — | — | `montar_dps_xml_context` (identificação, prestador, partes, serviço, valores/tributos); cobertura obrigatória `infDPS` rastreada em `layout_cobertura_parcial` |
 | Validar DPS | — (before assinar/transmitir) | — | **Product rule:** every **mandatory** `infDPS` field from **`layout_dps_leaiute.csv`** must pass **presence** validation; conditional rules from **`layout_dps.csv`** — see [Mandatory XML field presence](#mandatory-xml-field-presence) |
-| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | XML-DSig enveloped com **certificado A1 PFX** do prestador — **obrigatório**; ver [Certificado para assinatura XML](#certificado-para-assinatura-xml) |
-| Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
-| Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | mTLS + optional `certificado_id`; updates doc/logs |
+| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | **Today:** request blocks until `xml_assinado` is persisted. **Target:** enqueue only — [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture). XML-DSig enveloped com **certificado A1 PFX** — ver [Certificado para assinatura XML](#certificado-para-assinatura-xml) |
+| Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS (unchanged; may reflect in-progress job state on target) |
+| Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | **Today:** request blocks on SEFIN HTTP + DB updates. **Target:** enqueue `TransmitirDocumentoJob` (mTLS, optional `certificado_id`, logs). Same section |
 
-Transmission implementation lives in `backend/app/services/nfse/` (ambiente URLs, resposta parsing, logs).
+Core logic lives in `backend/app/services/nfse/` (`assinatura.rs`, `transmissao.rs`, ambiente URLs, resposta parsing, logs). **Do not** grow controller handlers with retry/scheduling logic — that belongs in jobs once async is implemented.
+
+### Async assinatura e transmissão (target architecture)
+
+**Status:** **not implemented** — `ApiDocumentosController::assinar` and `::transmitir` still run sign/transmit inline. This section is the **product and implementation target** so agents can migrate without redesigning the pipeline.
+
+**Why async**
+
+| Concern | Sync HTTP (today) | Background job (target) |
+|---------|-------------------|-------------------------|
+| SEFIN latency / outages | Client timeout; hard to retry safely | Worker `max_retries`, backoff, `timeout` per job |
+| Operability | Sign/transmit tied to web process | Scale **`cargo doido worker`** separately from API |
+| Scheduling | Manual click only | `run_at` on `doido_jobs` (defer transmit), future **lote** batch enqueue |
+| Maintenance | Duplicated orchestration if lotes/MCP grow | One job body calling existing services |
+
+**Infrastructure (already in repo)**
+
+- Doido **jobs**: `doido_jobs` table, queue **`default`** in `backend/config/development.yml` / `production.yml`.
+- Worker: **`cargo doido worker`** (see `backend/README.md`).
+- Reference job: `backend/app/jobs/import_nfse_anexo_a.rs` (`#[job(queue = "default", …)]`, payload struct, `JobContext` + `ctx.db()`).
+
+**Target jobs (to add)**
+
+| Job | Payload (sketch) | Worker steps |
+|-----|------------------|--------------|
+| **`AssinarDocumentoJob`** | `documento_id`, `company_id` (tenant), optional `certificado_id` | Scope documento → `load_dps_context` → `validar_dps_contexto` → resolve PFX → `assinar_dps_xml_rascunho` → persist `xml_assinado` → clear in-flight status |
+| **`TransmitirDocumentoJob`** | Same + optional `certificado_id` | Require `xml_assinado` → `transmitir_documento` → update status, `xml_processado`, chave/protocolo → append **logs-retorno** |
+
+Optional later: a single **`ProcessDocumentoNfseJob`** with `step: assinar \| transmitir` if enqueue paths must stay unified for lotes.
+
+**API contract (target)**
+
+1. **`POST …/assinar`** and **`POST …/transmitir`** become **fast enqueue** endpoints: tenant check, idempotency (reject if already `assinando` / `transmitindo` or terminal success), enqueue job, return **`202 Accepted`** with `{ job_id?, documento_id, status }` or the usual documento DTO with updated **`status`** / processing flags.
+2. **Heavy work only in the worker** — reuse `validar_dps_contexto`, `assinar_dps_xml_rascunho`, `transmitir_documento`; no second copy of RN/presence rules in controllers.
+3. **Status surface** — extend documento `status` (or dedicated columns) for in-flight and failure messages queryable by **`GET /api/documentos/{id}`**; optional **`GET /api/documentos/{id}/jobs`** or poll `doido_jobs` by correlation id if exposed.
+4. **MCP / OpenAPI** — same enqueue semantics as the UI (`quicknfe_documentos_transmitir`, etc.); document async in `docs/api/openapi.yaml` when implemented.
+
+**UI (target)**
+
+- **Assinar** / **Transmitir SEFIN** trigger enqueue; show “Na fila…” / spinner from documento status; TanStack Query **poll or invalidate** until terminal state or error toast from persisted message.
+- Keep **Baixar XML** behavior; disable transmit while `assinando` or missing `xml_assinado`.
+
+**Scheduling and lotes**
+
+- Deferred transmit: enqueue with **`run_at`** (e.g. competência window, off-peak).
+- **Lotes** (`/api/lotes`): batch enqueue **`TransmitirDocumentoJob`** per documento in the lote instead of N sequential HTTP calls to SEFIN from the API process.
+
+**Agent checklist when implementing**
+
+1. Add jobs under `backend/app/jobs/` and register via `doido generate job` / `app/jobs/mod.rs`.
+2. Slim controllers to validate + enqueue; move current `documentos_controller::assinar` / `::transmitir` bodies into job functions.
+3. Define idempotency and status transitions (including failure → user-visible validation vs SEFIN reject).
+4. Frontend: `DocumentoAssinarButton`, `DocumentoTransmitirButton`, show view — async UX; integration tests with worker running.
+5. Keep [Mandatory XML field presence](#mandatory-xml-field-presence) and [Certificado para assinatura XML](#certificado-para-assinatura-xml) enforced **inside the job** before sign/transmit.
 
 ### Mandatory XML field presence
 
@@ -279,7 +332,7 @@ Transmission implementation lives in `backend/app/services/nfse/` (ambiente URLs
 **Validation expectations for agents:**
 
 1. **Presence, not optional omission** — empty string, missing relation, zero items when `1-n` serviço lines are required, or absent JSON for exterior parties must **fail** with `ApiError::Validation` (clear message referencing layout path or form field where possible).
-2. **Single pipeline** — run the same checks from `validar_dps_contexto` (and extensions) on **`POST …/assinar`** and **`POST …/transmitir`** after `load_dps_context`; do not sign or transmit when mandatory data is missing.
+2. **Single pipeline** — run the same checks from `validar_dps_contexto` (and extensions) on assinar/transmitir paths after `load_dps_context` (**today:** HTTP handlers; **target:** background jobs — see [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture)); do not sign or transmit when mandatory data is missing.
 3. **Grow toward full leiaute coverage** — today `validar_dps_contexto` covers critical RN/form rules and `layout_cobertura_parcial` tracks XML tag emission gaps; **target state** is mandatory **presence** for every leiaute-required field that QuickNFe owns (DB, computed, or nested itens), aligned with `montar_dps_xml_context`.
 4. **Tests** — add/adjust cases in `nfse/rn_validacao.rs`, `nfse/dps.rs` (`layout_cobertura_parcial`, golden tags), and documento API tests when new mandatory fields are mapped.
 
@@ -492,7 +545,7 @@ Core routes in `backend/config/routes.rs`:
 
 - Session/tenant: `/api/me`, `/tenant/company`, `/tenant/prestador`, `/api/dashboard`
 - CRUD: prestadores, clientes, intermediários, lotes, documentos
-- Documento actions: `…/xml`, `…/assinar`, `…/transmitir`
+- Documento actions: `…/xml`, `…/assinar`, `…/transmitir` (target: assinar/transmitir enqueue jobs — [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture))
 - Nested: `documentos/{doc_id}/itens`, `eventos`, `logs-retorno`
 - Itens tributos, global logs-retorno
 - Reference: municipios, cnas (index/show)
@@ -516,6 +569,7 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 9. **DPS layout**: treat root **`layout_dps_leaiute.csv`** (XML structure) and **`layout_dps.csv`** (RN/reception) as the schema source of truth; align forms, DB, validation, and `montar_dps_xml`—see [DPS XML layout (CSV)](#dps-xml-layout-csv).
 10. **DPS mandatory presence**: validate **all** leiaute-required `infDPS` fields for **presence** before assinar/transmitir; extend `validar_dps_contexto` / `dps_layout` as mapping grows—see [Mandatory XML field presence](#mandatory-xml-field-presence).
 11. **DPS signing cert**: **Assinar** must use prestador **certificado digital** (A1 PFX) for real XML-DSig; never rely on stub signatures for SEFIN-bound notas—see [Certificado para assinatura XML](#certificado-para-assinatura-xml).
+12. **Async sign/transmit**: prefer **doido-jobs** for assinar + transmitir orchestration (retries, schedule, lotes); keep controllers thin — see [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture).
 
 ---
 
@@ -532,6 +586,8 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
+| NFSe sign/transmit (target jobs) | `nfse/assinatura.rs`, `nfse/transmissao.rs`, `app/jobs/` (pattern: `import_nfse_anexo_a.rs`), `config/*yml` `jobs.queues` |
+| Documento actions UI | `DocumentoAssinarButton.tsx`, `DocumentoTransmitirButton.tsx`, `api/documentos.ts` |
 | DPS layout spec | `layout_dps_leaiute.csv`, `layout_dps.csv` (repo root); `nfse/dps.rs` (XML builder), `nfse/dps_layout.rs`, `nfse/dps_rn.rs`, `nfse/rn_validacao.rs`, `nfse/assinatura.rs` |
 | SEFIN/CNC config | `backend/config/development.yml`, `production.yml`, env `SEFIN_BASE_URL`, `CNC_BASE_URL` |
 | Routes | `backend/config/routes.rs` |
