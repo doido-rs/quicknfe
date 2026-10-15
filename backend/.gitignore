@@ -7,6 +7,7 @@ config/credentials.yml.enc
 
 # Rust / cargo coverage reports (llvm-cov, tarpaulin, grcov, etc.)
 /coverage/
+/storage/
 lcov.info
 tarpaulin-report.html
 cobertura.xml

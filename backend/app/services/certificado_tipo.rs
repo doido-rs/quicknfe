@@ -24,3 +24,4 @@ mod tests {
         assert!(validar_certificado_tipo("INVALID").is_err());
     }
 }
+

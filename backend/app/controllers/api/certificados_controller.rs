@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use doido::controller::controller;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
@@ -22,7 +22,30 @@ pub struct CertificadoForm {
     #[serde(default)]
     pub arquivo_nome: Option<String>,
     pub senha: Option<String>,
+    #[serde(deserialize_with = "deserialize_data_validade")]
     pub data_validade: DateTime<Utc>,
+}
+
+fn deserialize_data_validade<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Input {
+        DateTime(DateTime<Utc>),
+        Date(NaiveDate),
+    }
+
+    match Input::deserialize(deserializer)? {
+        Input::DateTime(dt) => Ok(dt),
+        Input::Date(d) => d
+            .and_hms_opt(0, 0, 0)
+            .ok_or_else(|| D::Error::custom("data_validade inválida"))
+            .map(|ndt| ndt.and_utc()),
+    }
 }
 
 fn caminho_from_form(form: &CertificadoForm, prestador_id: i64) -> Result<Option<String>, ApiError> {
@@ -160,5 +183,17 @@ impl ApiCertificadosController {
         ));
         crate::api!(db(CertEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CertificadoForm;
+
+    #[test]
+    fn form_json_aceita_data_validade_somente_data() {
+        let json = r#"{"tipo":"A1","senha":"secret","arquivo_nome":"a.pfx","arquivo_base64":"YQ==","data_validade":"2027-08-15"}"#;
+        let form: CertificadoForm = serde_json::from_str(json).expect("parse");
+        assert_eq!(form.tipo, "A1");
     }
 }

@@ -108,11 +108,24 @@ export function fileToBase64Payload(file: File): Promise<string> {
   })
 }
 
+/** Doido `body_json` / certificado storage — keep JSON under ~2 MiB total. */
+export const MAX_UPLOAD_FILE_BYTES = 1_400_000
+
 export async function buildCreateBodyWithFiles(
   fields: FieldDef[],
   form: Record<string, string>,
   files: Record<string, File | undefined>,
 ): Promise<Record<string, unknown>> {
+  for (const field of fields) {
+    if (field.type !== 'file') continue
+    const file = files[field.key]
+    if (file && file.size > MAX_UPLOAD_FILE_BYTES) {
+      throw new Error(
+        `Arquivo muito grande (${Math.ceil(file.size / 1024)} KB). Limite ~${Math.floor(MAX_UPLOAD_FILE_BYTES / 1024)} KB para upload via JSON.`,
+      )
+    }
+  }
+
   const body = buildBody(
     fields.filter((f) => !isFileField(f)),
     form,
