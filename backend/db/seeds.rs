@@ -152,6 +152,10 @@ async fn seed_prestador_bayan_cnc(db: &DatabaseConnection) -> doido::Result<()> 
         inscricao_estadual: Set(None),
         regime_tributario: Set("REGIME_NORMAL".into()),
         municipio_id: Set(municipio_rj.id),
+        cep: Set(Some("20040020".into())),
+        logradouro: Set(Some("Praia de Botafogo".into())),
+        numero: Set(Some("300".into())),
+        bairro: Set(Some("Botafogo".into())),
         criado_em: Set(now),
         ..Default::default()
     }
@@ -182,6 +186,10 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         inscricao_estadual: Set(Some("123456789012".into())),
         regime_tributario: Set("SIMPLES_NACIONAL".into()),
         municipio_id: Set(municipio_sp.id),
+        cep: Set(Some("01310100".into())),
+        logradouro: Set(Some("Avenida Paulista".into())),
+        numero: Set(Some("1000".into())),
+        bairro: Set(Some("Bela Vista".into())),
         criado_em: Set(chrono::Utc::now()),
         ..Default::default()
     }

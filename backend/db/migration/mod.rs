@@ -23,6 +23,8 @@ mod m20261012180000_documento_tributacao_municipal;
 mod m20261012190000_documento_tributacao_federal;
 mod m20261013150000_seed_municipio_rio_de_janeiro;
 mod m20261014100000_user_date_format;
+mod m20261014210000_partes_endereco_br;
+mod m20261014220000_documento_processamento_mensagem;
 // @generated-migrations-mod — `doido generate model` inserts `mod` declarations above this line. Do not remove.
 
 pub struct Migrator;
@@ -56,6 +58,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20261012190000_documento_tributacao_federal::Migration),
             Box::new(m20261013150000_seed_municipio_rio_de_janeiro::Migration),
             Box::new(m20261014100000_user_date_format::Migration),
+            Box::new(m20261014210000_partes_endereco_br::Migration),
+            Box::new(m20261014220000_documento_processamento_mensagem::Migration),
             // @generated-migrations-list
         ]
     }

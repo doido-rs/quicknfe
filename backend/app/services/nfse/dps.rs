@@ -59,8 +59,8 @@ pub fn montar_dps_xml_context(ctx: &DpsContext) -> Result<String, ApiError> {
     xml.push('\n');
     append_identificacao(&mut xml, ctx, &competencia);
     append_prestador(&mut xml, ctx)?;
-    append_tomador(&mut xml, ctx);
-    append_intermediario(&mut xml, ctx);
+    append_tomador(&mut xml, ctx)?;
+    append_intermediario(&mut xml, ctx)?;
     append_servico(&mut xml, ctx);
     append_valores(&mut xml, ctx);
     xml.push_str("  </infDPS>\n</DPS>\n");
@@ -87,6 +87,12 @@ fn append_identificacao(xml: &mut String, ctx: &DpsContext, competencia: &str) {
 
 fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
     let p = &ctx.prestador;
+    let end = super::endereco_brasil::endereco_prestador(
+        p.cep.as_deref(),
+        p.logradouro.as_deref(),
+        p.numero.as_deref(),
+        p.bairro.as_deref(),
+    )?;
     xml.push_str("    <prest>\n");
     let (tag, insc) = cpf_cnpj_tag(&p.cpf_cnpj);
     push_elem(xml, 6, tag, &insc);
@@ -102,11 +108,11 @@ fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> 
         "cMun",
         &pad_ibge7(&ctx.municipio_prestador.codigo_ibge),
     );
-    push_elem(xml, 10, "CEP", "00000000");
+    push_elem(xml, 10, "CEP", &end.cep);
     xml.push_str("        </endNac>\n");
-    push_elem(xml, 8, "xLgr", "NAO INFORMADO");
-    push_elem(xml, 8, "nro", "S/N");
-    push_elem(xml, 8, "xBairro", "NAO INFORMADO");
+    push_elem(xml, 8, "xLgr", &xml_escape(&end.logradouro));
+    push_elem(xml, 8, "nro", &xml_escape(&end.numero));
+    push_elem(xml, 8, "xBairro", &xml_escape(&end.bairro));
     xml.push_str("      </end>\n");
     xml.push_str("      <regTrib>\n");
     push_elem(xml, 8, "opSimpNac", &map_op_simp_nac(&p.regime_tributario));
@@ -124,15 +130,15 @@ fn map_op_simp_nac(regime: &str) -> String {
     }
 }
 
-fn append_tomador(xml: &mut String, ctx: &DpsContext) {
+fn append_tomador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
     if ctx.doc.tomador_localidade == "nao_informado" {
-        return;
+        return Ok(());
     }
     if ctx.doc.tomador_localidade == "exterior" {
         if let Some(ext) = &ctx.tomador_exterior {
             append_parte_exterior(xml, "toma", ext);
         }
-        return;
+        return Ok(());
     }
     if let Some(t) = &ctx.tomador {
         append_parte_brasil(
@@ -144,19 +150,24 @@ fn append_tomador(xml: &mut String, ctx: &DpsContext) {
             t.email.as_deref(),
             t.telefone.as_deref(),
             ctx.tomador_municipio.as_ref(),
-        );
+            t.cep.as_deref(),
+            t.logradouro.as_deref(),
+            t.numero.as_deref(),
+            t.bairro.as_deref(),
+        )?;
     }
+    Ok(())
 }
 
-fn append_intermediario(xml: &mut String, ctx: &DpsContext) {
+fn append_intermediario(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
     if ctx.doc.intermediario_localidade == "nao_informado" {
-        return;
+        return Ok(());
     }
     if ctx.doc.intermediario_localidade == "exterior" {
         if let Some(ext) = &ctx.intermediario_exterior {
             append_parte_exterior(xml, "interm", ext);
         }
-        return;
+        return Ok(());
     }
     if let Some(i) = &ctx.intermediario {
         append_parte_brasil(
@@ -167,9 +178,14 @@ fn append_intermediario(xml: &mut String, ctx: &DpsContext) {
             i.inscricao_municipal.as_deref(),
             i.email.as_deref(),
             i.telefone.as_deref(),
-            None,
-        );
+            ctx.intermediario_municipio.as_ref(),
+            i.cep.as_deref(),
+            i.logradouro.as_deref(),
+            i.numero.as_deref(),
+            i.bairro.as_deref(),
+        )?;
     }
+    Ok(())
 }
 
 fn append_parte_brasil(
@@ -181,7 +197,11 @@ fn append_parte_brasil(
     email: Option<&str>,
     fone: Option<&str>,
     municipio: Option<&crate::models::municipio::Model>,
-) {
+    cep: Option<&str>,
+    logradouro: Option<&str>,
+    numero: Option<&str>,
+    bairro: Option<&str>,
+) -> Result<(), ApiError> {
     xml.push_str(&format!("    <{grupo}>\n"));
     let (tag, insc) = cpf_cnpj_tag(cpf_cnpj);
     push_elem(xml, 6, tag, &insc);
@@ -190,6 +210,7 @@ fn append_parte_brasil(
     }
     push_elem(xml, 6, "xNome", &xml_escape(razao));
     if municipio.is_some() {
+        let end = super::endereco_brasil::endereco_from_optional(cep, logradouro, numero, bairro)?;
         xml.push_str("      <end>\n");
         xml.push_str("        <endNac>\n");
         if let Some(m) = municipio {
@@ -200,11 +221,11 @@ fn append_parte_brasil(
                 &pad_ibge7(&m.codigo_ibge),
             );
         }
-        push_elem(xml, 10, "CEP", "00000000");
+        push_elem(xml, 10, "CEP", &end.cep);
         xml.push_str("        </endNac>\n");
-        push_elem(xml, 8, "xLgr", "NAO INFORMADO");
-        push_elem(xml, 8, "nro", "S/N");
-        push_elem(xml, 8, "xBairro", "NAO INFORMADO");
+        push_elem(xml, 8, "xLgr", &xml_escape(&end.logradouro));
+        push_elem(xml, 8, "nro", &xml_escape(&end.numero));
+        push_elem(xml, 8, "xBairro", &xml_escape(&end.bairro));
         xml.push_str("      </end>\n");
     }
     if let Some(f) = fone.filter(|s| !s.trim().is_empty()) {
@@ -214,6 +235,7 @@ fn append_parte_brasil(
         push_elem(xml, 6, "email", &xml_escape(e));
     }
     xml.push_str(&format!("    </{grupo}>\n"));
+    Ok(())
 }
 
 fn append_parte_exterior(xml: &mut String, grupo: &str, ext: &ParteExterior) {
@@ -258,6 +280,9 @@ fn append_servico(xml: &mut String, ctx: &DpsContext) {
     let (c_trib, x_desc) = servico_from_itens(&ctx.itens, &ctx.doc);
     push_elem(xml, 8, "cTribNac", &c_trib);
     push_elem(xml, 8, "xDescServ", &xml_escape(&x_desc));
+    if let Some(item) = ctx.itens.first() {
+        push_elem(xml, 8, "cIntContrib", &item.numero_item.to_string());
+    }
     xml.push_str("      </cServ>\n");
     if let Some(info) = info_complementar_text(ctx) {
         push_elem(xml, 6, "infoCompl", &xml_escape(&info));
@@ -443,7 +468,7 @@ pub mod coverage {
             "pAliq", "vBC", "vISSQN", "tpRetISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins",
             "vRetCP",
             "vRetIRRF", "vRetCSLL",
-            "infoCompl", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
+            "infoCompl", "cIntContrib", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
         ]
         .into_iter()
         .collect()
@@ -469,6 +494,24 @@ mod tests {
     use doido::model::sea_orm::prelude::Decimal;
     use std::path::PathBuf;
 
+    fn sample_prestador() -> crate::models::empresa::Model {
+        crate::models::empresa::Model {
+            id: 1,
+            company_id: 1,
+            cpf_cnpj: "12345678000199".into(),
+            razao_social: "Prestador LTDA".into(),
+            inscricao_municipal: Some("123".into()),
+            inscricao_estadual: None,
+            regime_tributario: "SIMPLES_NACIONAL".into(),
+            municipio_id: 1,
+            cep: Some("20040020".into()),
+            logradouro: Some("Rua Teste".into()),
+            numero: Some("100".into()),
+            bairro: Some("Centro".into()),
+            criado_em: Utc::now(),
+        }
+    }
+
     fn sample_doc() -> Documento {
         Documento {
             id: 1,
@@ -488,6 +531,7 @@ mod tests {
             ambiente: 2,
             tipo_emissao: 1,
             status: "novo".into(),
+            processamento_mensagem: None,
             data_emissao: Utc::now(),
             data_competencia: None,
             serie_numero_automatico: 1,
@@ -539,7 +583,7 @@ mod tests {
             "cobertura completa inesperada neste teste: {hit}/{total}"
         );
         // Baseline documentado (Phase 4): aumentar `min_ratio` conforme o builder evolui.
-        let min_ratio = 0.24_f64;
+        let min_ratio = 0.35_f64;
         let ratio = hit as f64 / total as f64;
         assert!(
             ratio >= min_ratio,
@@ -577,17 +621,7 @@ mod tests {
         };
         let ctx = DpsContext {
             doc: sample_doc(),
-            prestador: Empresa {
-                id: 1,
-                company_id: 1,
-                cpf_cnpj: "12345678000199".into(),
-                razao_social: "Prestador LTDA".into(),
-                inscricao_municipal: Some("123".into()),
-                inscricao_estadual: None,
-                regime_tributario: "SIMPLES_NACIONAL".into(),
-                municipio_id: 1,
-                criado_em: Utc::now(),
-            },
+            prestador: sample_prestador(),
             municipio_emissao: municipio.clone(),
             municipio_prestacao: municipio.clone(),
             municipio_prestador: municipio,
@@ -635,17 +669,7 @@ mod tests {
         };
         let ctx = DpsContext {
             doc: sample_doc(),
-            prestador: Empresa {
-                id: 1,
-                company_id: 1,
-                cpf_cnpj: "12345678000199".into(),
-                razao_social: "Prestador LTDA".into(),
-                inscricao_municipal: Some("123".into()),
-                inscricao_estadual: None,
-                regime_tributario: "SIMPLES_NACIONAL".into(),
-                municipio_id: 1,
-                criado_em: Utc::now(),
-            },
+            prestador: sample_prestador(),
             municipio_emissao: municipio.clone(),
             municipio_prestacao: municipio.clone(),
             municipio_prestador: municipio,

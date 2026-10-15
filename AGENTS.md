@@ -9,7 +9,7 @@ QuickNFe is a multi-tenant web app for **NFSe (Nota Fiscal de Serviço eletrôni
 - Cadastros: prestadores (emitters), tomadores (`clientes`), intermediários, municípios (IBGE), CNA (código tributação nacional).
 - **Notas fiscais** (`documentos`): structured form aligned with the **DPS XML layout** in `layout_dps_leaiute.csv` + `layout_dps.csv` (competência, partes, municípios, valores, ISSQN, PIS/COFINS federal panel, itens).
 - **Itens** per nota, **certificados digitais** per prestador, **lotes** and **logs de retorno (SEFAZ)**.
-- Outbound **CNC** (cadastro nacional consult) and **SEFIN Nacional** transmission (backend), with local mock/dev paths. **Assinar** and **transmitir** are synchronous HTTP today; the **target** is background jobs (see [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture)).
+- Outbound **CNC** (cadastro nacional consult) and **SEFIN Nacional** transmission (backend), with local mock/dev paths. **Assinar** and **transmitir** enqueue **doido-jobs** (`202 Accepted`); run **`cargo doido worker`** for processing (see [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture)).
 
 Stack: Rust/Doido backend (MySQL), React/Vite frontend (Bun), TanStack Query/Router, shadcn/ui. See `docs/architecture/stack.md` and `docs/README.md` for harness, CI, MCP/OAuth notes.
 
@@ -261,15 +261,15 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 |------|-----|----------|--------|
 | Montar rascunho XML | — | — | `montar_dps_xml_context` (identificação, prestador, partes, serviço, valores/tributos); cobertura obrigatória `infDPS` rastreada em `layout_cobertura_parcial` |
 | Validar DPS | — (before assinar/transmitir) | — | **Product rule:** every **mandatory** `infDPS` field from **`layout_dps_leaiute.csv`** must pass **presence** validation; conditional rules from **`layout_dps.csv`** — see [Mandatory XML field presence](#mandatory-xml-field-presence) |
-| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | **Today:** request blocks until `xml_assinado` is persisted. **Target:** enqueue only — [Async assinatura e transmissão](#async-assinatura-e-transmissão-target-architecture). XML-DSig enveloped com **certificado A1 PFX** — ver [Certificado para assinatura XML](#certificado-para-assinatura-xml) |
-| Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS (unchanged; may reflect in-progress job state on target) |
-| Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | **Today:** request blocks on SEFIN HTTP + DB updates. **Target:** enqueue `TransmitirDocumentoJob` (mTLS, optional `certificado_id`, logs). Same section |
+| Assinar | `POST /api/documentos/{id}/assinar` | **Assinar nota fiscal** | **202** — enfileira `assinar_documento` (worker); validação DPS antes do enqueue; XML-DSig A1 PFX no job — [Certificado para assinatura XML](#certificado-para-assinatura-xml) |
+| Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
+| Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | **202** — enfileira `transmitir_documento_nfse` (mTLS, optional `certificado_id`, logs) |
 
 Core logic lives in `backend/app/services/nfse/` (`assinatura.rs`, `transmissao.rs`, ambiente URLs, resposta parsing, logs). **Do not** grow controller handlers with retry/scheduling logic — that belongs in jobs once async is implemented.
 
 ### Async assinatura e transmissão (target architecture)
 
-**Status:** **not implemented** — `ApiDocumentosController::assinar` and `::transmitir` still run sign/transmit inline. This section is the **product and implementation target** so agents can migrate without redesigning the pipeline.
+**Status:** **implemented** — `ApiDocumentosController::assinar` / `::transmitir` validam tenant + DPS (assinar) e enfileiram jobs; trabalho pesado em `app/jobs/assinar_documento.rs` e `transmitir_documento.rs`. **`POST /api/lotes/{id}/transmitir`** enfileira transmissão por nota do lote. UI faz poll em `GET /api/documentos/{id}` enquanto `status` é `assinando` / `transmitindo`.
 
 **Why async**
 
@@ -595,4 +595,4 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, `PATCH 
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/sign/transmit/XML (optional `certificado_id` on transmit when multiple certs), draft itens on create, item tributos nested UI, certificado `tipo` enum (UI + API validation), tributação municipal/federal form sections, cursor pagination, Sonner toasts, unsaved-changes guard with **Salvar** on edit (`UnsavedConfirmDialog`). DPS: **`layout_dps_leaiute.csv`** + **`layout_dps.csv`**; CSV loaders; `dps_presenca` + incremental `dps_rn_engine`; **assinar** exige certificado A1 (XML-DSig real). User date format (`DMY`/`MDY`/`YMD`). Doido **0.0.32-test1**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/XML; **assinar/transmitir async** (`202` + `cargo doido worker`, status `assinando`/`transmitindo`, `processamento_mensagem`), lote **`POST /api/lotes/{id}/transmitir`**, UI poll; endereços Brasil em prestador/tomador/intermediário + DPS sem placeholders; `certificado_id` em assinar/transmitir; draft itens, item tributos UI, certificado `tipo` enum, tributação form sections, cursor pagination, Sonner, unsaved-changes guard. DPS: CSV loaders, `dps_presenca` (CEP/endereço/cIntContrib), `dps_rn_engine`, cobertura `min_ratio` 0.35, `make dps-coverage`. User date format. Doido **0.0.32-test1**.*

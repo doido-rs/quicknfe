@@ -17,6 +17,11 @@ pub struct Model {
     pub inscricao_municipal: Option<String>,
     pub email: Option<String>,
     pub telefone: Option<String>,
+    pub municipio_id: Option<i64>,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub bairro: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

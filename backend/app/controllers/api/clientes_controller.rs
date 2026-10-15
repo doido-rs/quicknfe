@@ -20,6 +20,7 @@ pub struct ClienteForm {
     pub logradouro: Option<String>,
     pub numero: Option<String>,
     pub bairro: Option<String>,
+    pub cep: Option<String>,
     pub municipio_id: Option<i64>,
     pub email: Option<String>,
     pub telefone: Option<String>,
@@ -126,6 +127,7 @@ impl ApiClientesController {
                 logradouro: Set(form.logradouro),
                 numero: Set(form.numero),
                 bairro: Set(form.bairro),
+                cep: Set(form.cep),
                 municipio_id: Set(form.municipio_id),
                 email: Set(form.email),
                 telefone: Set(form.telefone),
@@ -154,6 +156,7 @@ impl ApiClientesController {
         record.logradouro = Set(form.logradouro);
         record.numero = Set(form.numero);
         record.bairro = Set(form.bairro);
+        record.cep = Set(form.cep);
         record.municipio_id = Set(form.municipio_id);
         record.email = Set(form.email);
         record.telefone = Set(form.telefone);

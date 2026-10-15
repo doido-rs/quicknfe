@@ -19,6 +19,7 @@ pub struct Model {
     pub logradouro: Option<String>,
     pub numero: Option<String>,
     pub bairro: Option<String>,
+    pub cep: Option<String>,
     pub municipio_id: Option<i64>,
     pub email: Option<String>,
     pub telefone: Option<String>,

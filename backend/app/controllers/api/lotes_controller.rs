@@ -6,7 +6,9 @@ use serde::Deserialize;
 use crate::models::lote_transmissao::{
     ActiveModel as LoteActive, Column as LoteColumn, Entity as LoteEntity,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
+use crate::services::api_error::{
+    db, id_param, json_body, json_with_status, require_tenant, scoped, to_response,
+};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::dto::LoteDto;
 use crate::services::tenant_scope;
@@ -98,6 +100,22 @@ impl ApiLotesController {
         record.data_recebimento = Set(form.data_recebimento);
         let updated = crate::api!(db(record.update(ctx.db()).await));
         ctx.json(LoteDto::from(updated))
+    }
+
+    /// Enfileira transmissão SEFIN para todas as notas do lote.
+    pub async fn transmitir(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        let results = crate::api!(to_response(
+            crate::services::documento_enqueue::enqueue_transmitir_lote(
+                ctx.db(),
+                access.company.id,
+                access.prestador.id,
+                id,
+            )
+            .await,
+        ));
+        json_with_status(202, results)
     }
 
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {

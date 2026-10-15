@@ -13,6 +13,8 @@ mod settings;
 
 #[path = "../app/services/mod.rs"]
 mod services;
+#[path = "../app/jobs/mod.rs"]
+mod jobs;
 #[path = "../app/helpers/mod.rs"]
 mod helpers;
 #[path = "../app/oauth/mod.rs"]

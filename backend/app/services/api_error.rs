@@ -1,5 +1,7 @@
-use doido::controller::axum::http::StatusCode;
+use doido::controller::axum::body::Body;
+use doido::controller::axum::http::{header, StatusCode};
 use doido::controller::axum::response::{IntoResponse, Response};
+use serde::Serialize;
 
 use crate::auth::tenant::TenantError;
 
@@ -101,6 +103,15 @@ macro_rules! api {
             Err(__api_err) => return __api_err,
         }
     };
+}
+
+pub fn json_with_status<T: Serialize>(status: u16, data: T) -> Response {
+    let body = serde_json::to_vec(&data).unwrap_or_default();
+    Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(body))
+        .expect("valid json response")
 }
 
 pub trait ApiErrExt<T> {

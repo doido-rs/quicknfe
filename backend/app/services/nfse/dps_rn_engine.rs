@@ -1,7 +1,10 @@
 //! Motor incremental de RN a partir de `layout_dps.csv` (Obrig. + Rej.).
 
+use doido::model::sea_orm::prelude::Decimal;
+
 use super::dps_context::DpsContext;
 use super::dps_rn::{load_rn_dps_rows, RnRow};
+use super::endereco_brasil;
 use crate::services::api_error::ApiError;
 use crate::services::nfse::ambiente::AmbienteNfse;
 
@@ -34,11 +37,33 @@ fn aplicar_regra_conhecida(ctx: &DpsContext, row: &RnRow) -> Result<(), ApiError
         "tpAmb" if row.cod_erro == "E0006" || row.descricao.contains("Ambiente") => {
             AmbienteNfse::from_codigo(ctx.doc.ambiente)?.ensure_matches_config()?;
         }
-        "tpEmit" if row.cod_erro == "E9996" || row.descricao.contains("tomador ou interm") => {
-            // QuickNFe emite apenas tpEmit=1 (prestador).
-            if ctx.doc.tipo_emissao != 1 {
-                // tipo_emissao no doc; tpEmit fixo 1 no XML — nada a fazer
+        "tpEmit" if row.cod_erro == "E9996" || row.descricao.contains("tomador ou interm") => {}
+        "vServ" if campo == "vServ" && is_obrig_rej(row) => {
+            if ctx.doc.valor_total_servicos_produtos <= Decimal::ZERO {
+                return Err(ApiError::Validation(
+                    "RN: valor da operação (vServ) deve ser positivo".into(),
+                ));
             }
+        }
+        "cTribNac" if is_obrig_rej(row) => {
+            let ok = ctx.itens.iter().any(|i| {
+                i.codigo_tributacao_nacional
+                    .as_ref()
+                    .is_some_and(|s| !s.trim().is_empty())
+            });
+            if !ok {
+                return Err(ApiError::Validation(
+                    "RN: item deve informar código de tributação nacional (cTribNac)".into(),
+                ));
+            }
+        }
+        "CEP" | "xLgr" | "nro" | "xBairro" if is_obrig_rej(row) => {
+            endereco_brasil::endereco_prestador(
+                ctx.prestador.cep.as_deref(),
+                ctx.prestador.logradouro.as_deref(),
+                ctx.prestador.numero.as_deref(),
+                ctx.prestador.bairro.as_deref(),
+            )?;
         }
         _ => {}
     }

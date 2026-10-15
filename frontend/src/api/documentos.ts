@@ -25,10 +25,22 @@ export function documentoXmlAssinado(row: Record<string, unknown>): boolean {
   return typeof signed === 'string' && signed.includes('Signature')
 }
 
-export async function assinarDocumento(documentoId: number): Promise<Record<string, unknown>> {
-  return apiFetch<Record<string, unknown>>(`/api/documentos/${documentoId}/assinar`, {
+export type DocumentoEnqueueResponse = {
+  documento_id: number
+  status: string
+  job_id?: string | null
+  processamento_mensagem?: string | null
+}
+
+export async function assinarDocumento(
+  documentoId: number,
+  certificadoId?: number,
+): Promise<DocumentoEnqueueResponse> {
+  return apiFetch<DocumentoEnqueueResponse>(`/api/documentos/${documentoId}/assinar`, {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify(
+      certificadoId != null ? { certificado_id: certificadoId } : {},
+    ),
   })
 }
 
@@ -42,8 +54,8 @@ export type TransmitirDocumentoResponse = {
 export async function transmitirDocumento(
   documentoId: number,
   certificadoId?: number,
-): Promise<TransmitirDocumentoResponse> {
-  return apiFetch<TransmitirDocumentoResponse>(
+): Promise<DocumentoEnqueueResponse> {
+  return apiFetch<DocumentoEnqueueResponse>(
     `/api/documentos/${documentoId}/transmitir`,
     {
       method: 'POST',

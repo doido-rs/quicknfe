@@ -108,6 +108,9 @@ test-frontend:
 test-backend:
 	cd $(BACKEND_DIR) && cargo test
 
+dps-coverage: ## Relatório cobertura DPS (leiaute infDPS × XML emitido)
+	bash scripts/dps_coverage_report.sh
+
 test-integration: ## tenant_api_test (MySQL quicknfe_test)
 	cd $(BACKEND_DIR) && DOIDO_ENV=test cargo doido db create
 	cd $(BACKEND_DIR) && DOIDO_ENV=test cargo doido db migrate

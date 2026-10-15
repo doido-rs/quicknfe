@@ -59,9 +59,9 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
             "RN: tpAmb deve ser 1 (produção) ou 2 (homologação)".into(),
         ));
     }
-    if ctx.itens.is_empty() && doc.valor_total_servicos_produtos > Decimal::ZERO {
+    if ctx.itens.is_empty() {
         return Err(ApiError::Validation(
-            "RN: nota com valor da operação exige ao menos um item de serviço".into(),
+            "RN: ao menos um item de serviço é obrigatório na DPS".into(),
         ));
     }
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
@@ -112,6 +112,7 @@ pub fn minimal_dps_context() -> DpsContext {
                 ambiente: 2,
                 tipo_emissao: 1,
                 status: "novo".into(),
+                processamento_mensagem: None,
                 data_emissao: Utc::now(),
                 data_competencia: None,
                 serie_numero_automatico: 1,
@@ -153,6 +154,10 @@ pub fn minimal_dps_context() -> DpsContext {
                 inscricao_estadual: None,
                 regime_tributario: "REGIME_NORMAL".into(),
                 municipio_id: 1,
+                cep: Some("20040020".into()),
+                logradouro: Some("Rua Teste".into()),
+                numero: Some("100".into()),
+                bairro: Some("Centro".into()),
                 criado_em: Utc::now(),
             },
             municipio_emissao: municipio.clone(),

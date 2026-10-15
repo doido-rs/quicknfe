@@ -619,12 +619,12 @@ paths:
       security:
         - cookieSession: []
       responses:
-        '200':
-          description: Documento com xml_assinado atualizado
+        '202':
+          description: Assinatura enfileirada (worker)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentoDto'
+                $ref: '#/components/schemas/DocumentoEnqueueDto'
 
   /api/documentos/{id}/xml:
     parameters:
@@ -659,11 +659,12 @@ paths:
             schema:
               $ref: '#/components/schemas/TransmitirForm'
       responses:
-        '200':
+        '202':
+          description: Transmissão enfileirada (worker)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TransmitirDocumentoResponse'
+                $ref: '#/components/schemas/DocumentoEnqueueDto'
 
   /api/documentos/{doc_id}/itens:
     parameters:
@@ -1616,6 +1617,9 @@ components:
           type: integer
         status:
           type: string
+        processamento_mensagem:
+          type: string
+          nullable: true
         data_emissao:
           type: string
           format: date-time
@@ -1661,6 +1665,19 @@ components:
           type: string
           nullable: true
         numero_pedido_ordem_b2b:
+          type: string
+          nullable: true
+    DocumentoEnqueueDto:
+      type: object
+      properties:
+        documento_id:
+          type: integer
+        status:
+          type: string
+        job_id:
+          type: string
+          nullable: true
+        processamento_mensagem:
           type: string
           nullable: true
     DocumentoDto:

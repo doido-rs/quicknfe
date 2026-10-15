@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { PenLine } from 'lucide-react'
 import { assinarDocumento, documentoXmlAssinado } from '@/api/documentos'
+import { documentoProcessamentoInFlight } from '@/lib/documentoProcessamento'
 import { Button } from '@/components/ui/button'
 import { toastFromError, toastSuccess } from '@/lib/toast'
 
@@ -13,13 +14,14 @@ export function DocumentoAssinarButton({
 }) {
   const queryClient = useQueryClient()
   const alreadySigned = documentoXmlAssinado(row)
+  const inFlight = documentoProcessamentoInFlight(row.status)
 
   const mutation = useMutation({
     mutationFn: () => assinarDocumento(documentoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documentos', 'detail', documentoId] })
       queryClient.invalidateQueries({ queryKey: ['documentos', 'list'] })
-      toastSuccess('Nota fiscal assinada')
+      toastSuccess('Assinatura enfileirada')
     },
     onError: (err) => toastFromError(err, 'Não foi possível assinar a nota'),
   })
@@ -29,11 +31,11 @@ export function DocumentoAssinarButton({
       type="button"
       variant="default"
       className="gap-2"
-      disabled={mutation.isPending}
+      disabled={mutation.isPending || inFlight}
       onClick={() => mutation.mutate()}
     >
       <PenLine className="size-4" />
-      {mutation.isPending
+      {mutation.isPending || inFlight
         ? 'Assinando…'
         : alreadySigned
           ? 'Assinar novamente'

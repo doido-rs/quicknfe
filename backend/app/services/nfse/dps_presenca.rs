@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use doido::model::sea_orm::prelude::Decimal;
 
 use super::dps_context::{cpf_cnpj_tag, DpsContext};
+use super::endereco_brasil;
 use super::dps_layout::{load_infdps_leiaute, mandatory_infdps_fields, LayoutFieldRow};
 use crate::services::api_error::ApiError;
 
@@ -31,9 +32,24 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "tribISSQN",
         "opSimpNac",
         "regEspTrib",
+        "CEP",
+        "xLgr",
+        "nro",
+        "xBairro",
+        "cIntContrib",
     ]
     .into_iter()
     .collect()
+}
+
+fn endereco_prestador_ok(ctx: &DpsContext) -> bool {
+    endereco_brasil::endereco_prestador(
+        ctx.prestador.cep.as_deref(),
+        ctx.prestador.logradouro.as_deref(),
+        ctx.prestador.numero.as_deref(),
+        ctx.prestador.bairro.as_deref(),
+    )
+    .is_ok()
 }
 
 fn valor_presente(ctx: &DpsContext, campo: &str) -> Result<bool, ApiError> {
@@ -68,6 +84,8 @@ fn valor_presente(ctx: &DpsContext, campo: &str) -> Result<bool, ApiError> {
         "tribISSQN" => !doc.trib_issqn.trim().is_empty(),
         "opSimpNac" => !ctx.prestador.regime_tributario.trim().is_empty(),
         "regEspTrib" => !doc.reg_esp_trib_issqn.trim().is_empty(),
+        "CEP" | "xLgr" | "nro" | "xBairro" => endereco_prestador_ok(ctx),
+        "cIntContrib" => !ctx.itens.is_empty(),
         _ => return Ok(false),
     };
     Ok(ok)

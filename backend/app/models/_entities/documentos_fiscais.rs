@@ -34,6 +34,8 @@ pub struct Model {
     pub ambiente: i32,
     pub tipo_emissao: i32,
     pub status: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub processamento_mensagem: Option<String>,
     pub data_emissao: DateTimeUtc,
     pub data_competencia: Option<Date>,
     pub serie_numero_automatico: i8,

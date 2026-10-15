@@ -84,6 +84,14 @@ pub async fn load_dps_context(
             .map_err(|e| ApiError::Internal(e.to_string()))?,
         None => None,
     };
+    let intermediario_municipio = if let Some(ref i) = intermediario {
+        match i.municipio_id {
+            Some(mid) => Some(load_municipio(db, mid).await?),
+            None => None,
+        }
+    } else {
+        None
+    };
 
     let itens = ItemEntity::find()
         .filter(ItemColumn::DocumentoFiscalId.eq(doc.id))
@@ -105,7 +113,7 @@ pub async fn load_dps_context(
         tomador_municipio,
         tomador_exterior,
         intermediario,
-        intermediario_municipio: None,
+        intermediario_municipio,
         intermediario_exterior,
         itens,
     })

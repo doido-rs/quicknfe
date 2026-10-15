@@ -8,6 +8,7 @@ use crate::models::intermediario::{
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::dto::IntermediarioDto;
+use crate::services::municipio::require_municipio;
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
@@ -17,6 +18,11 @@ pub struct IntermediarioForm {
     pub inscricao_municipal: Option<String>,
     pub email: Option<String>,
     pub telefone: Option<String>,
+    pub municipio_id: Option<i64>,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub bairro: Option<String>,
 }
 
 pub struct ApiIntermediariosController;
@@ -71,6 +77,9 @@ impl ApiIntermediariosController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let form: IntermediarioForm = crate::api!(json_body(ctx).await);
+        if let Some(mid) = form.municipio_id {
+            crate::api!(to_response(require_municipio(ctx.db(), mid).await));
+        }
         let created = crate::api!(db(
             IntermediarioActive {
                 empresa_id: Set(access.prestador.id),
@@ -79,6 +88,11 @@ impl ApiIntermediariosController {
                 inscricao_municipal: Set(form.inscricao_municipal),
                 email: Set(form.email),
                 telefone: Set(form.telefone),
+                municipio_id: Set(form.municipio_id),
+                cep: Set(form.cep),
+                logradouro: Set(form.logradouro),
+                numero: Set(form.numero),
+                bairro: Set(form.bairro),
                 ..Default::default()
             }
             .insert(ctx.db())
@@ -100,6 +114,14 @@ impl ApiIntermediariosController {
         record.inscricao_municipal = Set(form.inscricao_municipal);
         record.email = Set(form.email);
         record.telefone = Set(form.telefone);
+        if let Some(mid) = form.municipio_id {
+            crate::api!(to_response(require_municipio(ctx.db(), mid).await));
+            record.municipio_id = Set(Some(mid));
+        }
+        record.cep = Set(form.cep);
+        record.logradouro = Set(form.logradouro);
+        record.numero = Set(form.numero);
+        record.bairro = Set(form.bairro);
         let updated = crate::api!(db(record.update(ctx.db()).await));
         ctx.json(IntermediarioDto::from(updated))
     }

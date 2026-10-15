@@ -18,6 +18,10 @@ pub struct PrestadorForm {
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: RegimeTributario,
     pub municipio_id: i64,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub bairro: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -28,6 +32,10 @@ pub struct PrestadorPatchForm {
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: Option<RegimeTributario>,
     pub municipio_id: Option<i64>,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub bairro: Option<String>,
 }
 
 pub struct ApiPrestadoresController;
@@ -89,6 +97,10 @@ impl ApiPrestadoresController {
                 inscricao_estadual: Set(form.inscricao_estadual),
                 regime_tributario: Set(form.regime_tributario.as_str().into()),
                 municipio_id: Set(form.municipio_id),
+                cep: Set(form.cep),
+                logradouro: Set(form.logradouro),
+                numero: Set(form.numero),
+                bairro: Set(form.bairro),
                 ..Default::default()
             }
             .insert(ctx.db())
@@ -129,6 +141,18 @@ impl ApiPrestadoresController {
         }
         if let Some(v) = form.municipio_id {
             record.municipio_id = Set(v);
+        }
+        if let Some(v) = form.cep {
+            record.cep = Set(Some(v));
+        }
+        if let Some(v) = form.logradouro {
+            record.logradouro = Set(Some(v));
+        }
+        if let Some(v) = form.numero {
+            record.numero = Set(Some(v));
+        }
+        if let Some(v) = form.bairro {
+            record.bairro = Set(Some(v));
         }
         let updated = crate::api!(db(record.update(ctx.db()).await));
         let dto = crate::api!(to_response(empresa_public(ctx.db(), updated).await));

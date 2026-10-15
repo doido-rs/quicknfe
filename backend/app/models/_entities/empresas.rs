@@ -19,6 +19,10 @@ pub struct Model {
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: String,
     pub municipio_id: i64,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub bairro: Option<String>,
     pub criado_em: DateTimeUtc,
 }
 

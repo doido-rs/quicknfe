@@ -12,6 +12,7 @@ import { documentoStatusLabel } from '@/lib/documentoListFormat'
 import { buildDocumentoRelationLabels } from '@/lib/documentoShowLabels'
 import { rowToForm, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceEditTo, resourceListTo } from '@/lib/resourcePaths'
+import { useDocumentoProcessamentoPoll } from '@/hooks/useDocumentoProcessamentoPoll'
 import { resourceNesteds, type ResourceDef } from '@/resources/definitions'
 
 export function DocumentoShowView({
@@ -25,6 +26,7 @@ export function DocumentoShowView({
 }) {
   const form = useResourceFieldForm(def.fields)
   const relationLabels = useMemo(() => buildDocumentoRelationLabels(row), [row])
+  useDocumentoProcessamentoPoll(recordId, row)
 
   useEffect(() => {
     const base = rowToForm(row, def.fields)

@@ -96,6 +96,10 @@ pub struct EmpresaPublic {
     pub regime_tributario: RegimeTributario,
     pub municipio_id: i64,
     pub municipio: MunicipioDto,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub bairro: Option<String>,
     pub criado_em: DateTime<Utc>,
 }
 
@@ -146,6 +150,10 @@ impl EmpresaPublic {
             })?,
             municipio_id: e.municipio_id,
             municipio: MunicipioDto::from(m),
+            cep: e.cep,
+            logradouro: e.logradouro,
+            numero: e.numero,
+            bairro: e.bairro,
             criado_em: e.criado_em,
         })
     }
@@ -195,6 +203,7 @@ pub struct ClienteDto {
     pub logradouro: Option<String>,
     pub numero: Option<String>,
     pub bairro: Option<String>,
+    pub cep: Option<String>,
     pub municipio_id: Option<i64>,
     pub municipio: Option<MunicipioDto>,
     pub email: Option<String>,
@@ -213,6 +222,7 @@ impl ClienteDto {
             logradouro: c.logradouro,
             numero: c.numero,
             bairro: c.bairro,
+            cep: c.cep,
             municipio_id: c.municipio_id,
             municipio: m.map(MunicipioDto::from),
             email: c.email,
@@ -230,6 +240,11 @@ pub struct IntermediarioDto {
     pub inscricao_municipal: Option<String>,
     pub email: Option<String>,
     pub telefone: Option<String>,
+    pub municipio_id: Option<i64>,
+    pub cep: Option<String>,
+    pub logradouro: Option<String>,
+    pub numero: Option<String>,
+    pub bairro: Option<String>,
 }
 
 impl From<Intermediario> for IntermediarioDto {
@@ -242,6 +257,11 @@ impl From<Intermediario> for IntermediarioDto {
             inscricao_municipal: i.inscricao_municipal,
             email: i.email,
             telefone: i.telefone,
+            municipio_id: i.municipio_id,
+            cep: i.cep,
+            logradouro: i.logradouro,
+            numero: i.numero,
+            bairro: i.bairro,
         }
     }
 }
@@ -332,6 +352,7 @@ pub struct DocumentoListDto {
     pub ambiente: i32,
     pub tipo_emissao: i32,
     pub status: String,
+    pub processamento_mensagem: Option<String>,
     pub data_emissao: DateTime<Utc>,
     pub data_competencia: Option<NaiveDate>,
     pub serie_numero_automatico: bool,
@@ -391,6 +412,7 @@ impl From<Documento> for DocumentoListDto {
             ambiente: d.ambiente,
             tipo_emissao: d.tipo_emissao,
             status: d.status,
+            processamento_mensagem: d.processamento_mensagem,
             data_emissao: d.data_emissao,
             data_competencia: d.data_competencia,
             serie_numero_automatico: d.serie_numero_automatico != 0,

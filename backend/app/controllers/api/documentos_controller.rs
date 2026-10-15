@@ -7,14 +7,16 @@ use serde::Deserialize;
 use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity, Model as Documento,
 };
-use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
+use crate::services::api_error::{
+    db, id_param, json_body, json_with_status, require_tenant, scoped, to_response, ApiError,
+};
 use crate::services::documento_presentacao::{documento_detalhe, documentos_list_items};
 use crate::services::dto::{DocumentoDto, ParteExteriorDto, TransmitirDocumentoResponse};
 use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEntity};
 use crate::services::dto::decode_certificado_senha;
+use crate::services::documento_enqueue::{enqueue_assinar, enqueue_transmitir};
 use crate::services::nfse::{
-    assinar_dps_xml_rascunho, load_dps_context, montar_dps_xml_context,
-    transmitir_documento, validar_dps_contexto, TransmitirParams,
+    load_dps_context, montar_dps_xml_context, validar_dps_contexto, DocumentoAssinarParams,
 };
 use crate::services::pagination::PageResponse;
 use crate::services::municipio::require_municipio;
@@ -23,6 +25,11 @@ use crate::services::tenant_scope;
 
 #[derive(Debug, Default, Deserialize)]
 pub struct TransmitirForm {
+    pub certificado_id: Option<i64>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub struct AssinarForm {
     pub certificado_id: Option<i64>,
 }
 
@@ -463,7 +470,7 @@ impl ApiDocumentosController {
         ctx.json(detalhe)
     }
 
-    /// Gera/atualiza o XML da DPS com assinatura XML-DSig (elemento `Signature`).
+    /// Enfileira assinatura XML-DSig da DPS (worker `cargo doido worker`).
     pub async fn assinar(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
@@ -474,54 +481,20 @@ impl ApiDocumentosController {
             load_dps_context(ctx.db(), existing.clone()).await,
         ));
         crate::api!(to_response(validar_dps_contexto(&dps_ctx)));
-        let base_xml = if existing
-            .xml_assinado
-            .as_ref()
-            .is_some_and(|x| !x.trim().is_empty())
-        {
-            existing.xml_assinado.clone().unwrap()
-        } else {
-            crate::api!(to_response(montar_dps_xml_context(&dps_ctx)))
+        let form: AssinarForm = match ctx.body_json().await {
+            Ok(f) => f,
+            Err(_) => AssinarForm::default(),
         };
-        let cert_opt = crate::api!(to_response(
-            ultimo_certificado_empresa(ctx.db(), existing.empresa_id).await,
-        ));
-        let cert = crate::api!(to_response(
-            cert_opt.ok_or_else(|| {
-                ApiError::Validation(
-                    "Cadastre um certificado digital A1 (PFX) no prestador antes de assinar a nota."
-                        .into(),
-                )
-            }),
-        ));
-        if cert.data_validade < chrono::Utc::now() {
-            crate::api!(to_response(Err(ApiError::Validation(
-                "Certificado digital expirado. Envie um certificado A1 válido no prestador."
-                    .into(),
-            ))));
-        }
-        let caminho = crate::api!(to_response(
-            cert.caminho_arquivo
-                .as_deref()
-                .filter(|s| !s.trim().is_empty())
-                .ok_or_else(|| {
-                    ApiError::Validation(
-                        "Arquivo do certificado não encontrado. Reenvie o certificado A1 no prestador."
-                            .into(),
-                    )
-                }),
-        ));
-        let senha_owned = decode_certificado_senha(&cert.senha_encriptada);
-        let signed = crate::api!(to_response(assinar_dps_xml_rascunho(
-            &base_xml,
-            Some(caminho),
-            Some(&senha_owned),
-        )));
-        let mut record: DocActive = existing.into();
-        record.xml_assinado = Set(Some(signed));
-        let updated = crate::api!(db(record.update(ctx.db()).await));
-        let detalhe = crate::api!(to_response(documento_detalhe(ctx.db(), updated).await));
-        ctx.json(detalhe)
+        let enqueued = crate::api!(to_response(enqueue_assinar(
+            ctx.db(),
+            DocumentoAssinarParams {
+                company_id: access.company.id,
+                documento_id: id,
+                certificado_id: form.certificado_id,
+            },
+        )
+        .await));
+        json_with_status(202, enqueued)
     }
 
     pub async fn destroy(mut ctx: doido::controller::Context) -> doido::controller::Response {
@@ -550,7 +523,7 @@ impl ApiDocumentosController {
         )
     }
 
-    /// Envia a DPS já assinada (`xml_assinado`) para a API SEFIN Nacional (mTLS + JSON).
+    /// Enfileira transmissão da DPS assinada à SEFIN Nacional.
     pub async fn transmitir(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let id = crate::api!(id_param(&ctx, "id"));
@@ -558,30 +531,12 @@ impl ApiDocumentosController {
             Ok(f) => f,
             Err(_) => TransmitirForm::default(),
         };
-        let doc = crate::api!(scoped(
+        let _doc = crate::api!(scoped(
             tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
-        let outcome = crate::api!(to_response(
-            transmitir_documento(
-                ctx.db(),
-                TransmitirParams {
-                    empresa_id: doc.empresa_id,
-                    documento_id: id,
-                    certificado_id: form.certificado_id,
-                },
-            )
-            .await,
+        let enqueued = crate::api!(to_response(
+            enqueue_transmitir(ctx.db(), access.company.id, id, form.certificado_id).await,
         ));
-        let r = outcome.resultado;
-        ctx.json(TransmitirDocumentoResponse {
-            sucesso: r.sucesso,
-            http_status: r.http_status,
-            id_dps: r.id_dps,
-            chave_acesso: r.chave_acesso,
-            nfse_xml: r.nfse_xml,
-            alertas: r.alertas,
-            erros: r.erros,
-            documento: DocumentoDto::from(outcome.documento),
-        })
+        json_with_status(202, enqueued)
     }
 }

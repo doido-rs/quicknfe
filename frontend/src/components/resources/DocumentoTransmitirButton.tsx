@@ -3,6 +3,7 @@ import { Send } from 'lucide-react'
 import { useState } from 'react'
 import { resourceApi } from '@/api/client'
 import { documentoXmlAssinado, transmitirDocumento } from '@/api/documentos'
+import { documentoProcessamentoInFlight } from '@/lib/documentoProcessamento'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { toastFromError, toastSuccess } from '@/lib/toast'
@@ -24,6 +25,7 @@ export function DocumentoTransmitirButton({
   const signed = documentoXmlAssinado(row)
   const status = String(row.status ?? '').toLowerCase()
   const autorizada = status === 'autorizada' || status === 'autorizado'
+  const inFlight = documentoProcessamentoInFlight(row.status)
   const empresaId = Number(row.empresa_id)
   const certPath =
     Number.isFinite(empresaId) && empresaId > 0
@@ -48,7 +50,7 @@ export function DocumentoTransmitirButton({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documentos', 'detail', documentoId] })
       queryClient.invalidateQueries({ queryKey: ['documentos', 'list'] })
-      toastSuccess('Nota fiscal transmitida à SEFIN')
+      toastSuccess('Transmissão enfileirada')
     },
     onError: (err) => toastFromError(err, 'Não foi possível transmitir a nota'),
   })
@@ -81,7 +83,7 @@ export function DocumentoTransmitirButton({
         type="button"
         variant="secondary"
         className="gap-2"
-        disabled={!signed || autorizada || mutation.isPending}
+        disabled={!signed || autorizada || mutation.isPending || inFlight}
         title={
           !signed
             ? 'Assine a nota fiscal antes de transmitir'
@@ -92,7 +94,7 @@ export function DocumentoTransmitirButton({
         onClick={() => mutation.mutate()}
       >
         <Send className="size-4" />
-        {mutation.isPending ? 'Transmitindo…' : 'Transmitir SEFIN'}
+        {mutation.isPending || inFlight ? 'Transmitindo…' : 'Transmitir SEFIN'}
       </Button>
     </div>
   )

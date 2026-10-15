@@ -6,7 +6,13 @@ import { fieldValue } from '@/lib/resourceForm'
 const STATUS_LABELS: Record<string, string> = {
   novo: 'Novo',
   rascunho: 'Rascunho',
+  assinando: 'Assinando…',
+  assinado: 'Assinado',
+  transmitindo: 'Transmitindo…',
   autorizada: 'Autorizada',
+  autorizado: 'Autorizada',
+  erro_assinatura: 'Erro na assinatura',
+  erro_transmissao: 'Erro na transmissão',
   rejeitada: 'Rejeitada',
 }
 

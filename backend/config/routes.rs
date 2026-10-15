@@ -75,6 +75,7 @@ pub fn router() -> axum::Router {
         get!("/api/lotes/{id}", ApiLotesController::show);
         patch!("/api/lotes/{id}", ApiLotesController::update);
         delete!("/api/lotes/{id}", ApiLotesController::destroy);
+        post!("/api/lotes/{id}/transmitir", ApiLotesController::transmitir);
 
         get!("/api/documentos", ApiDocumentosController::index);
         post!("/api/documentos", ApiDocumentosController::create);

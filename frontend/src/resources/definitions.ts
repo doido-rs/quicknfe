@@ -613,6 +613,10 @@ export const resources: ResourceDef[] = [
         relationResource: 'municipios',
         required: true,
       },
+      { key: 'cep', label: 'CEP' },
+      { key: 'logradouro', label: 'Logradouro' },
+      { key: 'numero', label: 'Número' },
+      { key: 'bairro', label: 'Bairro' },
     ],
     nested: {
       label: 'Certificados digitais',
@@ -668,6 +672,10 @@ export const resources: ResourceDef[] = [
         type: 'relation',
         relationResource: 'municipios',
       },
+      { key: 'cep', label: 'CEP' },
+      { key: 'logradouro', label: 'Logradouro' },
+      { key: 'numero', label: 'Número' },
+      { key: 'bairro', label: 'Bairro' },
     ],
   },
   {
@@ -681,6 +689,16 @@ export const resources: ResourceDef[] = [
       { key: 'inscricao_municipal', label: 'Inscrição municipal' },
       { key: 'email', label: 'E-mail' },
       { key: 'telefone', label: 'Telefone' },
+      {
+        key: 'municipio_id',
+        label: 'Município',
+        type: 'relation',
+        relationResource: 'municipios',
+      },
+      { key: 'cep', label: 'CEP' },
+      { key: 'logradouro', label: 'Logradouro' },
+      { key: 'numero', label: 'Número' },
+      { key: 'bairro', label: 'Bairro' },
     ],
   },
 ]
