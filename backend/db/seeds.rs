@@ -1,22 +1,30 @@
-//! Database seeds — run with `cargo doido db seed`.
+//! Database seeds — run with `cargo doido db migrate && cargo doido db seed`.
 
 use doido::model::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, FromQueryResult,
+    QueryFilter, QueryResult, Set, Statement,
 };
 use doido::model::sea_orm::prelude::{DateTimeUtc, Decimal};
 
 use crate::models::certificado_digital::ActiveModel as CertificadoActive;
-use crate::models::cliente::ActiveModel as ClienteActive;
+use crate::models::cna::{Column as CnaColumn, Entity as CnaEntity};
+use crate::models::cliente::{ActiveModel as ClienteActive, Column as ClienteColumn, Entity as ClienteEntity};
 use crate::models::company::{
     ActiveModel as CompanyActive, Column as CompanyColumn, Entity as CompanyEntity,
 };
 use crate::models::municipio::ActiveModel as MunicipioActive;
 use crate::models::company_usuario::ActiveModel as CompanyMembroActive;
-use crate::models::documento_fiscal::ActiveModel as DocumentoActive;
-use crate::models::empresa::{ActiveModel as EmpresaActive, Entity as EmpresaEntity};
+use crate::models::documento_fiscal::{
+    ActiveModel as DocumentoActive, Column as DocumentoColumn, Entity as DocumentoEntity,
+};
+use crate::models::empresa::{
+    ActiveModel as EmpresaActive, Column as EmpresaColumn, Entity as EmpresaEntity,
+};
 use crate::models::user::{ActiveModel as UserActive, Entity as UserEntity};
 use doido::model::password::hash_password;
-use crate::models::item_documento_fiscal::ActiveModel as ItemActive;
+use crate::models::item_documento_fiscal::{
+    ActiveModel as ItemActive, Column as ItemColumn, Entity as ItemEntity,
+};
 use crate::models::log_mensagem_retorno::ActiveModel as LogActive;
 use crate::models::lote_transmissao::ActiveModel as LoteActive;
 use crate::models::municipio::{Column as MunicipioColumn, Entity as MunicipioEntity};
@@ -27,6 +35,44 @@ const CNPJ_EMISSOR: &str = "11222333000199";
 const CNPJ_PRESTADOR_BAYAN_CNC: &str = "31041140000131";
 const DEMO_COMPANY_NAME: &str = "QuickNFe Demo";
 const SEED_USER_EMAIL: &str = "admin@quicknfe.local";
+/// Documented in README / docs/guides/getting-started.md
+const SEED_USER_PASSWORD: &str = "QuickNFe2026!";
+const CNA_CODIGO_DEMO_ITEM: &str = "010101";
+
+struct SchemaColCount {
+    n: i64,
+}
+
+impl FromQueryResult for SchemaColCount {
+    fn from_query_result(row: &QueryResult, pre: &str) -> Result<Self, DbErr> {
+        Ok(Self {
+            n: row.try_get(pre, "n")?,
+        })
+    }
+}
+
+/// Endereço Brasil + `processamento_mensagem` exigem migrations recentes antes do seed.
+async fn assert_seed_schema(db: &DatabaseConnection) -> doido::Result<()> {
+    let row = SchemaColCount::find_by_statement(Statement::from_string(
+        db.get_database_backend(),
+        "SELECT COUNT(*) AS n FROM information_schema.COLUMNS \
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'empresas' AND COLUMN_NAME = 'cep'"
+            .to_string(),
+    ))
+    .one(db)
+    .await?;
+
+    if row.map(|r| r.n).unwrap_or(0) == 0 {
+        return Err(DbErr::Custom(
+            "schema desatualizado: coluna empresas.cep ausente. \
+             Rode `cargo doido db migrate` (ou `make db-migrate`) antes de `cargo doido db seed`."
+                .into(),
+        )
+        .into());
+    }
+
+    Ok(())
+}
 
 fn dec(value: i64) -> Decimal {
     Decimal::from(value)
@@ -37,7 +83,9 @@ fn dec_frac(int: i64, scale: u32) -> Decimal {
 }
 
 pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
+    assert_seed_schema(db).await?;
     seed_prestador_bayan_cnc(db).await?;
+    repair_seed_fixture_data(db).await?;
 
     if UserEntity::find()
         .filter(crate::models::user::Column::Email.eq(SEED_USER_EMAIL))
@@ -63,7 +111,7 @@ pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
     let now: DateTimeUtc = chrono::Utc::now();
     let user = UserActive {
         email: Set(SEED_USER_EMAIL.into()),
-        password_digest: Set(hash_password("Admin@1234")?),
+        password_digest: Set(hash_password(SEED_USER_PASSWORD)?),
         created_at: Set(now),
         updated_at: Set(now),
         ..Default::default()
@@ -152,15 +200,104 @@ async fn seed_prestador_bayan_cnc(db: &DatabaseConnection) -> doido::Result<()> 
         inscricao_estadual: Set(None),
         regime_tributario: Set("REGIME_NORMAL".into()),
         municipio_id: Set(municipio_rj.id),
-        cep: Set(Some("20040020".into())),
-        logradouro: Set(Some("Praia de Botafogo".into())),
-        numero: Set(Some("300".into())),
-        bairro: Set(Some("Botafogo".into())),
+        cep: Set(Some("23075350".into())),
+        logradouro: Set(Some("Rua Ivan Serpa".into())),
+        numero: Set(Some("451".into())),
+        bairro: Set(Some("Campo Grande".into())),
         criado_em: Set(now),
         ..Default::default()
     }
     .insert(db)
     .await?;
+
+    Ok(())
+}
+
+async fn cna_demo_consultoria(db: &DatabaseConnection) -> doido::Result<i64> {
+    Ok(CnaEntity::find()
+        .filter(CnaColumn::Codigo.eq(CNA_CODIGO_DEMO_ITEM))
+        .one(db)
+        .await?
+        .expect("CNA 010101 — rode as migrations")
+        .id)
+}
+
+/// Atualiza registros seedados antes das colunas de endereço / CNA (idempotente).
+async fn repair_seed_fixture_data(db: &DatabaseConnection) -> doido::Result<()> {
+    if let Some(empresa) = EmpresaEntity::find()
+        .filter(EmpresaColumn::CpfCnpj.eq(CNPJ_PRESTADOR_BAYAN_CNC))
+        .one(db)
+        .await?
+    {
+        if empresa.cep.as_deref().unwrap_or("").is_empty() {
+            let mut active: EmpresaActive = empresa.into();
+            active.cep = Set(Some("23075350".into()));
+            active.logradouro = Set(Some("Rua Ivan Serpa".into()));
+            active.numero = Set(Some("451".into()));
+            active.bairro = Set(Some("Campo Grande".into()));
+            active.update(db).await?;
+        }
+    }
+
+    if let Some(empresa) = EmpresaEntity::find()
+        .filter(EmpresaColumn::CpfCnpj.eq(CNPJ_EMISSOR))
+        .one(db)
+        .await?
+    {
+        let empresa_id = empresa.id;
+
+        if empresa.cep.as_deref().unwrap_or("").is_empty() {
+            let mut active: EmpresaActive = empresa.into();
+            active.cep = Set(Some("01310100".into()));
+            active.logradouro = Set(Some("Avenida Paulista".into()));
+            active.numero = Set(Some("1000".into()));
+            active.bairro = Set(Some("Bela Vista".into()));
+            active.update(db).await?;
+        }
+
+        if let Some(cliente) = ClienteEntity::find()
+            .filter(ClienteColumn::EmpresaId.eq(empresa_id))
+            .filter(ClienteColumn::CpfCnpj.eq("12345678901"))
+            .one(db)
+            .await?
+        {
+            let needs_addr = cliente.cep.as_deref().unwrap_or("").is_empty()
+                || cliente.logradouro.as_deref().unwrap_or("").is_empty();
+            if needs_addr {
+                let mut active: ClienteActive = cliente.into();
+                active.cep = Set(Some("01310100".into()));
+                active.logradouro = Set(Some("Rua Augusta".into()));
+                active.numero = Set(Some("500".into()));
+                active.bairro = Set(Some("Consolação".into()));
+                active.update(db).await?;
+            }
+        }
+
+        let doc_ids: Vec<i64> = DocumentoEntity::find()
+            .filter(DocumentoColumn::EmpresaId.eq(empresa_id))
+            .all(db)
+            .await?
+            .into_iter()
+            .map(|d| d.id)
+            .collect();
+
+        if !doc_ids.is_empty() {
+            let cna_id = cna_demo_consultoria(db).await?;
+            let itens = ItemEntity::find()
+                .filter(ItemColumn::DocumentoFiscalId.is_in(doc_ids))
+                .all(db)
+                .await?;
+
+            for item in itens {
+                if item.codigo_tributacao_nacional.is_none() && item.cna_id.is_none() {
+                    let mut active: ItemActive = item.into();
+                    active.codigo_tributacao_nacional = Set(Some(CNA_CODIGO_DEMO_ITEM.into()));
+                    active.cna_id = Set(Some(cna_id));
+                    active.update(db).await?;
+                }
+            }
+        }
+    }
 
     Ok(())
 }
@@ -215,9 +352,10 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         razao_social: Set("Cliente Exemplo".into()),
         inscricao_municipal: Set(None),
         inscricao_estadual: Set(None),
-        logradouro: Set(None),
-        numero: Set(None),
-        bairro: Set(None),
+        cep: Set(Some("01310100".into())),
+        logradouro: Set(Some("Rua Augusta".into())),
+        numero: Set(Some("500".into())),
+        bairro: Set(Some("Consolação".into())),
         municipio_id: Set(Some(municipio_sp.id)),
         email: Set(Some("fiscal@cliente-exemplo.com.br".into())),
         telefone: Set(None),
@@ -251,7 +389,9 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         tipo_emissao: Set(1),
         status: Set("autorizada".into()),
         data_emissao: Set(data_emissao),
-        data_competencia: Set(None),
+        data_competencia: Set(Some(
+            chrono::NaiveDate::from_ymd_opt(2026, 9, 1).expect("data competência seed"),
+        )),
         municipio_emissao_id: Set(municipio_sp.id),
         municipio_prestacao_id: Set(municipio_sp.id),
         protocolo_autorizacao: Set(Some("AUTH-SEED".into())),
@@ -264,13 +404,16 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
     .insert(db)
     .await?;
 
+    let cna_id = cna_demo_consultoria(db).await?;
+
     let item = ItemActive {
         documento_fiscal_id: Set(documento.id),
         numero_item: Set(1),
-        descricao: Set("Consultoria em NF-e".into()),
-        descricao_servico: Set(Some("Consultoria em NF-e".into())),
+        descricao: Set("Análise e desenvolvimento de sistemas".into()),
+        descricao_servico: Set(Some("Análise e desenvolvimento de sistemas".into())),
         codigo_ncm: Set(None),
-        codigo_tributacao_nacional: Set(None),
+        codigo_tributacao_nacional: Set(Some(CNA_CODIGO_DEMO_ITEM.into())),
+        cna_id: Set(Some(cna_id)),
         quantidade: Set(dec_frac(1, 0)),
         valor_unitario: Set(dec(1500)),
         valor_total_bruto: Set(dec(1500)),
@@ -301,8 +444,8 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
     LogActive {
         documento_fiscal_id: Set(Some(documento.id)),
         lote_id: Set(Some(lote.id)),
-        codigo_erro: Set("0".into()),
-        mensagem_retorno: Set("Autorizado".into()),
+        codigo_erro: Set("100".into()),
+        mensagem_retorno: Set("NFSe autorizada (ambiente de homologação)".into()),
         correcao_sugerida: Set(None),
         ..Default::default()
     }

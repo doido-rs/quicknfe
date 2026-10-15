@@ -30,6 +30,10 @@ INSERT INTO empresas (
     inscricao_estadual,
     regime_tributario,
     municipio_id,
+    cep,
+    logradouro,
+    numero,
+    bairro,
     criado_em
 )
 SELECT
@@ -40,6 +44,10 @@ SELECT
     NULL,
     'REGIME_NORMAL',
     m.id,
+    '23075350',
+    'Rua Ivan Serpa',
+    '451',
+    'Campo Grande',
     UTC_TIMESTAMP()
 FROM companies c
 CROSS JOIN municipios m
@@ -48,3 +56,13 @@ WHERE c.nome = 'QuickNFe Demo'
   AND NOT EXISTS (
       SELECT 1 FROM empresas e WHERE e.cpf_cnpj = '31041140000131' LIMIT 1
   );
+
+-- Endereço em bases já seedadas (antes das colunas de endereço)
+UPDATE empresas
+SET
+    cep = '23075350',
+    logradouro = 'Rua Ivan Serpa',
+    numero = '451',
+    bairro = 'Campo Grande'
+WHERE cpf_cnpj = '31041140000131'
+  AND (cep IS NULL OR cep = '');

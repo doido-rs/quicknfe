@@ -1,6 +1,6 @@
--- Seed legado (PostgreSQL). No backend Doido/MySQL use:
---   cargo doido db migrate && cargo doido db seed
--- (implementação equivalente em `db/seeds.rs`).
+-- Seed legado (PostgreSQL, NF-e modelo 55). Não reflete o schema MySQL/NFSe atual.
+-- Ambiente Doido/MySQL: `cargo doido db migrate && cargo doido db seed`
+-- (fonte canônica: `db/seeds.rs` — NFSe, endereços Brasil, CNA nos itens).
 --
 -- Pré-requisito: DDL PostgreSQL das tabelas empresas … logs_mensagens_retorno.
 -- Executar: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/sql/seed_emissao_nfe.sql

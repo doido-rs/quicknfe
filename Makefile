@@ -46,7 +46,7 @@ db-create: ## Cria banco development
 db-migrate: ## Migrations development
 	cd $(BACKEND_DIR) && cargo doido db migrate
 
-db-seed: ## Seeds development
+db-seed: db-migrate ## Seeds development (migrate first — seeds need empresas.cep, etc.)
 	cd $(BACKEND_DIR) && cargo doido db seed
 
 db-setup: db-create db-migrate ## create + migrate (dev)
