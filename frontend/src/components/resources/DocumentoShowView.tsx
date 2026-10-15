@@ -7,6 +7,7 @@ import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { flattenDocumentoRowToForm } from '@/lib/documentoParteLocalidade'
 import { documentoStatusLabel } from '@/lib/documentoListFormat'
 import { buildDocumentoRelationLabels } from '@/lib/documentoShowLabels'
@@ -32,6 +33,10 @@ export function DocumentoShowView({
     const base = rowToForm(row, def.fields)
     form.reset(flattenDocumentoRowToForm(row, base))
   }, [row, def.fields, form])
+
+  const nesteds = resourceNesteds(def)
+  const itensNested = nesteds.find((n) => n.path(recordId).includes('/itens'))
+  const logsNested = nesteds.find((n) => n.path(recordId).includes('/logs-retorno'))
 
   return (
     <div className="space-y-6">
@@ -60,22 +65,36 @@ export function DocumentoShowView({
         </div>
       </div>
 
-      <ResourceFormFields
-        fields={def.fields}
-        formSections={def.formSections}
-        form={form}
-        readOnly
-        relationDisplayLabels={relationLabels}
-        displayRow={row}
-      />
+      <Tabs defaultValue="dados">
+        <TabsList aria-label="Seções da nota fiscal">
+          <TabsTrigger value="dados">Dados da nota</TabsTrigger>
+          <TabsTrigger value="itens">Itens da nota</TabsTrigger>
+          <TabsTrigger value="logs">Logs SEFAZ</TabsTrigger>
+        </TabsList>
 
-      {resourceNesteds(def).map((nested) => (
-        <NestedResourcePanel
-          key={nested.path(recordId)}
-          parentId={recordId}
-          nested={nested}
-        />
-      ))}
+        <TabsContent value="dados">
+          <ResourceFormFields
+            fields={def.fields}
+            formSections={def.formSections}
+            form={form}
+            readOnly
+            relationDisplayLabels={relationLabels}
+            displayRow={row}
+          />
+        </TabsContent>
+
+        <TabsContent value="itens">
+          {itensNested ? (
+            <NestedResourcePanel parentId={recordId} nested={itensNested} />
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="logs">
+          {logsNested ? (
+            <NestedResourcePanel parentId={recordId} nested={logsNested} />
+          ) : null}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

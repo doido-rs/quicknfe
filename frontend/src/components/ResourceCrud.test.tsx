@@ -130,6 +130,7 @@ describe('Resource pages', () => {
     })
 
     await renderWithProviders({ route: '/app/documentos/9' })
+    await userEvent.click(await screen.findByRole('tab', { name: /itens da nota/i }))
     expect(await screen.findByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /baixar xml/i })).toBeEnabled()
     expect(screen.getByRole('button', { name: /assinar nota fiscal/i })).toBeInTheDocument()
@@ -167,11 +168,12 @@ describe('Resource pages', () => {
     })
 
     await renderWithProviders({ route: '/app/documentos/9' })
+    await userEvent.click(await screen.findByRole('tab', { name: /logs sefaz/i }))
     const logsTitle = await screen.findByText('Logs de retorno (SEFAZ)')
     await screen.findByText('E1')
     const logsCard = logsTitle.closest('[data-slot="card"]')
     expect(logsCard).toBeTruthy()
     expect(within(logsCard as HTMLElement).queryByRole('button', { name: /adicionar item/i })).toBeNull()
-    expect(screen.getByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /adicionar item/i })).toBeNull()
   })
 })

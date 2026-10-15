@@ -40,7 +40,7 @@ All CRUD screens are generated from `frontend/src/resources/definitions.ts`:
 | Sidebar | `sidebarResources()` — `menuPlacement` defaults to `sidebar` |
 | Settings hub | `/app/configuracoes` — `settingsResources()` (`menuPlacement: 'settings'`: CNA, municípios) |
 | List | `ResourceListPage` — infinite query, `page_size` / `page_token`; **documentos** use `DocumentoListTable` |
-| Show | Generic `ResourceShowPage` except **documentos** → `DocumentoShowView` (read-only form layout) |
+| Show | Generic `ResourceShowPage` except **documentos** → `DocumentoShowView` (read-only form layout; **tabs**: dados / itens / logs SEFAZ) |
 | New / Edit | `ResourceNewPage` / `ResourceEditPage`; documentos use `buildDocumentoBody` / `flattenDocumentoRowToForm` |
 
 ### Registered resources (summary)
@@ -196,7 +196,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 ### List and show (documentos)
 
 - **List** (`DocumentoListTable`): data (competência/emissão), prestador, tomador, intermediário, valor, situação; API list DTO adds `*_razao_social` (`documento_presentacao.rs`).
-- **Show** (`DocumentoShowView`): same sections as edit, read-only; **Assinar nota fiscal**, **Transmitir SEFIN**, **Baixar XML**, Editar; nested itens (+ tributos) + logs SEFAZ.
+- **Show** (`DocumentoShowView`): header actions (**Assinar nota fiscal**, **Transmitir SEFIN**, **Baixar XML**, Editar) stay above **tabs** — **Dados da nota** (same read-only sections as edit), **Itens da nota** (`NestedResourcePanel` + tributos), **Logs SEFAZ** (read-only nested logs). Inactive tabs unmount their panels (list queries run when the tab is opened).
 
 ---
 
