@@ -569,13 +569,46 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 
 ---
 
+## Test coverage (product rule)
+
+QuickNFe treats automated test coverage as a **merge gate**: the repo must stay at or above **85%** overall, with stricter **per-file** floors on HTTP handlers and domain logic.
+
+### Global threshold (85%)
+
+| Layer | Tooling | Scope |
+|-------|---------|--------|
+| **Frontend** | Vitest + `@vitest/coverage-v8` (`bun run test:coverage`, `make test-coverage-frontend`) | Project-wide **lines, functions, branches, statements** — minimum **85%** each (see `frontend/vite.config.ts` `coverage.thresholds`). shadcn primitives under `frontend/src/components/ui/` remain excluded from the denominator where configured. |
+| **Backend** | `cargo llvm-cov` (`make test-coverage-backend`, `backend/.llvm-cov.toml`) | Binary `quicknfe` aggregate report — minimum **85% line coverage** (`fail-under-lines`). Migrations, generated entities, routes glue, and other low-ROI paths may stay in `ignore-filename-regex`; do not use ignores to dodge controllers or services. |
+
+Run **`make test-coverage`** (or CI job `frontend-coverage` + `backend-coverage` in `.github/workflows/ci.yml`) before opening a PR that touches behavior. **`COVERAGE_MIN`** in the `Makefile` documents the same **85%** target for local runs.
+
+### Per-file threshold — `app/controllers` and `app/services`
+
+Every Rust source file under:
+
+- `backend/app/controllers/` (API and session controllers), and  
+- `backend/app/services/` (NFSe, certificados, tenant helpers, etc.)
+
+must maintain **at least 85% line coverage on that file alone**, not only contribute to the global backend percentage. Add or extend **unit tests** (`#[cfg(test)]` in-module) and/or **integration tests** (`backend/tests/`, e.g. `tenant_api_test`) so new endpoints and service paths are exercised; refactors that drop a file below 85% must add tests in the same change.
+
+**Agent expectations:**
+
+1. New controller actions → request/response cases (happy path, validation errors, tenant scope).
+2. New service modules → pure logic tested without DB when possible; DB-bound flows via integration tests.
+3. Do not merge features that leave any file in those two trees under **85%** without an explicit product exception (rare; document in PR).
+4. When raising thresholds in harness config (`vite.config.ts`, `.llvm-cov.toml`, `COVERAGE_MIN`), keep **AGENTS.md**, `frontend/README.md`, and `docs/harness/makefile.md` aligned.
+
+**Note:** DPS **leiaute** coverage (`layout_cobertura_parcial`, `make dps-coverage`) is separate — it measures mandatory XML tag emission, not Rust line coverage.
+
+---
+
 ## Conventions for agents
 
 1. **Prefer extending `definitions.ts`** over one-off forms when adding CRUD fields or sections.
 2. **Documento changes**: update both `buildDocumentoBody` / `flattenDocumentoRowToForm` and backend `DocumentoForm` + normalizers.
 3. **CNC**: keep mock-friendly behavior (localhost CNC URL skips mTLS); do not break `applyCncItemToForm` mapping.
 4. **Scoped relations**: tomador/intermediário must keep `relationScopeFromField: 'empresa_id'`.
-5. **Tests**: frontend Vitest (`frontend/src/**/*.test.ts`, `ResourceCrud.test.tsx`); backend `cargo test`; integration `make test-integration` (MySQL).
+5. **Tests**: frontend Vitest (`frontend/src/**/*.test.ts`, `ResourceCrud.test.tsx`); backend `cargo test`; integration `make test-integration` (MySQL). Respect **[Test coverage (product rule)](#test-coverage-product-rule)** — **85%** global and **85% per file** in `backend/app/controllers/` and `backend/app/services/`.
 6. **Minimal diffs**: match existing patterns (`NestedResourcePanel`, `buildNestedCreateBody`, resource pages).
 7. **Unsaved changes**: guard navigation when dirty on all mutating forms; see [Unsaved changes — required behavior](#unsaved-changes--required-behavior). Do not bypass with ad-hoc “leave anyway” flows.
 8. **Date format**: all calendar dates in the UI use the user preference via shared helpers; see [User preferences — date format](#user-preferences--date-format). API and XML stay ISO/`YYYY-MM-DD`.
@@ -608,7 +641,8 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 | SEFIN/CNC config | `backend/config/development.yml`, `production.yml`, env `SEFIN_BASE_URL`, `CNC_BASE_URL` |
 | Routes | `backend/config/routes.rs` |
 | Tenant | `backend/app/auth/tenant.rs`, `tenant_scope.rs`, `AuthContext.tsx` |
+| Test coverage gates | `Makefile` (`COVERAGE_MIN`, `test-coverage`), `frontend/vite.config.ts`, `backend/.llvm-cov.toml`, `.github/workflows/ci.yml` |
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Test coverage policy: 85% global; 85% per file in `app/controllers` and `app/services`.** Doido **0.0.32-test2**.*
