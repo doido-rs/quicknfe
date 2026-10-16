@@ -43,7 +43,7 @@ make fix
 make test
 make test-integration   # Requires test DB migrated
 make test-all
-make test-coverage      # Frontend 80% thresholds
+make test-coverage      # Frontend ≥85% (COVERAGE_MIN) + backend app-layer gates
 ```
 
 Integration test prep:

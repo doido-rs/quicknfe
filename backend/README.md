@@ -88,7 +88,7 @@ are git-ignored by default.
 ## Testing
 
 ```bash
-# Cobertura (≥80% em app/services + app/settings; ver .llvm-cov.toml)
+# Cobertura (≥85% — ver .llvm-cov.toml, scripts/check_app_layer_coverage.py, coverage/app_layer_floors.json)
 make test-coverage-backend
 
 # Unitários do crate

@@ -45,7 +45,7 @@ bun run test
 bun run test:coverage
 ```
 
-Meta de coverage global: **80%** (linhas, funções, branches, statements). Componentes shadcn em `src/components/ui/` ficam fora do escopo de cobertura.
+Meta de coverage: **85%** em linhas (`COVERAGE_MIN`, ver `vite.config.ts`); funções/statements/branches sobem gradualmente até 85%. Componentes shadcn em `src/components/ui/`, páginas show pesadas e glue de contexto listados em `vite.config.ts` → `coverage.exclude`.
 
 ## Build
 

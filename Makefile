@@ -118,18 +118,20 @@ test-integration: ## tenant_api_test (MySQL quicknfe_test)
 
 test-all: test test-integration ## Unitários + integração API
 
-COVERAGE_MIN ?= 80
+COVERAGE_MIN ?= 85
 
 test-coverage: test-coverage-frontend test-coverage-backend ## Coverage ≥ $(COVERAGE_MIN)% (frontend + backend)
 
 test-coverage-frontend: ## Vitest com threshold $(COVERAGE_MIN)%
-	cd $(FRONTEND_DIR) && $(BUN) run test:coverage
+	cd $(FRONTEND_DIR) && COVERAGE_MIN=$(COVERAGE_MIN) $(BUN) run test:coverage
 
-test-coverage-backend: ## cargo-llvm-cov no bin quicknfe (ver backend/.llvm-cov.toml)
+test-coverage-backend: ## llvm-cov + gate app/controllers e app/services (≥ $(COVERAGE_MIN)%)
 	@command -v cargo-llvm-cov >/dev/null 2>&1 || { \
 		echo "Instale: cargo install cargo-llvm-cov"; exit 1; \
 	}
-	cd $(BACKEND_DIR) && cargo llvm-cov test --bin quicknfe --summary-only
+	cd $(BACKEND_DIR) && cargo llvm-cov test --bin quicknfe \
+		--json --summary-only --output-path target/llvm-cov-app-layer.json
+	python3 scripts/check_app_layer_coverage.py $(BACKEND_DIR)/target/llvm-cov-app-layer.json --min $(COVERAGE_MIN)
 
 ci: lint test-coverage build ## Pipeline local (lint + coverage + build)
 

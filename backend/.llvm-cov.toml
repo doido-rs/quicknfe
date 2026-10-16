@@ -1,10 +1,9 @@
 [report]
-fail-under-lines = 80
+fail-under-lines = 85
 ignore-filename-regex = [
     "db/migration/",
     "app/models/_entities/",
     "app/models/",
-    "app/controllers/",
     "app/oauth/",
     "app/mcp/",
     "app/api_docs/",

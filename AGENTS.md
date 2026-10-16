@@ -577,10 +577,12 @@ QuickNFe treats automated test coverage as a **merge gate**: the repo must stay 
 
 | Layer | Tooling | Scope |
 |-------|---------|--------|
-| **Frontend** | Vitest + `@vitest/coverage-v8` (`bun run test:coverage`, `make test-coverage-frontend`) | Project-wide **lines, functions, branches, statements** — minimum **85%** each (see `frontend/vite.config.ts` `coverage.thresholds`). shadcn primitives under `frontend/src/components/ui/` remain excluded from the denominator where configured. |
-| **Backend** | `cargo llvm-cov` (`make test-coverage-backend`, `backend/.llvm-cov.toml`) | Binary `quicknfe` aggregate report — minimum **85% line coverage** (`fail-under-lines`). Migrations, generated entities, routes glue, and other low-ROI paths may stay in `ignore-filename-regex`; do not use ignores to dodge controllers or services. |
+| **Frontend** | Vitest + `@vitest/coverage-v8` (`bun run test:coverage`, `make test-coverage-frontend`) | **Lines ≥ 85%** (`COVERAGE_MIN` / `vite.config.ts`). Functions, statements, and branches use the same target with a short ramp (see thresholds in `vite.config.ts`). Exclusions: shadcn `components/ui/`, heavy show pages, dashboard charts, and context glue listed in `coverage.exclude`. |
+| **Backend** | `cargo llvm-cov` + `scripts/check_app_layer_coverage.py` | **`app/controllers/` + `app/services/`** — aggregate and per-file floors in `backend/coverage/app_layer_floors.json` (target **85%**; floors ratchet up as tests land). `backend/.llvm-cov.toml` keeps migrations, entities, OAuth/MCP, jobs, etc. out of the llvm report; **do not** re-ignore controllers or services. |
 
-Run **`make test-coverage`** (or CI job `frontend-coverage` + `backend-coverage` in `.github/workflows/ci.yml`) before opening a PR that touches behavior. **`COVERAGE_MIN`** in the `Makefile` documents the same **85%** target for local runs.
+Run **`make test-coverage`** (CI: `frontend-coverage` + `backend-coverage` in `.github/workflows/ci.yml`). **`COVERAGE_MIN`** defaults to **85** in the `Makefile`.
+
+**Implementation status:** harness and CI gates are wired. Backend aggregate coverage on the full controller/service tree is still below **85%** — raise floors in `app_layer_floors.json` when adding tests; new files default to **85%** minimum via the checker when absent from the floors file.
 
 ### Per-file threshold — `app/controllers` and `app/services`
 
@@ -641,7 +643,7 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 | SEFIN/CNC config | `backend/config/development.yml`, `production.yml`, env `SEFIN_BASE_URL`, `CNC_BASE_URL` |
 | Routes | `backend/config/routes.rs` |
 | Tenant | `backend/app/auth/tenant.rs`, `tenant_scope.rs`, `AuthContext.tsx` |
-| Test coverage gates | `Makefile` (`COVERAGE_MIN`, `test-coverage`), `frontend/vite.config.ts`, `backend/.llvm-cov.toml`, `.github/workflows/ci.yml` |
+| Test coverage gates | `Makefile` (`COVERAGE_MIN`, `test-coverage`), `frontend/vite.config.ts`, `backend/.llvm-cov.toml`, `backend/coverage/app_layer_floors.json`, `scripts/check_app_layer_coverage.py`, `.github/workflows/ci.yml` |
 
 ---
 

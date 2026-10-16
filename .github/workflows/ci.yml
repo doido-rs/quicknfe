@@ -20,7 +20,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
         working-directory: frontend
-      - run: bun run test:coverage
+      - run: COVERAGE_MIN=85 bun run test:coverage
         working-directory: frontend
   backend-coverage:
     runs-on: ubuntu-latest
