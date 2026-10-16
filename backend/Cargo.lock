@@ -2824,6 +2824,77 @@ dependencies = [
 ]
 
 [[package]]
+name = "oxixml-c14n"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fbb7a85f67f8b378d41bd85eb6780cc2c615a842c0fa0d809ee9ba5e3162a3b"
+dependencies = [
+ "oxixml-dom",
+ "oxixml-qname",
+]
+
+[[package]]
+name = "oxixml-dom"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d32e82201e0bc59027a1a512279fec6496117e4555c14b65c25e5aa938df0d"
+dependencies = [
+ "oxixml-qname",
+ "oxixml-xml",
+]
+
+[[package]]
+name = "oxixml-dsig"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1eecacd690f6dd9d339a3a52b3c6b1c3b3d2d6ec5111b91be4ccff2852509cfe"
+dependencies = [
+ "oxixml-c14n",
+ "oxixml-dom",
+ "oxixml-support",
+ "oxixml-text",
+]
+
+[[package]]
+name = "oxixml-qname"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9caf21e5676e02e6c7953180af5bff88049a4f6426ffd754702d5753cae8ad8b"
+dependencies = [
+ "oxixml-unicode",
+]
+
+[[package]]
+name = "oxixml-support"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "822ab227407d022b23cba7e0f58d9dcb31851636983f6b9852c69fa2b658bd52"
+
+[[package]]
+name = "oxixml-text"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "758208d48bd16d75ce434bbbeea2afa2054cb7b500b8ecfe552add148f1509a0"
+dependencies = [
+ "oxixml-support",
+]
+
+[[package]]
+name = "oxixml-unicode"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f4fe405939d195999b5e957038d6c66e14ee766c94a98b08309afa04548bdb6"
+
+[[package]]
+name = "oxixml-xml"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0397a4a82dc1e65bc2392afdac9a4a134f2a7d1acedf461ecfeee3464a6ea52c"
+dependencies = [
+ "oxixml-support",
+]
+
+[[package]]
 name = "parking"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3046,9 +3117,14 @@ dependencies = [
  "doido-model",
  "dotenvy",
  "flate2",
+ "foreign-types",
  "hex",
  "jsonwebtoken 9.3.1",
  "openssl",
+ "openssl-sys",
+ "oxixml-c14n",
+ "oxixml-dom",
+ "oxixml-dsig",
  "rand 0.8.8",
  "reqwest",
  "rmcp",

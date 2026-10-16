@@ -93,7 +93,12 @@ pub async fn assinar_documento_nfse(
             )
         })?;
     let senha_owned = decode_certificado_senha(&cert.senha_encriptada);
-    let signed = assinar_dps_xml_rascunho(&base_xml, Some(caminho), Some(&senha_owned))?;
+    let signed = assinar_dps_xml_rascunho(
+        &base_xml,
+        Some(caminho),
+        Some(&senha_owned),
+        Some(&dps_ctx.prestador.cpf_cnpj),
+    )?;
     let mut record: DocActive = doc.into();
     record.xml_assinado = Set(Some(signed));
     record.status = Set(documento_status::ASSINADO.into());

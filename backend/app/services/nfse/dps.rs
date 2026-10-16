@@ -696,6 +696,7 @@ mod tests {
             raw,
             Some(pfx.to_str().unwrap()),
             Some("test123"),
+            None,
         )
         .unwrap();
         assert!(signed.contains("<SignatureValue>"));

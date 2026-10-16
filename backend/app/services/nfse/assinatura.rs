@@ -2,25 +2,28 @@
 
 use std::fs;
 
-use base64::{engine::general_purpose::STANDARD, Engine as _};
-use openssl::hash::MessageDigest;
-use openssl::pkcs12::Pkcs12;
-use openssl::pkey::PKey;
-use openssl::sign::Signer;
-use openssl::x509::X509;
-use sha2::{Digest, Sha256};
+use oxixml_c14n::CanonicalizationAlgorithm;
+use oxixml_dsig::{
+    DigestAlgorithm, KeyInfoSpec, ReferenceSpec, RsaPrivateKey, Signature, SignatureAlgorithm,
+    SignatureBuilder, SigningKey, TransformSpec, TrustedCertificates, Verifier, sign,
+};
+use oxixml_dom::build;
 
 use super::dps::DPS_XML_NS;
 use crate::services::api_error::ApiError;
-use crate::services::openssl_legacy::ensure_legacy_providers_for_pkcs12;
+use crate::services::certificado_pfx::{parse_pfx_bytes, validar_certificado_emitente};
 
 const DPS_XML_NS_LEGACY: &str = "http://www.gov.br/nfse";
 
 /// Assina a DPS com certificado A1 PFX (XML-DSig enveloped sobre `infDPS`).
+///
+/// Quando `cpf_cnpj_emitente` é informado, confere se o CPF/CNPJ do certificado ICP-Brasil
+/// corresponde ao prestador (regra E0718 / E0716 na SEFIN).
 pub fn assinar_dps_xml_rascunho(
     xml_rascunho: &str,
     caminho_pfx: Option<&str>,
     senha_pfx: Option<&str>,
+    cpf_cnpj_emitente: Option<&str>,
 ) -> Result<String, ApiError> {
     let xml_rascunho = preparar_xml_para_assinatura(xml_rascunho);
 
@@ -34,16 +37,12 @@ pub fn assinar_dps_xml_rascunho(
     let pfx_bytes = fs::read(caminho).map_err(|e| {
         ApiError::Validation(format!("não foi possível ler certificado {caminho}: {e}"))
     })?;
-    ensure_legacy_providers_for_pkcs12();
-    let pkcs12 = Pkcs12::from_der(&pfx_bytes)
-        .and_then(|p| p.parse2(senha))
-        .map_err(|e| ApiError::Validation(format!("PFX inválido ou senha incorreta: {e}")))?;
-    let pkey = pkcs12.pkey.ok_or_else(|| ApiError::Validation("PFX sem chave privada".into()))?;
-    let cert = pkcs12
-        .cert
-        .ok_or_else(|| ApiError::Validation("PFX sem certificado".into()))?;
+    let parsed = parse_pfx_bytes(&pfx_bytes, senha)?;
+    if let Some(insc) = cpf_cnpj_emitente {
+        validar_certificado_emitente(&parsed.cert, insc)?;
+    }
 
-    assinar_com_chave(&xml_rascunho, &pkey, &cert)
+    assinar_com_chave(&xml_rascunho, &parsed.pkey, &parsed.cert)
 }
 
 /// Remove assinatura anterior e corrige namespace legado antes de assinar de novo.
@@ -70,71 +69,58 @@ fn remover_blocos_signature(xml: &str) -> String {
     out
 }
 
-fn assinar_com_chave(xml: &str, pkey: &PKey<openssl::pkey::Private>, cert: &X509) -> Result<String, ApiError> {
-    let (inf_start, inf_end, id_value) = locate_inf_dps(xml)?;
-    let inf_fragment = &xml[inf_start..inf_end];
-    let digest_b64 = base64_sha256(inf_fragment.as_bytes());
+fn assinar_com_chave(
+    xml: &str,
+    pkey: &openssl::pkey::PKey<openssl::pkey::Private>,
+    cert: &openssl::x509::X509,
+) -> Result<String, ApiError> {
+    let id_value = extrair_id_inf_dps(xml)?;
 
-    let cert_der = cert.to_der().map_err(|e| ApiError::Internal(e.to_string()))?;
-    let cert_b64 = STANDARD.encode(&cert_der);
+    let pkcs8 = pkey.private_key_to_pkcs8().map_err(|e| {
+        ApiError::Validation(format!("não foi possível extrair chave privada RSA do PFX: {e}"))
+    })?;
+    let rsa_private = RsaPrivateKey::from_der(pkcs8.as_ref()).map_err(|e| {
+        ApiError::Validation(format!("chave privada RSA inválida para assinatura XML: {e}"))
+    })?;
+    let signing_key = SigningKey::Rsa(Box::new(rsa_private));
 
-    let signed_info = format!(
-        r##"<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
-  <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
-  <SignatureMethod Algorithm="http://www.w3.org/2001/04/xdgst-more#rsa-sha256"/>
-  <Reference URI="#{id_value}">
-    <Transforms>
-      <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
-    </Transforms>
-    <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
-    <DigestValue>{digest_b64}</DigestValue>
-  </Reference>
-</SignedInfo>"##
-    );
-
-    let mut signer = Signer::new(MessageDigest::sha256(), pkey)
-        .map_err(|e| ApiError::Internal(format!("signer: {e}")))?;
-    signer
-        .update(signed_info.as_bytes())
+    let cert_der = cert
+        .to_der()
         .map_err(|e| ApiError::Internal(e.to_string()))?;
-    let sig_bytes = signer
-        .sign_to_vec()
-        .map_err(|e| ApiError::Internal(format!("assinatura: {e}")))?;
-    let signature_value = STANDARD.encode(sig_bytes);
 
-    let signature_block = format!(
-        r##"  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
-{signed_info}
-  <SignatureValue>{signature_value}</SignatureValue>
-  <KeyInfo>
-    <X509Data>
-      <X509Certificate>{cert_b64}</X509Certificate>
-    </X509Data>
-  </KeyInfo>
-</Signature>
-"##
-    );
+    let mut document = build::parse_str(xml).map_err(|e| {
+        ApiError::Validation(format!("XML da DPS inválido antes da assinatura: {e}"))
+    })?;
+    let dps_root = document.document_element().ok_or_else(|| {
+        ApiError::Validation("XML da DPS sem elemento raiz".into())
+    })?;
 
-    if xml.contains("</DPS>") {
-        Ok(xml.replace("</DPS>", &format!("{signature_block}</DPS>")))
-    } else {
-        Ok(format!("{xml}\n{signature_block}"))
-    }
+    // Perfil usual NFS-e Nacional: RSA-SHA1, C14N 1.0, referência ao Id de infDPS, enveloped.
+    let sig_node = SignatureBuilder::new(SignatureAlgorithm::RsaSha1)
+        .canonicalization(CanonicalizationAlgorithm::Canonical1_0)
+        .reference(
+            ReferenceSpec::new(format!("#{id_value}"))
+                .digest(DigestAlgorithm::Sha1)
+                .transform(TransformSpec::EnvelopedSignature)
+                .transform(TransformSpec::canonicalization(
+                    CanonicalizationAlgorithm::Canonical1_0,
+                )),
+        )
+        .key_info(KeyInfoSpec::X509Certificate(cert_der.clone()))
+        .build_into(&mut document, dps_root)
+        .map_err(|e| ApiError::Validation(format!("falha ao montar assinatura XML: {e}")))?;
+
+    sign(&mut document, sig_node, &signing_key).map_err(|e| {
+        ApiError::Validation(format!("falha ao assinar XML da DPS: {e}"))
+    })?;
+
+    Ok(document.to_xml())
 }
 
-fn locate_inf_dps(xml: &str) -> Result<(usize, usize, String), ApiError> {
+fn extrair_id_inf_dps(xml: &str) -> Result<String, ApiError> {
     for tag in ["infDPS", "infDps"] {
         if let Some(start) = xml.find(&format!("<{tag}")) {
-            let id_value = extract_id_attr(&xml[start..])?;
-            let open_end = xml[start..]
-                .find('>')
-                .map(|i| start + i + 1)
-                .ok_or_else(|| ApiError::Validation("infDPS malformado".into()))?;
-            let close = xml[open_end..]
-                .find(&format!("</{tag}>"))
-                .map(|i| open_end + i)
-                .ok_or_else(|| ApiError::Validation("infDPS sem fechamento".into()))?;
-            return Ok((open_end, close, id_value));
+            return extract_id_attr(&xml[start..]);
         }
     }
     Err(ApiError::Validation("XML sem infDPS para assinar".into()))
@@ -152,21 +138,17 @@ fn extract_id_attr(fragment: &str) -> Result<String, ApiError> {
     Err(ApiError::Validation("infDPS sem atributo Id".into()))
 }
 
-fn base64_sha256(data: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(data);
-    STANDARD.encode(hasher.finalize())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::certificado_pfx::parse_pfx_bytes;
+    use crate::services::openssl_legacy::ensure_legacy_providers_for_pkcs12;
     use std::path::PathBuf;
 
     #[test]
     fn rejeita_sem_certificado() {
         let xml = r#"<DPS><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
-        assert!(assinar_dps_xml_rascunho(xml, None, None).is_err());
+        assert!(assinar_dps_xml_rascunho(xml, None, None, None).is_err());
     }
 
     #[test]
@@ -177,6 +159,7 @@ mod tests {
             xml,
             Some(pfx.to_str().unwrap()),
             Some("test123"),
+            None,
         )
         .unwrap();
         assert!(out.contains(DPS_XML_NS));
@@ -186,16 +169,31 @@ mod tests {
     }
 
     #[test]
-    fn assina_com_pfx_fixture() {
+    fn assina_com_pfx_fixture_e_verifica_localmente() {
         let pfx = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-sign.pfx");
+        let pfx_bytes = std::fs::read(&pfx).unwrap();
+        ensure_legacy_providers_for_pkcs12();
+        let parsed = parse_pfx_bytes(&pfx_bytes, "test123").unwrap();
+        let cert_der = parsed.cert.to_der().unwrap();
+
         let xml = r#"<?xml version="1.0"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
         let out = assinar_dps_xml_rascunho(
             xml,
             Some(pfx.to_str().unwrap()),
             Some("test123"),
+            None,
         )
         .unwrap();
         assert!(out.contains("<SignatureValue>"));
         assert!(out.contains("<X509Certificate>"));
+        assert!(out.contains("rsa-sha1"));
+
+        let document = build::parse_str(&out).expect("parse signed");
+        let signature = Signature::find(&document).expect("signature");
+        let trusted = TrustedCertificates::new().with_certificate(cert_der);
+        let result = Verifier::new()
+            .verify(&document, &signature, &trusted)
+            .expect("verify");
+        assert!(result.core_valid(), "assinatura local deve ser válida");
     }
 }
