@@ -49,16 +49,17 @@ export function DocumentoLogsRetornoPanel({ documentoId }: { documentoId: number
         ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum registro de retorno da SEFIN.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[7rem]">Código</TableHead>
-                <TableHead>Mensagem</TableHead>
-                <TableHead className="w-[11rem] whitespace-nowrap">Registrado em</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => {
+          <div className="w-full max-w-full [&_[data-slot=table-container]]:overflow-x-hidden">
+            <Table className="table-fixed">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[5.5rem]">Código</TableHead>
+                  <TableHead className="min-w-0">Mensagem</TableHead>
+                  <TableHead className="w-[10.5rem]">Registrado em</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => {
                 const codigo =
                   row.codigo_erro != null && String(row.codigo_erro).trim() !== ''
                     ? String(row.codigo_erro)
@@ -73,23 +74,28 @@ export function DocumentoLogsRetornoPanel({ documentoId }: { documentoId: number
                     : null
                 const registradoEm = formatDateForDisplay(logCreatedAt(row), dateFormat)
 
-                return (
-                  <TableRow key={String(row.id)}>
-                    <TableCell className="align-top font-medium">{codigo}</TableCell>
-                    <TableCell className="align-top">
-                      <p>{mensagem}</p>
-                      {correcao ? (
-                        <p className="mt-1 text-muted-foreground text-xs">{correcao}</p>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="align-top whitespace-nowrap text-muted-foreground">
-                      {registradoEm}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                  return (
+                    <TableRow key={String(row.id)}>
+                      <TableCell className="align-top font-medium whitespace-normal">
+                        {codigo}
+                      </TableCell>
+                      <TableCell className="max-w-0 align-top whitespace-normal break-words [overflow-wrap:anywhere]">
+                        <p className="leading-snug">{mensagem}</p>
+                        {correcao ? (
+                          <p className="mt-1 text-xs leading-snug text-muted-foreground break-words [overflow-wrap:anywhere]">
+                            {correcao}
+                          </p>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal text-muted-foreground text-xs sm:text-sm">
+                        {registradoEm}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
