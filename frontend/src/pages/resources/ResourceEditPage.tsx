@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate } from '@tanstack/react-router'
 import { GuardedLink } from '@/components/navigation/GuardedLink'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useRegisterUnsavedSave, useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
+import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +15,7 @@ import { buildDocumentoBody, flattenDocumentoRowToForm } from '@/lib/documentoPa
 import { buildBody, rowToForm, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
 import { toastFromError, toastSuccess } from '@/lib/toast'
+import { documentoItensNested } from '@/resources/definitions'
 
 export function ResourceEditPage() {
   const def = useResourceDef()
@@ -21,6 +23,10 @@ export function ResourceEditPage() {
   const queryClient = useQueryClient()
   const api = resourceApi<Record<string, unknown>>(def.path)
   const form = useResourceFieldForm(def.fields)
+  const itensNested = useMemo(
+    () => (def.key === 'documentos' ? documentoItensNested(def) : undefined),
+    [def],
+  )
 
   const { data: row, isLoading, isError } = useQuery({
     queryKey: [def.key, 'detail', recordId],
@@ -127,6 +133,10 @@ export function ResourceEditPage() {
           )}
         </CardContent>
       </Card>
+
+      {itensNested && recordId != null && (
+        <NestedResourcePanel parentId={recordId} nested={itensNested} />
+      )}
     </div>
   )
 }

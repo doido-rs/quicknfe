@@ -4,7 +4,7 @@ import { DocumentoAssinarButton } from '@/components/resources/DocumentoAssinarB
 import { DocumentoTransmitirButton } from '@/components/resources/DocumentoTransmitirButton'
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
 import { DocumentoLogsRetornoPanel } from '@/components/resources/DocumentoLogsRetornoPanel'
-import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
+import { DocumentoItensShowPanel } from '@/components/resources/DocumentoItensShowPanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +17,7 @@ import { buildDocumentoRelationLabels } from '@/lib/documentoShowLabels'
 import { rowToForm, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceEditTo, resourceListTo } from '@/lib/resourcePaths'
 import { useDocumentoProcessamentoPoll } from '@/hooks/useDocumentoProcessamentoPoll'
-import { resourceNesteds, type ResourceDef } from '@/resources/definitions'
+import { documentoItensNested, type ResourceDef } from '@/resources/definitions'
 
 export function DocumentoShowView({
   def,
@@ -37,8 +37,7 @@ export function DocumentoShowView({
     form.reset(flattenDocumentoRowToForm(row, base))
   }, [row, def.fields, form])
 
-  const nesteds = resourceNesteds(def)
-  const itensNested = nesteds.find((n) => n.path(recordId).includes('/itens'))
+  const itensNested = documentoItensNested(def)
   const processamentoMsg =
     typeof row.processamento_mensagem === 'string' ? row.processamento_mensagem.trim() : ''
   const showProcessamentoMsg = processamentoMsg.length > 0
@@ -99,7 +98,7 @@ export function DocumentoShowView({
 
         <TabsContent value="itens">
           {itensNested ? (
-            <NestedResourcePanel parentId={recordId} nested={itensNested} />
+            <DocumentoItensShowPanel documentoId={recordId} nested={itensNested} />
           ) : null}
         </TabsContent>
 

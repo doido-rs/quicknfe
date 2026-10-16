@@ -514,8 +514,10 @@ export const resources: ResourceDef[] = [
             relationResource: 'cnas',
             required: true,
           },
+          { key: 'codigo_ncm', label: 'Código NCM' },
           { key: 'quantidade', label: 'Quantidade', type: 'number', defaultValue: '1' },
           { key: 'valor_unitario', label: 'Valor unitário', type: 'number', defaultValue: '0' },
+          { key: 'valor_desconto', label: 'Desconto', type: 'number', defaultValue: '0' },
           { key: 'valor_total_bruto', label: 'Total bruto', type: 'number', defaultValue: '0' },
         ],
         itemTributos: {
@@ -739,5 +741,54 @@ export function resourceNesteds(def: ResourceDef): NestedDef[] {
 }
 
 export function documentoItensNested(def: ResourceDef): NestedDef | undefined {
-  return resourceNesteds(def).find((n) => n.allowCreate !== false && n.path(0).includes('/itens'))
+  return resourceNesteds(def).find((n) => n.path(0).includes('/itens'))
+}
+
+/** Campos read-only na aba Itens do show (alinhado a `ItemDto` + formulário nested). */
+export function documentoItemShowFields(nested: NestedDef): FieldDef[] {
+  const byKey = new Map<string, FieldDef>()
+  for (const f of nested.fields) {
+    byKey.set(f.key, { ...f, readOnly: true })
+  }
+  const extras: FieldDef[] = [
+    { key: 'id', label: 'ID', readOnly: true },
+    {
+      key: 'descricao',
+      label: 'Descrição (linha)',
+      type: 'textarea',
+      readOnly: true,
+    },
+    {
+      key: 'codigo_tributacao_nacional',
+      label: 'Cód. tributação nacional',
+      readOnly: true,
+    },
+  ]
+  for (const f of extras) {
+    if (!byKey.has(f.key)) {
+      byKey.set(f.key, f)
+    }
+  }
+  const order = [
+    'id',
+    'numero_item',
+    'descricao',
+    'descricao_servico',
+    'cna_id',
+    'codigo_tributacao_nacional',
+    'codigo_ncm',
+    'quantidade',
+    'valor_unitario',
+    'valor_desconto',
+    'valor_total_bruto',
+  ]
+  const fields: FieldDef[] = []
+  for (const key of order) {
+    const f = byKey.get(key)
+    if (f) fields.push(f)
+  }
+  for (const [key, f] of byKey) {
+    if (!order.includes(key)) fields.push(f)
+  }
+  return fields
 }

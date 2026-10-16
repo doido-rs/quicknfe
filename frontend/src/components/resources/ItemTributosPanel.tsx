@@ -17,10 +17,13 @@ export function ItemTributosPanel({
   itemId,
   itemLabel,
   def,
+  readOnly = false,
 }: {
   itemId: number
   itemLabel: string
   def: ItemTributosDef
+  /** Somente listagem (aba show da nota). */
+  readOnly?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const path = def.path(itemId)
@@ -61,30 +64,45 @@ export function ItemTributosPanel({
       </button>
       {open && (
         <div className="mt-2 space-y-3 rounded-md border border-border/60 bg-muted/20 p-3">
-          <form
-            className="grid gap-3 md:grid-cols-2"
-            onSubmit={handleSubmit((values) => createMutation.mutate(values))}
-          >
-            {def.fields.map((f) => (
-              <ResourceFieldInput
-                key={f.key}
-                field={f}
-                form={form}
-                idPrefix={`trib-${itemId}-${f.key}`}
-              />
-            ))}
-            <div className="md:col-span-2">
-              <Button type="submit" size="sm" disabled={createMutation.isPending}>
-                Adicionar tributo
-              </Button>
-            </div>
-          </form>
+          {!readOnly && (
+            <form
+              className="grid gap-3 md:grid-cols-2"
+              onSubmit={handleSubmit((values) => createMutation.mutate(values))}
+            >
+              {def.fields.map((f) => (
+                <ResourceFieldInput
+                  key={f.key}
+                  field={f}
+                  form={form}
+                  idPrefix={`trib-${itemId}-${f.key}`}
+                />
+              ))}
+              <div className="md:col-span-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  Adicionar tributo
+                </Button>
+              </div>
+            </form>
+          )}
           <ul className="list-disc space-y-1 pl-5 text-sm">
             {rows.length === 0 && (
               <li className="list-none pl-0 text-muted-foreground">Nenhum tributo.</li>
             )}
             {rows.map((r) => (
-              <li key={String(r.id)}>{rowLabel(r, def.fields)}</li>
+              <li key={String(r.id)} className="list-none pl-0">
+                {readOnly ? (
+                  <dl className="grid gap-1 sm:grid-cols-2 text-sm">
+                    {def.fields.map((f) => (
+                      <div key={f.key}>
+                        <span className="text-muted-foreground">{f.label}: </span>
+                        <span>{String(r[f.key] ?? '—')}</span>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  rowLabel(r, def.fields)
+                )}
+              </li>
             ))}
           </ul>
         </div>

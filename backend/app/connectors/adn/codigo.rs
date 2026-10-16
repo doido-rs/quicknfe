@@ -1,4 +1,35 @@
-//! Parsing de códigos de parametrização ADN (evita dependência circular com services).
+//! Parsing de códigos de parametrização ADN.
+
+fn normalize_c_trib_nac_6(raw: &str) -> Option<String> {
+    let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.is_empty() {
+        return None;
+    }
+    let mut s = digits;
+    if s.len() > 6 {
+        s = s[s.len() - 6..].to_string();
+    }
+    while s.len() < 6 {
+        s.insert(0, '0');
+    }
+    Some(s)
+}
+
+/// Formato ADN `NN.NN.NN.NNN` (desdobro municipal, ex. `000`).
+pub fn format_codigo_servico_adn(c_trib_nac: &str, c_trib_mun: &str) -> Option<String> {
+    let nac = normalize_c_trib_nac_6(c_trib_nac)?;
+    let item = &nac[0..2];
+    let sub = &nac[2..4];
+    let des = &nac[4..6];
+    let mun = normalize_c_trib_mun(c_trib_mun);
+    Some(format!(
+        "{:02}.{:02}.{:02}.{}",
+        u32::from_str_radix(item, 10).ok()?,
+        u32::from_str_radix(sub, 10).ok()?,
+        u32::from_str_radix(des, 10).ok()?,
+        mun
+    ))
+}
 
 /// Normaliza desdobro municipal para 3 dígitos.
 pub fn normalize_c_trib_mun(raw: &str) -> String {

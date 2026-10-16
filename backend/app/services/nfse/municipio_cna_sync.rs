@@ -42,7 +42,16 @@ pub async fn sync_municipio_by_ibge(
         Err(e) => return Err(doido_core::anyhow::anyhow!("query municipio: {e}").into()),
     };
 
-    let params = match adn::get_aliquotas_municipio(&municipio.codigo_ibge).await {
+    let codigos_nacionais: Vec<String> = CnaEntity::find()
+        .all(db)
+        .await
+        .map_err(|e| doido_core::anyhow::anyhow!("list cnas: {e}"))?
+        .into_iter()
+        .map(|c| c.codigo)
+        .collect();
+
+    let params = match adn::get_aliquotas_municipio(&municipio.codigo_ibge, &codigos_nacionais).await
+    {
         Ok(p) => p,
         Err(e) => {
             result.error = Some(e.to_string());

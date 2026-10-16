@@ -171,7 +171,20 @@ describe('Resource pages', () => {
         })
       }
       if (method === 'GET' && url.includes('/api/documentos/9/itens')) {
-        return jsonResponse(asPage([{ id: 1, numero_item: 1, descricao: 'Item 1' }]))
+        return jsonResponse(
+          asPage([
+            {
+              id: 1,
+              numero_item: 1,
+              descricao: 'Item 1',
+              descricao_servico: 'Serviço A',
+              codigo_tributacao_nacional: '010101',
+              quantidade: 1,
+              valor_unitario: 100,
+              valor_total_bruto: 100,
+            },
+          ]),
+        )
       }
       if (method === 'GET' && url.includes('/api/documentos/9/logs-retorno')) {
         return jsonResponse(asPage([]))
@@ -181,7 +194,9 @@ describe('Resource pages', () => {
 
     await renderWithProviders({ route: '/app/documentos/9' })
     await userEvent.click(await screen.findByRole('tab', { name: /itens da nota/i }))
-    expect(await screen.findByRole('button', { name: /adicionar item/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /adicionar item/i })).not.toBeInTheDocument()
+    expect(await screen.findByText('Serviço A')).toBeInTheDocument()
+    expect(screen.getByText(/Cód\. tributação nacional/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /baixar xml/i })).toBeEnabled()
     expect(screen.getByRole('button', { name: /assinar nota fiscal/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /transmitir sefin/i })).toBeInTheDocument()

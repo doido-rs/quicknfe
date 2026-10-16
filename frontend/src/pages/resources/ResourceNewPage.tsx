@@ -2,11 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Navigate, useNavigate } from '@tanstack/react-router'
 import { GuardedLink } from '@/components/navigation/GuardedLink'
 import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import { useAuth } from '@/auth/AuthContext'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
-import { DocumentoItensDraftPanel } from '@/components/resources/DocumentoItensDraftPanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,9 +14,7 @@ import { buildDocumentoBody } from '@/lib/documentoParteLocalidade'
 import { todayApiDate } from '@/lib/dateFormat'
 import { buildBody, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
-import { applyItensToDocumentoBody } from '@/lib/documentoItens'
 import { toastFromError, toastSuccess } from '@/lib/toast'
-import { documentoItensNested } from '@/resources/definitions'
 
 export function ResourceNewPage() {
   const def = useResourceDef()
@@ -26,12 +23,6 @@ export function ResourceNewPage() {
   const api = resourceApi<Record<string, unknown>>(def.path)
   const { me } = useAuth()
   const form = useResourceFieldForm(def.fields)
-  const itensNested = useMemo(
-    () => (def.key === 'documentos' ? documentoItensNested(def) : undefined),
-    [def],
-  )
-  const [draftItens, setDraftItens] = useState<Record<string, unknown>[]>([])
-
   const empresaId = form.watch('empresa_id')
 
   useEffect(() => {
@@ -68,8 +59,7 @@ export function ResourceNewPage() {
     })
   }, [def.key, empresaId, form])
 
-  const formDirty = form.formState.isDirty || draftItens.length > 0
-  useUnsavedFormGuard(formDirty)
+  useUnsavedFormGuard(form.formState.isDirty)
 
   const createMutation = useMutation({
     mutationFn: async (values: Record<string, string>) => {
@@ -77,28 +67,16 @@ export function ResourceNewPage() {
         def.key === 'documentos'
           ? buildDocumentoBody(def.fields, values)
           : (buildBody(def.fields, values) as Record<string, unknown>)
-      if (def.key === 'documentos' && draftItens.length > 0) {
-        applyItensToDocumentoBody(body, values, draftItens)
-      }
       if (body.serie_numero_automatico === true) {
         body.numero_documento = 0
         body.serie = ''
       }
-      const created = await api.create(body)
-      const newId = Number(created.id)
-      if (def.key === 'documentos' && itensNested && draftItens.length > 0 && Number.isFinite(newId)) {
-        const itensApi = resourceApi<Record<string, unknown>>(itensNested.path(newId))
-        for (const itemBody of draftItens) {
-          await itensApi.create(itemBody)
-        }
-      }
-      return created
+      return api.create(body)
     },
     onSuccess: (created, _vars, _ctx) => {
       queryClient.invalidateQueries({ queryKey: [def.key] })
       toastSuccess('Registro criado com sucesso')
       form.reset(form.getValues())
-      setDraftItens([])
       const newId = Number(created.id)
       if (Number.isFinite(newId)) {
         navigate(resourceShowTo(def, newId))
@@ -139,14 +117,6 @@ export function ResourceNewPage() {
           />
         </CardContent>
       </Card>
-
-      {itensNested && (
-        <DocumentoItensDraftPanel
-          nested={itensNested}
-          items={draftItens}
-          onItemsChange={setDraftItens}
-        />
-      )}
     </div>
   )
 }

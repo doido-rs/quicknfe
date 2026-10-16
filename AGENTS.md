@@ -44,7 +44,7 @@ Organize **one module (or subfolder) per external system**, not per QuickNFe fea
 |-----------------|----------------|----------------|
 | **`cnc/`** | HTTP + mTLS to cadastro nacional consult; raw CNC payload ↔ internal types | `settings.cnc.base_url`, `CNC_BASE_URL`; localhost mock skips mTLS |
 | **`sefin/`** (or `nfse_nacional/`) | HTTP + mTLS to SEFIN Nacional (emissão, consulta DPS); status/body parsing at the wire | `settings.sefin.base_url`, `SEFIN_BASE_URL`, `settings.sefin.ambiente` |
-| **`adn/`** | HTTP público — parametrização municipal (`parametros_municipais/{ibge}/aliquotas`) para sync CNA / E0312 | `settings.adn.base_url`, `ADN_BASE_URL` |
+| **`adn/`** | HTTP — parametrização municipal (`/parametrizacao/{ibge}/{codigoServico}`) para sync CNA / E0312 | `settings.adn.base_url`, `ADN_BASE_URL` |
 | **`mod.rs`** | `pub mod` + thin re-exports; no business rules |
 
 Connectors may depend on **`app/settings`**, certificate bytes/identity passed in from services (prestador PFX resolved in `app/services/`), and small shared HTTP helpers **inside** `app/connectors/` (e.g. `http_client.rs`, `mtls.rs`). They must **not** import controllers, jobs, or tenant-specific DB access.
@@ -162,7 +162,7 @@ Fields remain in flat `fields[]` for API mapping; sections control UX:
 
 **Product rule (all editable forms):** the user must **not** leave the form—with unsaved edits—by closing the flow, using Cancel/back links, sidebar navigation, in-app route changes, or browser tab close/reload—unless they **save successfully** or **explicitly confirm discarding** changes.
 
-**Status:** implemented via `UnsavedChangesProvider`, `useUnsavedFormGuard`, TanStack Router `useBlocker`, and `GuardedLink` on resource create/edit flows (including nested panels and documento draft itens).
+**Status:** implemented via `UnsavedChangesProvider`, `useUnsavedFormGuard`, TanStack Router `useBlocker`, and `GuardedLink` on resource create/edit flows (including nested panels on documento **edit**).
 
 **Scope — every form that mutates data:**
 
@@ -170,14 +170,13 @@ Fields remain in flat `fields[]` for API mapping; sections control UX:
 |---------|----------|
 | Resource create | `ResourceNewPage` + `ResourceFormFields` |
 | Resource edit | `ResourceEditPage` + `ResourceFormFields` |
-| Nested create | `NestedResourcePanel` inline POST forms (itens, certificados, …) |
-| Documento draft itens | `DocumentoItensDraftPanel` on new nota (local draft counts as dirty until create completes or user clears items) |
+| Nested create | `NestedResourcePanel` inline POST forms (itens na **edição** da nota, certificados, …) |
 
 **Out of scope:** read-only views (`DocumentoShowView`, generic show without edit form, list pages).
 
 **Behavior:**
 
-1. **Dirty detection** — compare current values to last saved baseline (e.g. `react-hook-form` `formState.isDirty` after `reset` from server defaults on edit; empty defaults on create). Include nested/draft panels in the same dirty signal where they hold unpublished data.
+1. **Dirty detection** — compare current values to last saved baseline (e.g. `react-hook-form` `formState.isDirty` after `reset` from server defaults on edit; empty defaults on create). Nested item forms on documento **edit** have their own dirty guard via `NestedResourcePanel`.
 2. **In-app navigation** — intercept TanStack Router transitions (sidebar, “Voltar”, list links, breadcrumbs) and show a confirm dialog: stay, **Salvar** (when edit page registered a save handler), or discard and leave.
 3. **Cancel actions** — “Cancelar” / back links follow the same rule (confirm if dirty), not silent navigation.
 4. **Browser leave** — `beforeunload` when dirty via TanStack Router `useBlocker` `enableBeforeUnload`.
@@ -197,7 +196,9 @@ Fields remain in flat `fields[]` for API mapping; sections control UX:
 
 ### Nested resources (`NestedDef`)
 
-Shown on **show** (and logs read-only) via `NestedResourcePanel`:
+**Documento itens:** **create** — só cabeçalho da nota (`ResourceNewPage`); **edit** — `NestedResourcePanel` (adicionar itens); **show** — `DocumentoItensShowPanel` (todos os campos de `ItemDto` + tributos read-only, sem POST).
+
+Outros nested (certificados, logs):
 
 - List: `GET parentPath?page_size=…`
 - Create: inline form → `POST parentPath` (unless `allowCreate: false`)
@@ -206,12 +207,11 @@ Shown on **show** (and logs read-only) via `NestedResourcePanel`:
 - File nested fields use `buildCreateBodyWithFiles` (base64)
 - **Prestador show:** certificados nested panel lives in the **Certificados digitais** tab (`PrestadorShowView`) — see [Prestador (cadastro) — show UX](#prestador-cadastro--show-ux)
 
-**Nota fiscal — create flow**: `ResourceNewPage` adds `DocumentoItensDraftPanel` (local draft). On **Criar**:
+**Nota fiscal — create / itens flow**:
 
-1. `buildDocumentoBody` + optional `applyItensToDocumentoBody` (sum item `valor_total_bruto` → valor operação/líquido).
-2. `POST /api/documentos`.
-3. Sequential `POST /api/documentos/{id}/itens` for each draft item.
-4. Navigate to show.
+1. **Novo** (`ResourceNewPage`): apenas dados da nota → `POST /api/documentos` → redirect ao show (sem itens).
+2. **Editar** (`ResourceEditPage`): cabeçalho + `NestedResourcePanel` de itens (`POST /api/documentos/{id}/itens`); `prepareCreateBody` copia `descricao` de `descricao_servico`.
+3. **Show** (`DocumentoShowView`, aba Itens): `DocumentoItensShowPanel` — grid read-only com todos os atributos do item (`documentoItemShowFields`, alinhado a `ItemDto`) e tributos expandíveis (read-only).
 
 ---
 
@@ -253,7 +253,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 ### List and show (documentos)
 
 - **List** (`DocumentoListTable`): data (competência/emissão), prestador, tomador, intermediário, valor, situação; API list DTO adds `*_razao_social` (`documento_presentacao.rs`).
-- **Show** (`DocumentoShowView`): header actions (**Assinar nota fiscal**, **Transmitir SEFIN**, **Baixar XML**, Editar) stay above **tabs** — **Dados da nota** (same read-only sections as edit), **Itens da nota** (`NestedResourcePanel` + tributos), **Logs SEFAZ** (read-only nested logs). Inactive tabs unmount their panels (list queries run when the tab is opened). **`processamento_mensagem`** from the API is shown in an alert under the header (destructive when status is `erro_assinatura` / `erro_transmissao`). Assinar/transmitir offer optional **certificado** select when the prestador has more than one certificado (`certificado_id` on POST).
+- **Show** (`DocumentoShowView`): header actions (**Assinar nota fiscal**, **Transmitir SEFIN**, **Baixar XML**, Editar) stay above **tabs** — **Dados da nota** (same read-only sections as edit), **Itens da nota** (`DocumentoItensShowPanel`: todos os campos do item + tributos read-only), **Logs SEFAZ** (read-only nested logs). Inactive tabs unmount their panels (list queries run when the tab is opened). **`processamento_mensagem`** from the API is shown in an alert under the header (destructive when status is `erro_assinatura` / `erro_transmissao`). Assinar/transmitir offer optional **certificado** select when the prestador has more than one certificado (`certificado_id` on POST).
 
 ---
 
@@ -420,9 +420,10 @@ Implementation: `ultimo_certificado_empresa` (or explicit `certificado_id`) + `a
 
 ### 4. Itens da nota
 
-- Fields: número, descrição serviço, **CNA** relation, quantidade, valores.
-- CNA list is read-only catalog; item create stores `codigo_tributacao_nacional` from CNA row.
-- Nested **tributos** per item: API `/api/itens/{item_id}/tributos`; UI expandível em **Itens da nota** no show da nota (`ItemTributosPanel`).
+- **Cadastro:** apenas em **Editar nota** (`ResourceEditPage` + `NestedResourcePanel`); **Novo** cria só o cabeçalho.
+- Fields: número, descrição serviço, **CNA** relation, NCM, quantidade, unitário, desconto, total bruto; API preenche `descricao` (linha) e `codigo_tributacao_nacional` a partir do CNA.
+- **Show:** `DocumentoItensShowPanel` lista todos os atributos (`ItemDto` + `documentoItemShowFields`).
+- Nested **tributos** per item: API `/api/itens/{item_id}/tributos`; expandível no show (read-only) e editável na edição (`ItemTributosPanel`).
 
 ### 5. Logs de retorno (SEFAZ)
 
@@ -518,8 +519,8 @@ Use this as the **checklist** when completing XML generation against **`layout_d
 | **Tomador** | Tomador do serviço (Brasil, exterior ou omitido) | `tomador_localidade` + `cliente_id` → `clientes`, or `tomador_exterior` JSON; CNC may prefill cadastro |
 | **Intermediário** | Intermediário (opcional) | `intermediario_localidade` + `intermediario_id` or `intermediario_exterior` |
 | **Localidade / município** | Município emissão e prestação | `municipio_emissao_id`, `municipio_prestacao_id` → `municipios.codigo_ibge`, nome, UF |
-| **Serviço / itens** | Discriminação do serviço (1..n linhas) | Nested **itens**: `numero_item`, `descricao` / `descricao_servico`, `cna_id` → `codigo_tributacao_nacional`, `quantidade`, `valor_unitario`, `valor_total_bruto` |
-| **Valores da operação** | Totais, descontos, líquido, valor intermediário | `valor_total_servicos_produtos`, `desconto_incondicionado`, `desconto_condicionado`, `valor_liquido`, `valor_recebido_intermediario`; draft itens on create feed totals via `applyItensToDocumentoBody` |
+| **Serviço / itens** | Discriminação do serviço (1..n linhas) | Nested **itens** (cadastro na **edição**): `numero_item`, `descricao` / `descricao_servico`, `cna_id` → `codigo_tributacao_nacional`, `codigo_ncm`, `quantidade`, `valor_unitario`, `valor_desconto`, `valor_total_bruto` |
+| **Valores da operação** | Totais, descontos, líquido, valor intermediário | `valor_total_servicos_produtos`, `desconto_incondicionado`, `desconto_condicionado`, `valor_liquido`, `valor_recebido_intermediario`; ajustar totais manualmente ou somar itens após cadastro na edição |
 | **Tributação municipal (ISSQN)** | ISSQN, exigibilidade, retenção, benefícios, BC/alíquota/valor | Form section *Tributação Municipal*: `trib_issqn`, `reg_esp_trib_issqn`, flags `issqn_*`, `issqn_aliquota`, `issqn_base_calculo`, `issqn_valor` |
 | **Tributação federal** | PIS/COFINS/CSLL, retenções federais | Form section *Tributação Federal*: `cst_pis_cofins`, `tp_ret_pis_cofins_csll`, `valor_irrf`, `valor_contrib_sociais_retidas`, `valor_contrib_previdenciaria_retida` |
 | **Informações complementares** | Campos adicionais / B2B / RT | `numero_doc_responsabilidade_tecnica`, `documento_referencia`, `informacoes_complementares`, `numero_pedido_ordem_b2b` |
@@ -693,7 +694,7 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 | Certificado enum | `frontend/src/lib/certificadoTipo.ts`, `backend/app/services/certificado_tipo.rs` |
 | Certificado upload | `backend/app/controllers/api/certificados_controller.rs`, `backend/app/services/certificado_arquivo.rs`, `nfse/assinatura.rs` (`Pkcs12`); nested fields in `definitions.ts` |
 | Unsaved + Salvar | `UnsavedConfirmDialog.tsx`, `useRegisterUnsavedSave`, `ResourceEditPage.tsx` |
-| Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
+| Documento | `documentoParteLocalidade.ts`, `DocumentoShowView.tsx`, `DocumentoItensShowPanel.tsx`, `DocumentoListTable.tsx`, `ResourceEditPage.tsx` (itens nested) |
 | Prestador show | `PrestadorShowView.tsx`, `ResourceShowPage.tsx`, `definitions.ts` `prestadores.nested`, `NestedResourcePanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController`; wire → **`app/connectors/cnc/`**; orchestration → `services/cnc/consulta.rs` |
 | External connectors | **`backend/app/connectors/`** (`cnc/`, `sefin/`, `adn/`, `mtls.rs`); `settings.cnc` / `settings.sefin` / `settings.adn`, `CNC_BASE_URL`, `SEFIN_BASE_URL`, `ADN_BASE_URL` |
@@ -709,4 +710,4 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Outbound CNC + SEFIN emissão HTTP** in **`app/connectors/`**. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; documento itens só na **edição** + show read-only completo; item tributos; certificado `tipo` enum; tributação sections; pagination; Sonner; unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Outbound CNC + SEFIN + ADN parametrizacao** in **`app/connectors/`**. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** Doido **0.0.32-test2**.*

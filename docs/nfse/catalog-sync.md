@@ -13,7 +13,7 @@ Carga automática da **lista nacional de CNA**, **regras de incidência** (`MUN.
 |-----|--------|
 | `sync_nfse_catalog_daily` | Anexo A (municípios IBGE) → incidência/lista nacional → enfileira coordenador → **reagenda** em +24h (hora `settings.nfse_catalog.daily_hour`, UTC−3). |
 | `sync_municipio_cna_coordinator` | Lista todos os `municipios.codigo_ibge`, divide em lotes e enfileira jobs filhos. |
-| `sync_municipio_cna_lote` | Para cada IBGE do lote: `GET {ADN}/parametros_municipais/{ibge}/aliquotas` e replace em `municipio_cna_parametrizacao`. |
+| `sync_municipio_cna_lote` | Para cada IBGE do lote: para cada CNA nacional (`cnas`), `GET {ADN}/parametrizacao/{ibge}/{codigoServico}` (ex. `01.01.01.000`) e replace em `municipio_cna_parametrizacao`. |
 
 ## Variáveis de ambiente
 
@@ -35,7 +35,7 @@ Carga automática da **lista nacional de CNA**, **regras de incidência** (`MUN.
 
 ## Tempo estimado
 
-~5,5 mil municípios × 1 chamada ADN/dia; com `batch_size=50` e `sleep_ms=100`, planeje **horas** de worker na fila `catalog` (ajuste `sleep_ms` / concorrência conforme limites ADN).
+~5,5 mil municípios × ~337 CNAs × 1 chamada ADN (com `sleep_ms` entre serviços); com `batch_size=50`, planeje **dias** de worker na fila `catalog` na primeira carga (ajuste `sleep_ms` / concorrência conforme limites ADN). Em homologação, confira `ADN_BASE_URL` e documentação em `{ADN}/parametrizacao/docs/index.html`.
 
 ## Tabelas
 

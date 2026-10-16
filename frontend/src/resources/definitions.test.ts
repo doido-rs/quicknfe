@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { resources, settingsResources, sidebarResources } from './definitions'
+import {
+  documentoItemShowFields,
+  resources,
+  settingsResources,
+  sidebarResources,
+} from './definitions'
 
 describe('resources', () => {
   it('sidebar: notas e cadastros operacionais; settings: CNA e municípios', () => {
@@ -144,5 +149,12 @@ describe('resources', () => {
       : documentos?.nested
     expect(itensNested?.fields.some((f) => f.key === 'descricao_servico')).toBe(true)
     expect(itensNested?.fields.some((f) => f.key === 'descricao')).toBe(false)
+    expect(itensNested?.fields.some((f) => f.key === 'codigo_ncm')).toBe(true)
+    expect(itensNested?.fields.some((f) => f.key === 'valor_desconto')).toBe(true)
+    if (itensNested) {
+      const showFields = documentoItemShowFields(itensNested)
+      expect(showFields.map((f) => f.key)).toContain('codigo_tributacao_nacional')
+      expect(showFields.map((f) => f.key)).toContain('descricao')
+    }
   })
 })
