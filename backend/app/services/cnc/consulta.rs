@@ -1,26 +1,11 @@
-use std::time::Duration;
-
-use reqwest::Client;
-
 use super::tipos::{ConsultaCadParams, RespostaConsultaCad};
+use crate::connectors::cnc;
+use crate::connectors::mtls::CredenciaisMtls;
 use crate::services::api_error::ApiError;
-use crate::services::nfse::{build_mtls_client, CredenciaisMtls};
 use crate::settings;
 
 fn apenas_digitos(s: &str) -> String {
     s.chars().filter(|c| c.is_ascii_digit()).collect()
-}
-
-fn cnc_usa_mtls(base_url: &str) -> bool {
-    let lower = base_url.to_ascii_lowercase();
-    !(lower.contains("127.0.0.1") || lower.contains("localhost"))
-}
-
-fn http_client_plain() -> Result<Client, ApiError> {
-    Client::builder()
-        .timeout(Duration::from_secs(60))
-        .build()
-        .map_err(|e| ApiError::Internal(format!("cliente HTTP CNC: {e}")))
 }
 
 pub async fn consulta_cad(
@@ -52,56 +37,19 @@ pub async fn consulta_cad(
     }
     let url = format!("{base}/cad?{query}");
 
-    let client = if cnc_usa_mtls(&base) {
-        let cred = credenciais.ok_or_else(|| {
-            ApiError::Validation(
-                "certificado digital do prestador é obrigatório para consulta CNC".into(),
-            )
-        })?;
-        build_mtls_client(&cred)?
-    } else {
-        http_client_plain()?
-    };
+    let (status, body) = cnc::get_cad(&url, &base, credenciais).await?;
 
-    let response = client
-        .get(url)
-        .header("Accept", "application/json, text/plain")
-        .send()
-        .await
-        .map_err(|e| ApiError::Internal(format!("falha na consulta CNC: {e}")))?;
-
-    let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|e| ApiError::Internal(format!("falha ao ler resposta CNC: {e}")))?;
-
-    if !status.is_success() && status.as_u16() != 404 {
+    if status != 404 && !(200..300).contains(&status) {
         return Err(ApiError::Validation(format!(
-            "CNC retornou HTTP {}: {}",
-            status.as_u16(),
+            "CNC retornou HTTP {status}: {}",
             body.chars().take(500).collect::<String>()
         )));
     }
 
     serde_json::from_str::<RespostaConsultaCad>(&body).map_err(|e| {
         ApiError::Internal(format!(
-            "resposta CNC não é JSON válido (HTTP {}): {e}; corpo: {}",
-            status.as_u16(),
+            "resposta CNC não é JSON válido (HTTP {status}): {e}; corpo: {}",
             body.chars().take(200).collect::<String>()
         ))
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn cnc_mock_nao_exige_mtls() {
-        assert!(!cnc_usa_mtls("http://127.0.0.1:8090/cnc/consulta"));
-        assert!(cnc_usa_mtls(
-            "https://adn.producaorestrita.nfse.gov.br/cnc/consulta"
-        ));
-    }
 }

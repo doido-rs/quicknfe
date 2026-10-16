@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Enforce AGENTS.md app-layer coverage on backend/app/controllers and app/services.
+"""Enforce AGENTS.md app-layer coverage on backend/app/controllers, services, and connectors.
 
-Reads llvm-cov JSON (--json --summary-only). Every *.rs file under the two trees
+Reads llvm-cov JSON (--json --summary-only). Every *.rs file under those trees
 must reach --min line coverage (default 85). Pure re-export mod.rs files (≤3
 non-blank, non-comment lines) are skipped.
 
@@ -24,6 +24,7 @@ BACKEND = REPO_ROOT / "backend"
 LAYER_DIRS = (
     BACKEND / "app" / "controllers",
     BACKEND / "app" / "services",
+    BACKEND / "app" / "connectors",
 )
 
 
@@ -57,6 +58,8 @@ def normalize_key(path: str) -> str:
         return "app/controllers/" + p.split("/app/controllers/")[-1]
     if "/app/services/" in p:
         return "app/services/" + p.split("/app/services/")[-1]
+    if "/app/connectors/" in p:
+        return "app/connectors/" + p.split("/app/connectors/")[-1]
     return p
 
 
@@ -133,7 +136,7 @@ def main() -> int:
         else default_min
     )
     print(
-        f"app/controllers + app/services: {aggregate:.1f}% lines "
+        f"app/controllers + app/services + app/connectors: {aggregate:.1f}% lines "
         f"({total_covered}/{total_lines}); target {target:.0f}% per file; "
         f"aggregate floor {aggregate_min:.1f}%"
     )

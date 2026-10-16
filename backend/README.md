@@ -85,6 +85,12 @@ To bake env into YAML at deploy time instead of render-on-boot, run
 Secrets (`config/master.key`, `config/credentials.yml.enc`) and local databases
 are git-ignored by default.
 
+## External HTTP (`app/connectors`)
+
+Outbound calls to **CNC** and **SEFIN Nacional** (mTLS, wire protocol) live under
+[`app/connectors/`](app/connectors/) (`cnc/`, `sefin/`, `mtls.rs`). Controllers and jobs call
+**services**, which validate/orchestrate and delegate HTTP to connectors — see [AGENTS.md](../AGENTS.md).
+
 ## Testing
 
 ```bash

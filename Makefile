@@ -125,7 +125,7 @@ test-coverage: test-coverage-frontend test-coverage-backend ## Coverage ≥ $(CO
 test-coverage-frontend: ## Vitest com threshold $(COVERAGE_MIN)%
 	cd $(FRONTEND_DIR) && COVERAGE_MIN=$(COVERAGE_MIN) $(BUN) run test:coverage
 
-test-coverage-backend: ## llvm-cov + gate app/controllers e app/services (≥ $(COVERAGE_MIN)%)
+test-coverage-backend: ## llvm-cov + gate app/controllers, services e connectors (≥ $(COVERAGE_MIN)%)
 	@command -v cargo-llvm-cov >/dev/null 2>&1 || { \
 		echo "Instale: cargo install cargo-llvm-cov"; exit 1; \
 	}

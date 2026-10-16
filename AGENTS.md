@@ -21,7 +21,7 @@ Outbound calls to **government and third-party HTTP APIs** are consolidating und
 
 **Purpose:** one place for **integrations with external systems** — every **outbound HTTP(S)** request (CNC, SEFIN Nacional, future APIs) lives here. In-app API handlers, jobs, and domain code stay free of ad hoc `reqwest` / URL construction.
 
-**Status:** **target architecture** (migration in progress). Today some HTTP still sits under `app/services/` (e.g. `services/cnc/consulta.rs`, `services/nfse/cliente.rs`, transmission HTTP inside `services/nfse/transmissao.rs`). **New code** must use `app/connectors/`; when changing existing integration paths, **move HTTP into a connector** in the same PR or a focused follow-up.
+**Status:** **implemented** for CNC consulta and SEFIN emissão (`POST /nfse`). Wire clients live in [`backend/app/connectors/`](backend/app/connectors/) (`cnc/`, `sefin/`, shared `mtls.rs`); [`services/cnc/consulta.rs`](backend/app/services/cnc/consulta.rs) and [`services/nfse/cliente.rs`](backend/app/services/nfse/cliente.rs) orchestrate validation, URL/payload prep, and response mapping only. **Remaining exception:** outbound HTTP in [`services/nfse_anexo_a_import.rs`](backend/app/services/nfse_anexo_a_import.rs) (catalog import) — move to a connector when that path is next touched. **New** CNC/SEFIN HTTP must go through `app/connectors/`.
 
 ### Layering rules
 
@@ -66,7 +66,7 @@ Connectors may depend on **`app/settings`**, certificate bytes/identity passed i
 | `app/services/nfse/cliente.rs` | `app/connectors/sefin/` (or split client vs domain response types) |
 | HTTP inside `app/services/nfse/transmissao.rs` | `app/connectors/sefin/` emit/consulta calls; service keeps orchestration + DB + logs |
 
-Wire the new module from `src/main.rs` (same `#[path = "../app/connectors/mod.rs"]` pattern as other `app/` trees) when the directory is created.
+Wired from [`backend/src/main.rs`](backend/src/main.rs) (`#[path = "../app/connectors/mod.rs"]`); integration tests include the same module before `app/services/`.
 
 ---
 
@@ -303,7 +303,7 @@ User-facing flows below are unchanged; **backend wire calls** should go through 
 
 1. Tenant + prestador scope (`empresa_id` query or active prestador).
 2. **mTLS credentials**: latest certificado for prestador (or `certificado_id`), unless CNC base URL is localhost/127.0.0.1 (mock — no cert).
-3. **Connector** (`app/connectors/cnc/` — target) calls CNC over HTTP/mTLS; service maps to public DTO (`resposta_publica`). Until migration, `services/cnc/consulta.rs` still performs the HTTP call.
+3. **Connector** [`app/connectors/cnc/`](backend/app/connectors/cnc/mod.rs) performs the HTTP/mTLS `GET`; service maps JSON to public DTO (`resposta_publica`).
 
 **Field mapping** (`CncLookupDef`):
 
@@ -358,7 +358,7 @@ User-facing flows below are unchanged; **backend wire calls** should go through 
 | Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
 | Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | **202** — enfileira `transmitir_documento_nfse` (mTLS, optional `certificado_id`, logs) |
 
-Core logic lives in `backend/app/services/nfse/` (`assinatura.rs`, `transmissao.rs`, `documento_processamento.rs`, ambiente URLs, resposta parsing, logs). **Outbound SEFIN HTTP** belongs in `app/connectors/sefin/` (target); keep new `reqwest` usage out of services/controllers. **Do not** add retry/scheduling logic in controllers — use jobs and `documento_enqueue.rs`.
+Core logic lives in `backend/app/services/nfse/` (`assinatura.rs`, `transmissao.rs`, `documento_processamento.rs`, ambiente URLs, resposta parsing, logs). **Outbound SEFIN emissão HTTP** is in [`app/connectors/sefin/`](backend/app/connectors/sefin/mod.rs); keep new `reqwest` usage out of services/controllers/jobs for CNC/SEFIN. **Do not** add retry/scheduling logic in controllers — use jobs and `documento_enqueue.rs`.
 
 ### Async assinatura e transmissão
 
@@ -690,14 +690,14 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 | Date format | `frontend/src/lib/dateFormat.ts`, `frontend/src/theme/DateFormatContext.tsx`, `SettingsPage.tsx` → Preferências; `users.date_format`, `session_controller` `update_me` |
 | Item tributos UI | `ItemTributosPanel.tsx`, `NestedResourcePanel` + `definitions.ts` `itemTributos` |
 | Certificado enum | `frontend/src/lib/certificadoTipo.ts`, `backend/app/services/certificado_tipo.rs` |
-| Certificado upload (target) | `backend/app/controllers/api/certificados_controller.rs`, `backend/app/services/certificado_arquivo.rs`, `nfse/assinatura.rs` (`Pkcs12`); nested fields in `definitions.ts` |
+| Certificado upload | `backend/app/controllers/api/certificados_controller.rs`, `backend/app/services/certificado_arquivo.rs`, `nfse/assinatura.rs` (`Pkcs12`); nested fields in `definitions.ts` |
 | Unsaved + Salvar | `UnsavedConfirmDialog.tsx`, `useRegisterUnsavedSave`, `ResourceEditPage.tsx` |
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | Prestador show | `PrestadorShowView.tsx`, `ResourceShowPage.tsx`, `definitions.ts` `prestadores.nested`, `NestedResourcePanel.tsx` |
-| CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController`; wire client → **`app/connectors/cnc/`** (target; today `services/cnc/consulta.rs`) |
-| External connectors | **`backend/app/connectors/`** (`cnc/`, `sefin/` — target); `settings.cnc` / `settings.sefin`, `CNC_BASE_URL`, `SEFIN_BASE_URL` |
+| CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController`; wire → **`app/connectors/cnc/`**; orchestration → `services/cnc/consulta.rs` |
+| External connectors | **`backend/app/connectors/`** (`cnc/`, `sefin/`, `mtls.rs`); `settings.cnc` / `settings.sefin`, `CNC_BASE_URL`, `SEFIN_BASE_URL` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
-| NFSe sign/transmit + enqueue | `documento_enqueue.rs`, `nfse/documento_processamento.rs`, `nfse/assinatura.rs`, `nfse/transmissao.rs` (orchestration; SEFIN HTTP → **`app/connectors/sefin/`**), `app/jobs/assinar_documento.rs`, `app/jobs/transmitir_documento.rs`, `config/*yml` `jobs.queues` |
+| NFSe sign/transmit + enqueue | `documento_enqueue.rs`, `nfse/documento_processamento.rs`, `nfse/assinatura.rs`, `nfse/transmissao.rs`, `nfse/cliente.rs` (facade); SEFIN wire → **`app/connectors/sefin/`**; `app/jobs/assinar_documento.rs`, `app/jobs/transmitir_documento.rs`, `config/*yml` `jobs.queues` |
 | Documento actions UI | `DocumentoAssinarButton.tsx`, `DocumentoTransmitirButton.tsx`, `DocumentoCertificadoSelect.tsx`, `useDocumentoProcessamentoPoll.ts`, `components/ui/tabs.tsx`, `api/documentos.ts`, `api/lotes.ts`, `LoteTransmitirButton.tsx` |
 | DPS layout spec | `layout_dps_leaiute.csv`, `layout_dps.csv` (repo root); `nfse/dps.rs` (XML builder), `nfse/dps_layout.rs`, `nfse/dps_rn.rs`, `nfse/rn_validacao.rs`, `nfse/assinatura.rs` |
 | SEFIN/CNC config | `backend/config/development.yml`, `production.yml`, env `SEFIN_BASE_URL`, `CNC_BASE_URL` |
@@ -707,4 +707,4 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** **Target:** outbound HTTP → **`app/connectors/`** (migration from `services/cnc`, `services/nfse/cliente`, transmission HTTP). Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Outbound CNC + SEFIN emissão HTTP** in **`app/connectors/`**. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** Doido **0.0.32-test2**.*

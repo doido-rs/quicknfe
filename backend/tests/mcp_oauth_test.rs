@@ -11,6 +11,9 @@ mod models;
 #[path = "../app/settings/mod.rs"]
 mod settings;
 
+#[path = "../app/connectors/mod.rs"]
+mod connectors;
+
 #[path = "../app/services/mod.rs"]
 mod services;
 #[path = "../app/jobs/mod.rs"]

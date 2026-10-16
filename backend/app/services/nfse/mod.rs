@@ -23,7 +23,7 @@ pub use dps::{montar_dps_xml, montar_dps_xml_context};
 pub use dps_context::{load_dps_context, DpsContext};
 pub use rn_validacao::validar_dps_contexto;
 
-pub use cliente::{build_mtls_client, CredenciaisMtls};
+pub use crate::connectors::mtls::{build_mtls_client, CredenciaisMtls};
 pub use resposta::MensagemProcessamento;
 pub use documento_processamento::{
     assinar_documento_nfse, certificado_para_assinatura, documento_status,
