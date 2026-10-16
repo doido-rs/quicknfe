@@ -10,8 +10,11 @@ use openssl::sign::Signer;
 use openssl::x509::X509;
 use sha2::{Digest, Sha256};
 
+use super::dps::DPS_XML_NS;
 use crate::services::api_error::ApiError;
 use crate::services::openssl_legacy::ensure_legacy_providers_for_pkcs12;
+
+const DPS_XML_NS_LEGACY: &str = "http://www.gov.br/nfse";
 
 /// Assina a DPS com certificado A1 PFX (XML-DSig enveloped sobre `infDPS`).
 pub fn assinar_dps_xml_rascunho(
@@ -19,9 +22,7 @@ pub fn assinar_dps_xml_rascunho(
     caminho_pfx: Option<&str>,
     senha_pfx: Option<&str>,
 ) -> Result<String, ApiError> {
-    if xml_rascunho.contains("<Signature") || xml_rascunho.contains(":Signature") {
-        return Ok(xml_rascunho.to_string());
-    }
+    let xml_rascunho = preparar_xml_para_assinatura(xml_rascunho);
 
     let caminho = caminho_pfx.filter(|s| !s.trim().is_empty()).ok_or_else(|| {
         ApiError::Validation(
@@ -42,7 +43,31 @@ pub fn assinar_dps_xml_rascunho(
         .cert
         .ok_or_else(|| ApiError::Validation("PFX sem certificado".into()))?;
 
-    assinar_com_chave(xml_rascunho, &pkey, &cert)
+    assinar_com_chave(&xml_rascunho, &pkey, &cert)
+}
+
+/// Remove assinatura anterior e corrige namespace legado antes de assinar de novo.
+fn preparar_xml_para_assinatura(xml: &str) -> String {
+    let mut out = remover_blocos_signature(xml);
+    if out.contains(DPS_XML_NS_LEGACY) {
+        out = out.replace(DPS_XML_NS_LEGACY, DPS_XML_NS);
+    }
+    out
+}
+
+fn remover_blocos_signature(xml: &str) -> String {
+    let mut out = xml.to_string();
+    loop {
+        let Some(start) = out.find("<Signature") else {
+            break;
+        };
+        let Some(rel_end) = out[start..].find("</Signature>") else {
+            break;
+        };
+        let end = start + rel_end + "</Signature>".len();
+        out.replace_range(start..end, "");
+    }
+    out
 }
 
 fn assinar_com_chave(xml: &str, pkey: &PKey<openssl::pkey::Private>, cert: &X509) -> Result<String, ApiError> {
@@ -145,9 +170,25 @@ mod tests {
     }
 
     #[test]
+    fn re_assina_substituindo_signature_e_namespace_legado() {
+        let pfx = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-sign.pfx");
+        let xml = r#"<?xml version="1.0"?><DPS xmlns="http://www.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignatureValue>old</SignatureValue></Signature></DPS>"#;
+        let out = assinar_dps_xml_rascunho(
+            xml,
+            Some(pfx.to_str().unwrap()),
+            Some("test123"),
+        )
+        .unwrap();
+        assert!(out.contains(DPS_XML_NS));
+        assert!(!out.contains(DPS_XML_NS_LEGACY));
+        assert!(out.contains("<SignatureValue>"));
+        assert!(!out.contains(">old<"));
+    }
+
+    #[test]
     fn assina_com_pfx_fixture() {
         let pfx = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-sign.pfx");
-        let xml = r#"<?xml version="1.0"?><DPS xmlns="http://www.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
+        let xml = r#"<?xml version="1.0"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
         let out = assinar_dps_xml_rascunho(
             xml,
             Some(pfx.to_str().unwrap()),

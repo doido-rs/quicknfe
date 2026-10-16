@@ -38,7 +38,7 @@ mod tests {
 
     #[test]
     fn roundtrip_gzip_base64() {
-        let original = r#"<?xml version="1.0"?><DPS xmlns="http://www.gov.br/nfse"><infDPS Id="x"/></DPS>"#;
+        let original = r#"<?xml version="1.0"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse"><infDPS Id="x"/></DPS>"#;
         let b64 = xml_para_dps_gzip_b64(original).unwrap();
         let back = gzip_b64_para_xml(&b64).unwrap();
         assert_eq!(back, original);

@@ -28,7 +28,7 @@ pub fn gerar_chave_acesso_mock() -> String {
 pub fn montar_nfse_xml(chave: &str, id_dps: &str) -> String {
     format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
-<NFSe xmlns="http://www.gov.br/nfse">
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse">
   <infNFSe Id="NFSe{id_dps}">
     <chaveAcesso>{chave}</chaveAcesso>
     <descricao>NFS-e emitida pelo sefin-mock (desenvolvimento local)</descricao>

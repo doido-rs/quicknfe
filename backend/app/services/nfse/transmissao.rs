@@ -136,14 +136,19 @@ async fn persistir_resultado(
         .map_err(|e| ApiError::Internal(e.to_string()))?;
     *documento = updated;
 
+    let data_registro = resultado
+        .data_hora_processamento
+        .unwrap_or_else(Utc::now);
+
     for erro in &resultado.erros {
+        let (codigo_erro, mensagem_retorno, correcao_sugerida) = erro.campos_log();
         LogActive {
             documento_fiscal_id: Set(Some(documento.id)),
             lote_id: Set(documento.lote_id),
-            codigo_erro: Set(erro.codigo.clone().unwrap_or_else(|| "SEFIN".into())),
-            mensagem_retorno: Set(erro.resumo()),
-            correcao_sugerida: Set(erro.complemento.clone()),
-            data_registro: Set(Utc::now()),
+            codigo_erro: Set(codigo_erro),
+            mensagem_retorno: Set(mensagem_retorno),
+            correcao_sugerida: Set(correcao_sugerida),
+            data_registro: Set(data_registro),
             ..Default::default()
         }
         .insert(db)
@@ -152,13 +157,18 @@ async fn persistir_resultado(
     }
 
     for alerta in &resultado.alertas {
+        let (codigo_erro, mensagem_retorno, correcao_sugerida) = alerta.campos_log();
         LogActive {
             documento_fiscal_id: Set(Some(documento.id)),
             lote_id: Set(documento.lote_id),
-            codigo_erro: Set(alerta.codigo.clone().unwrap_or_else(|| "ALERTA".into())),
-            mensagem_retorno: Set(alerta.resumo()),
-            correcao_sugerida: Set(alerta.complemento.clone()),
-            data_registro: Set(Utc::now()),
+            codigo_erro: Set(if codigo_erro == "SEFIN" {
+                "ALERTA".into()
+            } else {
+                codigo_erro
+            }),
+            mensagem_retorno: Set(mensagem_retorno),
+            correcao_sugerida: Set(correcao_sugerida),
+            data_registro: Set(data_registro),
             ..Default::default()
         }
         .insert(db)

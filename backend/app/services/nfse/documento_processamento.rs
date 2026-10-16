@@ -79,15 +79,8 @@ pub async fn assinar_documento_nfse(
 ) -> Result<Documento, ApiError> {
     let dps_ctx = load_dps_context(db, doc.clone()).await?;
     validar_dps_contexto(&dps_ctx)?;
-    let base_xml = if doc
-        .xml_assinado
-        .as_ref()
-        .is_some_and(|x| !x.trim().is_empty())
-    {
-        doc.xml_assinado.clone().unwrap()
-    } else {
-        montar_dps_xml_context(&dps_ctx)?
-    };
+    // Sempre remonta a DPS a partir dos dados atuais (leiaute/namespace); não reutiliza xml_assinado.
+    let base_xml = montar_dps_xml_context(&dps_ctx)?;
     let cert = certificado_para_assinatura(db, doc.empresa_id, certificado_id).await?;
     let caminho = cert
         .caminho_arquivo

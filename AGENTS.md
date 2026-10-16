@@ -477,7 +477,7 @@ When implementing or reviewing DPS mapping:
 4. For **CNA / serviço / LI / grupos específicos**, use RN rows referencing `cTribNac`, `MUN.INCID_INFO.SERV.`, etc., plus app **itens** (`cna_id`, `descricao_servico`) and the **CNA** catalog.
 5. For **tomador/intermediário exterior** and export ISSQN, use RN/export rows with `tomador_localidade` / `intermediario_localidade` and tributação ISSQN form fields.
 6. For each leiaute row, record **QuickNFe data source** (DB column, relation, item field, or computed).
-7. Cross-check **namespace and root element**: today `montar_dps_xml` uses root **`DPS`**, namespace **`http://www.gov.br/nfse`**, wrapper **`infDPS`** with `Id` (see `backend/app/services/nfse/dps.rs`). National paths in CSV often prefix `NFSe/infNFSe/DPS/…` — keep reconciliation documented.
+7. Cross-check **namespace and root element**: today `montar_dps_xml` uses root **`DPS`**, namespace **`http://www.sped.fazenda.gov.br/nfse`**, wrapper **`infDPS`** with `Id` (see `backend/app/services/nfse/dps.rs`). National paths in CSV often prefix `NFSe/infNFSe/DPS/…` — keep reconciliation documented.
 8. Extend **`montar_dps_xml`** to emit **all mandatory leiaute nodes**, loading prestador, tomador/intermediário, municípios IBGE, itens + CNA as required.
 
 **Backend loaders:** `dps_layout.rs` and `dps_rn.rs` read **`layout_dps_leaiute.csv`** / **`layout_dps.csv`** (regenerate via [`scripts/export_layout_dps_csv.py`](scripts/export_layout_dps_csv.py) — see [`docs/nfse/layout-dps-csv.md`](docs/nfse/layout-dps-csv.md)). Presença mapeada: [`docs/nfse/dps-presenca-mapped.md`](docs/nfse/dps-presenca-mapped.md).

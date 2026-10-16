@@ -9,6 +9,8 @@ use crate::services::api_error::ApiError;
 
 const VER_APLIC: &str = "QuickNFe/0.1";
 const DPS_VERSAO: &str = "1.01";
+/// Namespace oficial do leiaute DPS/NFS-e Nacional (validação SEFIN E1235).
+pub const DPS_XML_NS: &str = "http://www.sped.fazenda.gov.br/nfse";
 
 /// XML da DPS sem assinatura (rascunho). Prefer [`montar_dps_xml_context`] quando relações estão carregadas.
 pub fn montar_dps_xml(doc: &Documento) -> String {
@@ -19,7 +21,7 @@ pub fn montar_dps_xml(doc: &Documento) -> String {
         .unwrap_or_else(|| doc.data_emissao.format("%Y-%m-%d").to_string());
     format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
-<DPS xmlns="http://www.gov.br/nfse" versao="{DPS_VERSAO}">
+<DPS xmlns="{DPS_XML_NS}" versao="{DPS_VERSAO}">
   <infDPS Id="{id}">
     <tpAmb>{ambiente}</tpAmb>
     <dhEmi>{emissao}</dhEmi>
@@ -52,7 +54,7 @@ pub fn montar_dps_xml_context(ctx: &DpsContext) -> Result<String, ApiError> {
     xml.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
     xml.push('\n');
     xml.push_str(&format!(
-        r#"<DPS xmlns="http://www.gov.br/nfse" versao="{DPS_VERSAO}">"#
+        r#"<DPS xmlns="{DPS_XML_NS}" versao="{DPS_VERSAO}">"#
     ));
     xml.push('\n');
     xml.push_str(&format!(r#"  <infDPS Id="{id}">"#));
@@ -621,6 +623,8 @@ mod tests {
     #[test]
     fn montar_xml_minimo_contem_inf_dps() {
         let xml = montar_dps_xml(&sample_doc());
+        assert!(xml.contains(&format!(r#"xmlns="{DPS_XML_NS}""#)));
+        assert!(!xml.contains("http://www.gov.br/nfse"));
         assert!(xml.contains("<infDPS Id="));
         assert!(xml.contains("<tpAmb>2</tpAmb>"));
     }
@@ -654,7 +658,7 @@ mod tests {
     #[test]
     fn assinar_insere_signature() {
         let pfx = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-sign.pfx");
-        let raw = r#"<?xml version="1.0"?><DPS xmlns="http://www.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
+        let raw = r#"<?xml version="1.0"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse"><infDPS Id="DPS1"><tpAmb>2</tpAmb></infDPS></DPS>"#;
         let signed = super::super::assinatura::assinar_dps_xml_rascunho(
             raw,
             Some(pfx.to_str().unwrap()),
