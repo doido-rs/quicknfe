@@ -5,8 +5,10 @@ import { DocumentoTransmitirButton } from '@/components/resources/DocumentoTrans
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { documentoTerminalError } from '@/lib/documentoProcessamento'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { flattenDocumentoRowToForm } from '@/lib/documentoParteLocalidade'
 import { documentoStatusLabel } from '@/lib/documentoListFormat'
@@ -38,6 +40,10 @@ export function DocumentoShowView({
   const itensNested = nesteds.find((n) => n.path(recordId).includes('/itens'))
   const logsNested = nesteds.find((n) => n.path(recordId).includes('/logs-retorno'))
 
+  const processamentoMsg =
+    typeof row.processamento_mensagem === 'string' ? row.processamento_mensagem.trim() : ''
+  const showProcessamentoMsg = processamentoMsg.length > 0
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -64,6 +70,15 @@ export function DocumentoShowView({
           </Button>
         </div>
       </div>
+
+      {showProcessamentoMsg ? (
+        <Alert variant={documentoTerminalError(row.status) ? 'destructive' : 'default'}>
+          <AlertTitle>
+            {documentoTerminalError(row.status) ? 'Erro no processamento' : 'Processamento'}
+          </AlertTitle>
+          <AlertDescription>{processamentoMsg}</AlertDescription>
+        </Alert>
+      ) : null}
 
       <Tabs defaultValue="dados">
         <TabsList aria-label="Seções da nota fiscal">

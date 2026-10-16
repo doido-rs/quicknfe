@@ -5,6 +5,7 @@ import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
 import { DocumentoShowView } from '@/components/resources/DocumentoShowView'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
+import { LoteTransmitirButton } from '@/components/resources/LoteTransmitirButton'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -95,6 +96,7 @@ export function ResourceShowPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-start justify-end gap-2">
+          {def.key === 'lotes' ? <LoteTransmitirButton loteId={recordId} /> : null}
           <Button variant="outline" asChild>
             <Link {...resourceEditTo(def, recordId)}>Editar</Link>
           </Button>

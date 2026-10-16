@@ -538,6 +538,25 @@ paths:
         '204':
           description: Deleted
 
+  /api/lotes/{id}/transmitir:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      tags: [Lotes]
+      summary: Enfileira transmissão SEFIN para todas as notas do lote
+      operationId: transmitirLote
+      security:
+        - cookieSession: []
+      responses:
+        '202':
+          description: Accepted — one enqueue result per nota fiscal no lote
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentoEnqueueDto'
+
   /api/documentos:
     get:
       tags: [Documentos]
