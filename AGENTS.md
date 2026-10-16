@@ -75,7 +75,7 @@ Forms are **not** hand-written per screen. They share:
 |----------|---------|
 | `type` | `text`, `number`, `date`, `textarea`, `relation`, `enum`, `file`, `boolean` |
 | `type: 'enum'` | Fixed set via `enumOptions` (`{ value, label }[]`); renders a **select**, not free text. Example: certificado nested `tipo` — see [Certificado digital](#2-certificado-digital-nested-under-prestador). |
-| `type: 'date'` | Calendar dates only (competência, emissão, validade certificado, `data_registro`, …). **Display and edit** must follow the user’s [date format preference](#user-preferences--date-format); wire/API values stay ISO — see that section. |
+| `type: 'date'` | Calendar dates only (competência, emissão, validade certificado, `data_registro`, …). **Display and edit** must follow the user’s [date format preference](#user-preferences--date-format); wire/API values stay ISO — see that section. **Certificado `data_validade`:** target is **read-only**, derived from the PFX — not manual entry; see [Certificado upload — senha e validade](#certificado-upload--senha-e-validade). |
 | `required` | HTML/RHF validation on relation and inputs |
 | `defaultValue` | Initial string in `emptyForm` |
 | `readOnly` | Excluded from API body; shown disabled or as text |
@@ -268,12 +268,26 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 |-------|------------|--------|
 | `tipo` | **`type: 'enum'`** + `enumOptions` | **Must be a select**, not a plain text input. Allowed values match DB check constraint: `A1`, `A3`, `PFX`, `PEM`. Default UX: preselect `A1` when creating (most uploads are A1 `.pfx`/`.p12`). |
 | `arquivo` | `type: 'file'`, `accept: '.pfx,.p12'`, `fileUploadAs` | POST body: `arquivo_base64` + `arquivo_nome` |
-| `senha` | `text` (password in UI) | Encrypted server-side |
-| `data_validade` | `type: 'date'` | User [date format](#user-preferences--date-format); API `YYYY-MM-DD` |
+| `senha` | `text` (password in UI) | Required on create; encrypted server-side after **password verification** — see [Certificado upload — senha e validade](#certificado-upload--senha-e-validade). |
+| `data_validade` | `type: 'date'` (target: **read-only**, not user-edited) | **Product rule:** loaded from the certificate’s **notAfter** (expiration) when the PFX/P12 is opened with the supplied senha — not typed manually. Display in list/show using [date format preference](#user-preferences--date-format); persist/API `YYYY-MM-DD` (or end-of-day UTC consistent with existing column). **Today:** create form still sends `data_validade` manually — migrate to server-derived only. |
 
-**API**: `/api/prestadores/{prestador_id}/certificados` CRUD — `tipo` is a string enum on the wire (one of the values above).
+**API**: `/api/prestadores/{prestador_id}/certificados` CRUD — `tipo` is a string enum on the wire (one of the values above). On **create**, the backend should accept `arquivo_*` + `senha` (+ `tipo`); **`data_validade` must not be trusted from the client** once upload validation is implemented (server sets it from the parsed cert).
 
 **Workflow**: Upload on show/edit prestador after prestador exists; CNC in **dev mock** may work without cert; **assinar DPS**, production CNC, and SEFIN require valid cert on prestador (see [Certificado para assinatura XML](#certificado-para-assinatura-xml)).
+
+#### Certificado upload — senha e validade
+
+**Status:** **not fully implemented** — `ApiCertificadosController::create` persists client-supplied `data_validade` and does not yet reject wrong senha or corrupt PFX before save. This section is the **target behavior** for agents implementing the feature.
+
+**Product rules (create / re-upload with new arquivo):**
+
+1. **Verify senha** — Before writing the file or inserting the row, decode the PKCS#12 (`.pfx`/`.p12`) with the submitted senha (same approach as `Pkcs12::parse` in `nfse/assinatura.rs`). Wrong password, invalid/corrupt container, or empty cert bag → **`ApiError::Validation`** with a clear message (e.g. senha incorreta ou arquivo inválido). Do **not** store the cert or encrypted senha when verification fails.
+2. **Derive `data_validade`** — From the leaf/signing certificate’s **notAfter** (expiration instant). Normalize to the app’s stored date (calendar date in UTC or end-of-day rule aligned with `certificados_digitais.data_validade` and expiry checks in `documento_processamento` / assinar paths). Return the derived value in `CertificadoDto` so the UI list shows the real expiry without a manual field on upload.
+3. **UI** — Remove required manual **Validade** on the nested create form; optional read-only preview after successful POST or a short hint that validade comes from the arquivo. Keep **senha** required on create; on PATCH without new arquivo, senha remains optional (only re-verify when senha or arquivo changes).
+4. **Single pipeline** — Reuse one backend helper (e.g. `certificado_arquivo` or dedicated `certificado_pfx` module) for parse + notAfter extraction; call it from certificado **create** (and update when arquivo/senha change), not only from assinar/transmitir at runtime.
+5. **Tests** — Backend tests with fixture PFX (see `backend/tests/fixtures/test-sign.pfx`): correct senha → persisted `data_validade` matches cert; wrong senha → 422; frontend test that create body omits `data_validade` when the field is removed from `definitions.ts`.
+
+**Agent checklist:** implement server validation first; then drop `data_validade` from nested create in `definitions.ts` / `buildNestedCreateBody`; adjust OpenAPI if create schema marks `data_validade` optional or server-only on response.
 
 ### 3. NFSe / DPS — XML, assinatura, download, transmissão
 
@@ -341,7 +355,7 @@ Core logic lives in `backend/app/services/nfse/` (`assinatura.rs`, `transmissao.
 |-------------|--------|
 | **When** | Every successful **`POST /api/documentos/{id}/assinar`** must produce **real XML-DSig** (enveloped signature over `infDPS`) using the prestador’s PFX private key — not an empty `<Signature/>` placeholder. |
 | **Which cert** | Latest certificado for the documento’s `empresa_id` (prestador), or explicit `certificado_id` when the API supports choosing among multiples (same pattern as transmissão). |
-| **Failure modes** | No cert on prestador, unreadable file, wrong senha, or expired cert → **4xx validation** with actionable message; UI should direct the user to upload certificado on prestador show. |
+| **Failure modes** | No cert on prestador, unreadable file, wrong senha, or expired cert → **4xx validation** with actionable message; UI should direct the user to upload certificado on prestador show. Wrong senha at **upload** should fail before persist — see [Certificado upload — senha e validade](#certificado-upload--senha-e-validade). |
 | **Dev vs prod** | Local **CNC mock** (localhost) may omit mTLS; **signing and SEFIN** still require a real cert for homologation/production paths. Do not treat “stub signature” as acceptable for flows that reach SEFIN. |
 
 Implementation: `ultimo_certificado_empresa` (or explicit `certificado_id`) + `assinar_dps_xml_rascunho` in `nfse/assinatura.rs`, invoked from `assinar_documento_nfse` in the worker.
@@ -569,6 +583,7 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 10. **DPS mandatory presence**: validate **all** leiaute-required `infDPS` fields for **presence** before assinar/transmitir; extend `validar_dps_contexto` / `dps_layout` as mapping grows—see [Mandatory XML field presence](#mandatory-xml-field-presence).
 11. **DPS signing cert**: **Assinar** must use prestador **certificado digital** (A1 PFX) for real XML-DSig; never rely on stub signatures for SEFIN-bound notas—see [Certificado para assinatura XML](#certificado-para-assinatura-xml).
 12. **Async sign/transmit**: assinar + transmitir **use doido-jobs** today; keep controllers thin (validate + enqueue only) — see [Async assinatura e transmissão](#async-assinatura-e-transmissão).
+13. **Certificado upload**: on nested create, **verify PKCS#12 senha** and set **`data_validade` from cert notAfter** — do not rely on manual validade from the client; see [Certificado upload — senha e validade](#certificado-upload--senha-e-validade).
 
 ---
 
@@ -581,6 +596,7 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 | Date format | `frontend/src/lib/dateFormat.ts`, `frontend/src/theme/DateFormatContext.tsx`, `SettingsPage.tsx` → Preferências; `users.date_format`, `session_controller` `update_me` |
 | Item tributos UI | `ItemTributosPanel.tsx`, `NestedResourcePanel` + `definitions.ts` `itemTributos` |
 | Certificado enum | `frontend/src/lib/certificadoTipo.ts`, `backend/app/services/certificado_tipo.rs` |
+| Certificado upload (target) | `backend/app/controllers/api/certificados_controller.rs`, `backend/app/services/certificado_arquivo.rs`, `nfse/assinatura.rs` (`Pkcs12`); nested fields in `definitions.ts` |
 | Unsaved + Salvar | `UnsavedConfirmDialog.tsx`, `useRegisterUnsavedSave`, `ResourceEditPage.tsx` |
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | Prestador show | `PrestadorShowView.tsx`, `ResourceShowPage.tsx`, `definitions.ts` `prestadores.nested`, `NestedResourcePanel.tsx` |
@@ -595,4 +611,4 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. **Doc target (not implemented):** certificado create verifies PFX senha and derives `data_validade` from cert expiry. Doido **0.0.32-test2**.*
