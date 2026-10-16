@@ -402,7 +402,21 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
         if doc.issqn_retencao == 1 { "2" } else { "1" },
     );
     if doc.issqn_exigibilidade_suspensa == 1 {
-        push_elem(xml, 10, "tpImunidade", "0");
+        xml.push_str("          <exigSusp>\n");
+        let tp = doc.issqn_tp_suspensao.trim();
+        push_elem(
+            xml,
+            12,
+            "tpSusp",
+            if tp.is_empty() { "1" } else { tp },
+        );
+        let proc = doc
+            .issqn_n_processo_suspensao
+            .as_deref()
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or("0");
+        push_elem(xml, 12, "nProcesso", proc);
+        xml.push_str("          </exigSusp>\n");
     }
     if doc.issqn_beneficio_municipal == 1 {
         push_elem(xml, 10, "nBM", "0");
@@ -432,8 +446,25 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
         push_elem(xml, 10, "vRetCSLL", &decimal_xml(&v));
     }
     xml.push_str("        </tribFed>\n");
+    append_tot_trib(xml);
     xml.push_str("      </trib>\n");
     xml.push_str("    </valores>\n");
+}
+
+fn append_tot_trib(xml: &mut String) {
+    xml.push_str("        <totTrib>\n");
+    xml.push_str("          <vTotTrib>\n");
+    push_elem(xml, 12, "vTotTribFed", "0.00");
+    push_elem(xml, 12, "vTotTribEst", "0.00");
+    push_elem(xml, 12, "vTotTribMun", "0.00");
+    xml.push_str("          </vTotTrib>\n");
+    xml.push_str("          <pTotTrib>\n");
+    push_elem(xml, 12, "pTotTribFed", "0.00");
+    push_elem(xml, 12, "pTotTribEst", "0.00");
+    push_elem(xml, 12, "pTotTribMun", "0.00");
+    xml.push_str("          </pTotTrib>\n");
+    push_elem(xml, 10, "indTotTrib", "0");
+    xml.push_str("        </totTrib>\n");
 }
 
 fn pad_ibge7(code: &str) -> String {
@@ -461,7 +492,7 @@ pub mod coverage {
     /// Tags de elemento (`campo`) que o builder emite hoje (fases 3A–3H).
     pub fn emitted_tags() -> HashSet<&'static str> {
         [
-            "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "tpEmis", "cLocEmi",
+            "id", "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "tpEmis", "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
@@ -469,14 +500,33 @@ pub mod coverage {
             "vRetCP",
             "vRetIRRF", "vRetCSLL",
             "infoCompl", "cIntContrib", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
+            "vTotTribFed", "vTotTribEst", "vTotTribMun", "pTotTribFed", "pTotTribEst", "pTotTribMun",
+            "indTotTrib", "tpSusp", "nProcesso",
         ]
         .into_iter()
         .collect()
     }
 
     pub fn coverage_report(repo_root: &Path) -> Result<(usize, usize, Vec<String>), String> {
+        coverage_report_tier(repo_root, false)
+    }
+
+    pub fn coverage_report_owned(repo_root: &Path) -> Result<(usize, usize, Vec<String>), String> {
+        coverage_report_tier(repo_root, true)
+    }
+
+    fn coverage_report_tier(
+        repo_root: &Path,
+        owned_only: bool,
+    ) -> Result<(usize, usize, Vec<String>), String> {
+        use super::super::dps_layout::{mandatory_infdps_fields, mandatory_infdps_fields_owned};
+
         let rows = load_infdps_leiaute(repo_root)?;
-        let mandatory = mandatory_infdps_fields(&rows);
+        let mandatory: Vec<_> = if owned_only {
+            mandatory_infdps_fields_owned(&rows)
+        } else {
+            mandatory_infdps_fields(&rows)
+        };
         let emitted = emitted_tags();
         let missing: Vec<String> = mandatory
             .iter()
@@ -546,6 +596,8 @@ mod tests {
             trib_issqn: "1".into(),
             reg_esp_trib_issqn: "0".into(),
             issqn_exigibilidade_suspensa: 0,
+            issqn_tp_suspensao: "1".into(),
+            issqn_n_processo_suspensao: None,
             issqn_retencao: 0,
             issqn_beneficio_municipal: 0,
             issqn_deducao_reducao_bc: 0,
@@ -582,12 +634,19 @@ mod tests {
             total > hit,
             "cobertura completa inesperada neste teste: {hit}/{total}"
         );
-        // Baseline documentado (Phase 4): aumentar `min_ratio` conforme o builder evolui.
-        let min_ratio = 0.35_f64;
+        let (owned_hit, owned_total, owned_missing) =
+            coverage::coverage_report_owned(&root).expect("layout owned");
+        let min_ratio = 0.60_f64;
+        let owned_ratio = owned_hit as f64 / owned_total as f64;
+        assert!(
+            owned_ratio >= min_ratio,
+            "cobertura Tier A {owned_hit}/{owned_total} ({owned_ratio:.1}%) abaixo do mínimo {min_ratio:.0}% — faltam: {}",
+            owned_missing.len()
+        );
         let ratio = hit as f64 / total as f64;
         assert!(
-            ratio >= min_ratio,
-            "cobertura {hit}/{total} ({ratio:.1}%) abaixo do mínimo {min_ratio:.0}% — faltam: {}",
+            ratio >= 0.35_f64,
+            "cobertura total {hit}/{total} ({ratio:.1}%) — faltam: {}",
             missing.len()
         );
     }
@@ -695,7 +754,14 @@ mod tests {
             }],
         };
         let xml = montar_dps_xml_context(&ctx).expect("xml");
-        for tag in ["<tpEmis>", "<cTribNac>", "<xDescServ>", "<tribISSQN>"] {
+        for tag in [
+            "<tpEmis>",
+            "<cTribNac>",
+            "<xDescServ>",
+            "<tribISSQN>",
+            "<totTrib>",
+            "<vTotTribFed>",
+        ] {
             assert!(xml.contains(tag), "missing {tag}");
         }
     }

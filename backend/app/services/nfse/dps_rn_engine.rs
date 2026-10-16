@@ -3,7 +3,8 @@
 use doido::model::sea_orm::prelude::Decimal;
 
 use super::dps_context::DpsContext;
-use super::dps_rn::{load_rn_dps_rows, RnRow};
+use super::dps_context::only_digits;
+use super::dps_rn::{load_rn_dps_rows, load_rn_recepcao_rows, RnRow};
 use super::endereco_brasil;
 use crate::services::api_error::ApiError;
 use crate::services::nfse::ambiente::AmbienteNfse;
@@ -20,8 +21,14 @@ fn is_obrig_rej(row: &RnRow) -> bool {
 pub fn validar_rn_csv_incremental(ctx: &DpsContext) -> Result<(), ApiError> {
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
     let rows = load_rn_dps_rows(&root).map_err(|e| ApiError::Internal(format!("RN CSV: {e}")))?;
+    let recepcao =
+        load_rn_recepcao_rows(&root).map_err(|e| ApiError::Internal(format!("RN recepção: {e}")))?;
 
-    for row in rows.iter().filter(|r| is_obrig_rej(r)) {
+    for row in rows
+        .iter()
+        .chain(recepcao.iter())
+        .filter(|r| is_obrig_rej(r))
+    {
         aplicar_regra_conhecida(ctx, row)?;
     }
     Ok(())
@@ -64,6 +71,39 @@ fn aplicar_regra_conhecida(ctx: &DpsContext, row: &RnRow) -> Result<(), ApiError
                 ctx.prestador.numero.as_deref(),
                 ctx.prestador.bairro.as_deref(),
             )?;
+        }
+        "tribISSQN" if is_obrig_rej(row) => {
+            if ctx.doc.trib_issqn.trim().is_empty() {
+                return Err(ApiError::Validation(
+                    "RN: tribISSQN é obrigatório".into(),
+                ));
+            }
+        }
+        "tpRetISSQN" if is_obrig_rej(row) => {}
+        "CST" if is_obrig_rej(row) => {
+            if ctx.doc.cst_pis_cofins.trim().is_empty() {
+                return Err(ApiError::Validation("RN: CST PIS/COFINS é obrigatório".into()));
+            }
+        }
+        "tpRetPisCofins" if is_obrig_rej(row) => {
+            if ctx.doc.tp_ret_pis_cofins_csll.trim().is_empty() {
+                return Err(ApiError::Validation(
+                    "RN: tpRetPisCofins é obrigatório".into(),
+                ));
+            }
+        }
+        "CNPJ" if row.cod_erro == "E0202" || row.descricao.contains("tomador") => {
+            if ctx.doc.tomador_localidade == "brasil" {
+                if let Some(t) = &ctx.tomador {
+                    let prest = only_digits(&ctx.prestador.cpf_cnpj);
+                    let toma = only_digits(&t.cpf_cnpj);
+                    if prest.len() == 14 && prest == toma {
+                        return Err(ApiError::Validation(
+                            "RN: prestador não pode ser igual ao tomador (E0202)".into(),
+                        ));
+                    }
+                }
+            }
         }
         _ => {}
     }

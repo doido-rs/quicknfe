@@ -67,6 +67,30 @@ pub fn mandatory_infdps_fields(rows: &[LayoutFieldRow]) -> Vec<&LayoutFieldRow> 
         .collect()
 }
 
+/// Cenários ainda sem modelo de dados/UI (Tier B — ver `docs/nfse/dps-presenca-mapped.md`).
+const TIER_B_PATH_MARKERS: &[&str] = &[
+    "infDPS/subst",
+    "serv/comExt",
+    "serv/atvEvento",
+    "vDedRed",
+    "exigSusp",
+    "IBSCBS",
+];
+
+pub fn is_tier_a_owned(row: &LayoutFieldRow) -> bool {
+    !TIER_B_PATH_MARKERS
+        .iter()
+        .any(|marker| row.xml_path.contains(marker))
+}
+
+/// Campos obrigatórios do leiaute que o QuickNFe cobre no fluxo SEFIN-first atual (Tier A).
+pub fn mandatory_infdps_fields_owned(rows: &[LayoutFieldRow]) -> Vec<&LayoutFieldRow> {
+    mandatory_infdps_fields(rows)
+        .into_iter()
+        .filter(|r| is_tier_a_owned(r))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,6 +106,20 @@ mod tests {
         assert!(rows.len() > 50, "esperado dezenas de campos infDPS");
         assert!(rows.iter().any(|r| r.campo == "tpAmb"));
         assert!(rows.iter().any(|r| r.campo == "nDPS"));
+    }
+
+    #[test]
+    fn tier_a_exclui_subst_e_ibscbs() {
+        let rows = load_infdps_leiaute(&repo_root()).unwrap();
+        let owned = mandatory_infdps_fields_owned(&rows);
+        assert!(
+            !owned.iter().any(|r| r.campo == "chSubstda"),
+            "subst deve ser Tier B"
+        );
+        assert!(
+            !owned.iter().any(|r| r.xml_path.contains("IBSCBS")),
+            "IBSCBS deve ser Tier B"
+        );
     }
 
     #[test]

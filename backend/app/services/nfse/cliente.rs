@@ -8,6 +8,7 @@ use super::ambiente::AmbienteNfse;
 use super::compactacao::xml_para_dps_gzip_b64;
 use super::resposta::{interpretar_resposta_http, ResultadoTransmissao};
 use crate::services::api_error::ApiError;
+use crate::services::openssl_legacy::ensure_legacy_providers_for_pkcs12;
 
 #[derive(Serialize)]
 struct NfsePostRequest<'a> {
@@ -21,6 +22,7 @@ pub struct CredenciaisMtls {
 }
 
 pub fn build_mtls_client(credenciais: &CredenciaisMtls) -> Result<Client, ApiError> {
+    ensure_legacy_providers_for_pkcs12();
     let pfx = fs::read(&credenciais.caminho_pfx).map_err(|e| {
         ApiError::Validation(format!(
             "não foi possível ler o certificado em {}: {e}",

@@ -132,6 +132,10 @@ export interface NestedDef {
   prepareCreateBody?: (body: Record<string, unknown>) => Record<string, unknown>
   /** Tributos por linha de item (ex.: itens da nota). */
   itemTributos?: ItemTributosDef
+  /** Texto auxiliar acima do formulário de criação (ex.: validade derivada do PFX). */
+  createHint?: string
+  /** Colunas extras na listagem aninhada (campos não presentes no form de create). */
+  listColumns?: Pick<FieldDef, 'key' | 'label' | 'type'>[]
 }
 
 export interface ResourceDef {
@@ -325,6 +329,17 @@ export const resources: ResourceDef[] = [
         formOnly: true,
       },
       {
+        key: 'issqn_tp_suspensao',
+        label: 'Tipo de suspensão (tpSusp)',
+        defaultValue: '1',
+        formOnly: true,
+      },
+      {
+        key: 'issqn_n_processo_suspensao',
+        label: 'Número do processo (exigibilidade suspensa)',
+        formOnly: true,
+      },
+      {
         key: 'issqn_retencao',
         label: 'Há retenção do ISSQN pelo Tomador ou pelo Intermediário?',
         type: 'enum',
@@ -428,6 +443,8 @@ export const resources: ResourceDef[] = [
           'trib_issqn',
           'reg_esp_trib_issqn',
           'issqn_exigibilidade_suspensa',
+          'issqn_tp_suspensao',
+          'issqn_n_processo_suspensao',
           'issqn_retencao',
           'issqn_beneficio_municipal',
           'issqn_deducao_reducao_bc',
@@ -648,8 +665,10 @@ export const resources: ResourceDef[] = [
           required: true,
           inputType: 'password',
         },
-        { key: 'data_validade', label: 'Validade', type: 'date', required: true },
       ],
+      createHint:
+        'A validade do certificado é obtida automaticamente do arquivo (.pfx/.p12) após a verificação da senha.',
+      listColumns: [{ key: 'data_validade', label: 'Validade', type: 'date' }],
     },
   },
   {

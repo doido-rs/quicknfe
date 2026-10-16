@@ -269,7 +269,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 | `tipo` | **`type: 'enum'`** + `enumOptions` | **Must be a select**, not a plain text input. Allowed values match DB check constraint: `A1`, `A3`, `PFX`, `PEM`. Default UX: preselect `A1` when creating (most uploads are A1 `.pfx`/`.p12`). |
 | `arquivo` | `type: 'file'`, `accept: '.pfx,.p12'`, `fileUploadAs` | POST body: `arquivo_base64` + `arquivo_nome` |
 | `senha` | `text` (password in UI) | Required on create; encrypted server-side after **password verification** — see [Certificado upload — senha e validade](#certificado-upload--senha-e-validade). |
-| `data_validade` | `type: 'date'` (target: **read-only**, not user-edited) | **Product rule:** loaded from the certificate’s **notAfter** (expiration) when the PFX/P12 is opened with the supplied senha — not typed manually. Display in list/show using [date format preference](#user-preferences--date-format); persist/API `YYYY-MM-DD` (or end-of-day UTC consistent with existing column). **Today:** create form still sends `data_validade` manually — migrate to server-derived only. |
+| `data_validade` | **read-only** (list/show; not on create form) | Loaded from the certificate’s **notAfter** when the PFX is verified with the supplied senha. Display using [date format preference](#user-preferences--date-format); API returns ISO date-time on `CertificadoDto`. |
 
 **API**: `/api/prestadores/{prestador_id}/certificados` CRUD — `tipo` is a string enum on the wire (one of the values above). On **create**, the backend should accept `arquivo_*` + `senha` (+ `tipo`); **`data_validade` must not be trusted from the client** once upload validation is implemented (server sets it from the parsed cert).
 
@@ -277,7 +277,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 #### Certificado upload — senha e validade
 
-**Status:** **not fully implemented** — `ApiCertificadosController::create` persists client-supplied `data_validade` and does not yet reject wrong senha or corrupt PFX before save. This section is the **target behavior** for agents implementing the feature.
+**Status:** **implemented** — `certificado_pfx::verificar_pfx` runs before persist; `data_validade` is derived from cert `notAfter`; create/update ignore client `data_validade`; UI upload form omits manual Validade ([`certificados_controller.rs`](backend/app/controllers/api/certificados_controller.rs), [`definitions.ts`](frontend/src/resources/definitions.ts)).
 
 **Product rules (create / re-upload with new arquivo):**
 
@@ -611,4 +611,4 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. **Doc target (not implemented):** certificado create verifies PFX senha and derives `data_validade` from cert expiry. Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. Doido **0.0.32-test2**.*

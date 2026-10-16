@@ -26,6 +26,7 @@ use crate::services::tenant_scope;
 #[derive(Debug, Default, Deserialize)]
 pub struct TransmitirForm {
     pub certificado_id: Option<i64>,
+    pub run_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -73,6 +74,9 @@ pub struct DocumentoForm {
     pub reg_esp_trib_issqn: String,
     #[serde(default)]
     pub issqn_exigibilidade_suspensa: bool,
+    #[serde(default = "default_issqn_tp_suspensao")]
+    pub issqn_tp_suspensao: String,
+    pub issqn_n_processo_suspensao: Option<String>,
     #[serde(default)]
     pub issqn_retencao: bool,
     #[serde(default)]
@@ -119,6 +123,10 @@ fn default_reg_esp_trib_issqn() -> String {
 
 fn default_cst_pis_cofins() -> String {
     "00".into()
+}
+
+fn default_issqn_tp_suspensao() -> String {
+    "1".into()
 }
 
 fn default_tp_ret_pis_cofins_csll() -> String {
@@ -357,6 +365,8 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.trib_issqn = Set(form.trib_issqn.clone());
     record.reg_esp_trib_issqn = Set(form.reg_esp_trib_issqn.clone());
     record.issqn_exigibilidade_suspensa = Set(i8::from(form.issqn_exigibilidade_suspensa));
+    record.issqn_tp_suspensao = Set(form.issqn_tp_suspensao.clone());
+    record.issqn_n_processo_suspensao = Set(form.issqn_n_processo_suspensao.clone());
     record.issqn_retencao = Set(i8::from(form.issqn_retencao));
     record.issqn_beneficio_municipal = Set(i8::from(form.issqn_beneficio_municipal));
     record.issqn_deducao_reducao_bc = Set(i8::from(form.issqn_deducao_reducao_bc));
@@ -535,8 +545,26 @@ impl ApiDocumentosController {
             tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
         ));
         let enqueued = crate::api!(to_response(
-            enqueue_transmitir(ctx.db(), access.company.id, id, form.certificado_id).await,
+            enqueue_transmitir(
+                ctx.db(),
+                access.company.id,
+                id,
+                form.certificado_id,
+                form.run_at,
+            )
+            .await,
         ));
         json_with_status(202, enqueued)
+    }
+
+    /// Jobs doido enfileirados para este documento (assinatura / transmissão).
+    pub async fn jobs(mut ctx: doido::controller::Context) -> doido::controller::Response {
+        let access = crate::api!(require_tenant(ctx).await);
+        let id = crate::api!(id_param(&ctx, "id"));
+        let doc = crate::api!(scoped(
+            tenant_scope::documento_for_company(ctx.db(), access.company.id, id).await,
+        ));
+        let rows = crate::services::documento_jobs::list_jobs_for_documento(&doc);
+        ctx.json(rows)
     }
 }

@@ -55,6 +55,8 @@ pub struct Model {
     pub trib_issqn: String,
     pub reg_esp_trib_issqn: String,
     pub issqn_exigibilidade_suspensa: i8,
+    pub issqn_tp_suspensao: String,
+    pub issqn_n_processo_suspensao: Option<String>,
     pub issqn_retencao: i8,
     pub issqn_beneficio_municipal: i8,
     pub issqn_deducao_reducao_bc: i8,

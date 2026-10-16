@@ -11,6 +11,7 @@ use openssl::x509::X509;
 use sha2::{Digest, Sha256};
 
 use crate::services::api_error::ApiError;
+use crate::services::openssl_legacy::ensure_legacy_providers_for_pkcs12;
 
 /// Assina a DPS com certificado A1 PFX (XML-DSig enveloped sobre `infDPS`).
 pub fn assinar_dps_xml_rascunho(
@@ -32,6 +33,7 @@ pub fn assinar_dps_xml_rascunho(
     let pfx_bytes = fs::read(caminho).map_err(|e| {
         ApiError::Validation(format!("não foi possível ler certificado {caminho}: {e}"))
     })?;
+    ensure_legacy_providers_for_pkcs12();
     let pkcs12 = Pkcs12::from_der(&pfx_bytes)
         .and_then(|p| p.parse2(senha))
         .map_err(|e| ApiError::Validation(format!("PFX inválido ou senha incorreta: {e}")))?;

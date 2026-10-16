@@ -88,6 +88,7 @@ pub fn router() -> axum::Router {
             ApiDocumentosController::transmitir
         );
         post!("/api/documentos/{id}/assinar", ApiDocumentosController::assinar);
+        get!("/api/documentos/{id}/jobs", ApiDocumentosController::jobs);
 
         get!("/api/documentos/{doc_id}/itens", ApiItensController::index);
         post!("/api/documentos/{doc_id}/itens", ApiItensController::create);

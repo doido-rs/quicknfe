@@ -1,5 +1,6 @@
 //! Enfileira assinatura/transmissão NFSe (API → doido_jobs).
 
+use chrono::{DateTime, Utc};
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 use crate::jobs::{assinar_documento, transmitir_documento};
@@ -57,6 +58,7 @@ pub async fn enqueue_transmitir(
     company_id: i64,
     documento_id: i64,
     certificado_id: Option<i64>,
+    run_at: Option<DateTime<Utc>>,
 ) -> Result<DocumentoEnqueueResponse, ApiError> {
     let doc = tenant_scope::documento_for_company(db, company_id, documento_id).await?;
     reject_in_flight(&doc.status)?;
@@ -88,10 +90,18 @@ pub async fn enqueue_transmitir(
         company_id,
         certificado_id,
     };
-    let job_id = transmitir_documento::TransmitirDocumentoNfseJob::new(payload)
-        .enqueue(job_queue::default_job_queue().as_ref())
-        .await
-        .map_err(|e| ApiError::Internal(format!("falha ao enfileirar transmissão: {e}")))?;
+    let queue = job_queue::default_job_queue();
+    let job_id = if let Some(at) = run_at.filter(|t| *t > Utc::now()) {
+        transmitir_documento::TransmitirDocumentoNfseJob::new(payload)
+            .at(at)
+            .enqueue(queue.as_ref())
+            .await
+    } else {
+        transmitir_documento::TransmitirDocumentoNfseJob::new(payload)
+            .enqueue(queue.as_ref())
+            .await
+    }
+    .map_err(|e| ApiError::Internal(format!("falha ao enfileirar transmissão: {e}")))?;
 
     Ok(DocumentoEnqueueResponse {
         documento_id: updated.id,
@@ -121,7 +131,7 @@ pub async fn enqueue_transmitir_lote(
     }
     let mut out = Vec::with_capacity(docs.len());
     for doc in docs {
-        match enqueue_transmitir(db, company_id, doc.id, None).await {
+        match enqueue_transmitir(db, company_id, doc.id, None, None).await {
             Ok(r) => out.push(r),
             Err(e) => out.push(DocumentoEnqueueResponse {
                 documento_id: doc.id,

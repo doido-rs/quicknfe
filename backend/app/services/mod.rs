@@ -2,12 +2,15 @@
 
 pub mod api_error;
 pub mod certificado_arquivo;
+pub mod certificado_pfx;
+pub mod openssl_legacy;
 pub mod certificado_tipo;
 pub mod cna;
 pub mod cnc;
 pub mod dashboard;
 pub mod dto;
 pub mod documento_enqueue;
+pub mod documento_jobs;
 pub mod documento_presentacao;
 pub mod job_queue;
 pub mod pagination;

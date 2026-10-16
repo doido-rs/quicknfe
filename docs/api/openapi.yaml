@@ -663,6 +663,24 @@ paths:
                 type: string
                 format: binary
 
+  /api/documentos/{id}/jobs:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Documentos]
+      summary: List processing jobs for a documento
+      operationId: listDocumentoJobs
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentoJobRow'
+
   /api/documentos/{id}/transmitir:
     parameters:
       - $ref: '#/components/parameters/IdPath'
@@ -1375,7 +1393,10 @@ components:
           type: string
     CertificadoForm:
       type: object
-      required: [tipo, data_validade]
+      required: [tipo]
+      description: >
+        Create requires arquivo_base64 + senha; data_validade is derived from the PFX (ignored if sent).
+        Update may send new arquivo and/or senha to re-verify; data_validade cannot be set manually.
       properties:
         tipo:
           type: string
@@ -1395,6 +1416,7 @@ components:
         data_validade:
           type: string
           format: date-time
+          description: Ignored on create/update — server sets from certificate notAfter
     CertificadoDto:
       type: object
       properties:
@@ -1713,6 +1735,25 @@ components:
       properties:
         certificado_id:
           type: integer
+          nullable: true
+        run_at:
+          type: string
+          format: date-time
+          description: Optional deferred transmission (enqueue eligible after this instant)
+    DocumentoJobRow:
+      type: object
+      properties:
+        id:
+          type: string
+        queue:
+          type: string
+        status:
+          type: string
+        run_at:
+          type: string
+          format: date-time
+        job_class:
+          type: string
           nullable: true
     TransmitirDocumentoResponse:
       type: object

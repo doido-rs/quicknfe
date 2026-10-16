@@ -1,13 +1,18 @@
+use std::fs;
+
 use chrono::{DateTime, NaiveDate, Utc};
 use doido::controller::controller;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::certificado_digital::{
-    ActiveModel as CertActive, Column as CertColumn, Entity as CertEntity,
+    ActiveModel as CertActive, Column as CertColumn, Entity as CertEntity, Model as Certificado,
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
-use crate::services::certificado_arquivo::{gravar_certificado_pfx, tentar_remover_arquivo_certificado};
+use crate::services::certificado_arquivo::{
+    decode_certificado_base64, gravar_certificado_pfx_bytes, tentar_remover_arquivo_certificado,
+};
+use crate::services::certificado_pfx::verificar_pfx;
 use crate::services::certificado_tipo::validar_certificado_tipo;
 use crate::services::dto::{encode_certificado_senha, CertificadoDto};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
@@ -22,11 +27,11 @@ pub struct CertificadoForm {
     #[serde(default)]
     pub arquivo_nome: Option<String>,
     pub senha: Option<String>,
-    #[serde(deserialize_with = "deserialize_data_validade")]
-    pub data_validade: DateTime<Utc>,
+    #[serde(default, deserialize_with = "deserialize_data_validade_opt")]
+    pub data_validade: Option<DateTime<Utc>>,
 }
 
-fn deserialize_data_validade<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+fn deserialize_data_validade_opt<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -39,30 +44,87 @@ where
         Date(NaiveDate),
     }
 
-    match Input::deserialize(deserializer)? {
-        Input::DateTime(dt) => Ok(dt),
-        Input::Date(d) => d
+    let opt = Option::<Input>::deserialize(deserializer)?;
+    match opt {
+        None => Ok(None),
+        Some(Input::DateTime(dt)) => Ok(Some(dt)),
+        Some(Input::Date(d)) => d
             .and_hms_opt(0, 0, 0)
             .ok_or_else(|| D::Error::custom("data_validade inválida"))
-            .map(|ndt| ndt.and_utc()),
+            .map(|ndt| Some(ndt.and_utc())),
     }
 }
 
-fn caminho_from_form(form: &CertificadoForm, prestador_id: i64) -> Result<Option<String>, ApiError> {
-    if let Some(b64) = form
+fn has_new_upload(form: &CertificadoForm) -> bool {
+    form.arquivo_base64
+        .as_ref()
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false)
+}
+
+fn resolve_data_validade_create(
+    form: &CertificadoForm,
+    prestador_id: i64,
+    senha: &str,
+) -> Result<(String, DateTime<Utc>), ApiError> {
+    let b64 = form
         .arquivo_base64
         .as_ref()
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
-    {
+        .ok_or_else(|| ApiError::Validation("arquivo do certificado é obrigatório".into()))?;
+    let nome = form
+        .arquivo_nome
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or("certificado.pfx");
+    let bytes = decode_certificado_base64(b64)?;
+    let validade = verificar_pfx(&bytes, senha)?;
+    let caminho = gravar_certificado_pfx_bytes(prestador_id, nome, &bytes)?;
+    Ok((caminho, validade))
+}
+
+fn resolve_data_validade_update(
+    form: &CertificadoForm,
+    existing: &Certificado,
+    prestador_id: i64,
+) -> Result<(Option<String>, DateTime<Utc>), ApiError> {
+    let new_upload = has_new_upload(form);
+    let new_senha = form.senha.as_ref().filter(|s| !s.is_empty());
+
+    if new_upload {
+        let senha = new_senha.ok_or_else(|| {
+            ApiError::Validation(
+                "senha é obrigatória ao enviar novo arquivo de certificado".into(),
+            )
+        })?;
+        let b64 = form.arquivo_base64.as_ref().unwrap().trim();
         let nome = form
             .arquivo_nome
             .as_deref()
             .filter(|s| !s.is_empty())
             .unwrap_or("certificado.pfx");
-        return gravar_certificado_pfx(prestador_id, nome, b64).map(Some);
+        let bytes = decode_certificado_base64(b64)?;
+        let validade = verificar_pfx(&bytes, senha)?;
+        if let Some(old) = existing.caminho_arquivo.as_deref() {
+            tentar_remover_arquivo_certificado(old);
+        }
+        let caminho = gravar_certificado_pfx_bytes(prestador_id, nome, &bytes)?;
+        return Ok((Some(caminho), validade));
     }
-    Ok(form.caminho_arquivo.clone())
+
+    if let Some(senha) = new_senha {
+        let caminho = existing.caminho_arquivo.as_deref().ok_or_else(|| {
+            ApiError::Validation("certificado sem arquivo para validar senha".into())
+        })?;
+        let bytes = fs::read(caminho).map_err(|e| {
+            ApiError::Validation(format!("não foi possível ler certificado: {e}"))
+        })?;
+        let validade = verificar_pfx(&bytes, senha)?;
+        return Ok((None, validade));
+    }
+
+    Ok((None, existing.data_validade))
 }
 
 pub struct ApiCertificadosController;
@@ -115,25 +177,21 @@ impl ApiCertificadosController {
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
         crate::api!(to_response(validar_certificado_tipo(&form.tipo)));
-        let caminho = crate::api!(to_response(
-            caminho_from_form(&form, prestador_id).and_then(|p| {
-                p.ok_or(ApiError::Validation(
-                    "arquivo do certificado é obrigatório".into(),
-                ))
-            }),
-        ));
         let senha = crate::api!(to_response(
             form.senha
+                .as_ref()
                 .filter(|s| !s.is_empty())
                 .ok_or(ApiError::Validation("senha is required".into())),
         ));
+        let (caminho, data_validade) =
+            crate::api!(to_response(resolve_data_validade_create(&form, prestador_id, senha)));
         let created = crate::api!(db(
             CertActive {
                 empresa_id: Set(prestador_id),
                 tipo: Set(form.tipo),
                 caminho_arquivo: Set(Some(caminho)),
-                senha_encriptada: Set(encode_certificado_senha(&senha)),
-                data_validade: Set(form.data_validade),
+                senha_encriptada: Set(encode_certificado_senha(senha)),
+                data_validade: Set(data_validade),
                 criado_em: Set(Utc::now()),
                 ..Default::default()
             }
@@ -155,7 +213,11 @@ impl ApiCertificadosController {
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
         crate::api!(to_response(validar_certificado_tipo(&form.tipo)));
-        let caminho = crate::api!(to_response(caminho_from_form(&form, prestador_id)));
+        let (caminho, data_validade) = crate::api!(to_response(resolve_data_validade_update(
+            &form,
+            &existing,
+            prestador_id,
+        )));
         let mut record: CertActive = existing.into();
         record.tipo = Set(form.tipo);
         if let Some(c) = caminho {
@@ -163,7 +225,7 @@ impl ApiCertificadosController {
         } else if form.caminho_arquivo.is_some() {
             record.caminho_arquivo = Set(form.caminho_arquivo);
         }
-        record.data_validade = Set(form.data_validade);
+        record.data_validade = Set(data_validade);
         if let Some(senha) = form.senha.filter(|s| !s.is_empty()) {
             record.senha_encriptada = Set(encode_certificado_senha(&senha));
         }
@@ -194,9 +256,17 @@ mod tests {
     use super::CertificadoForm;
 
     #[test]
-    fn form_json_aceita_data_validade_somente_data() {
-        let json = r#"{"tipo":"A1","senha":"secret","arquivo_nome":"a.pfx","arquivo_base64":"YQ==","data_validade":"2027-08-15"}"#;
+    fn form_json_sem_data_validade() {
+        let json = r#"{"tipo":"A1","senha":"secret","arquivo_nome":"a.pfx","arquivo_base64":"YQ=="}"#;
         let form: CertificadoForm = serde_json::from_str(json).expect("parse");
         assert_eq!(form.tipo, "A1");
+        assert!(form.data_validade.is_none());
+    }
+
+    #[test]
+    fn form_json_ignora_data_validade_opcional() {
+        let json = r#"{"tipo":"A1","senha":"secret","arquivo_nome":"a.pfx","arquivo_base64":"YQ==","data_validade":"2027-08-15"}"#;
+        let form: CertificadoForm = serde_json::from_str(json).expect("parse");
+        assert!(form.data_validade.is_some());
     }
 }

@@ -115,6 +115,11 @@ export function buildDocumentoBody(
   if (body.reg_esp_trib_issqn == null || String(body.reg_esp_trib_issqn).trim() === '') {
     body.reg_esp_trib_issqn = values.reg_esp_trib_issqn?.trim() || '0'
   }
+  if (body.issqn_tp_suspensao == null || String(body.issqn_tp_suspensao).trim() === '') {
+    body.issqn_tp_suspensao = values.issqn_tp_suspensao?.trim() || '1'
+  }
+  const proc = values.issqn_n_processo_suspensao?.trim()
+  body.issqn_n_processo_suspensao = proc ? proc : null
 
   if (body.cst_pis_cofins == null || String(body.cst_pis_cofins).trim() === '') {
     body.cst_pis_cofins = values.cst_pis_cofins?.trim() || '00'

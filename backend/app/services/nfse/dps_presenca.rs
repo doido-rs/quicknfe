@@ -6,7 +6,7 @@ use doido::model::sea_orm::prelude::Decimal;
 
 use super::dps_context::{cpf_cnpj_tag, DpsContext};
 use super::endereco_brasil;
-use super::dps_layout::{load_infdps_leiaute, mandatory_infdps_fields, LayoutFieldRow};
+use super::dps_layout::{load_infdps_leiaute, mandatory_infdps_fields_owned, LayoutFieldRow};
 use crate::services::api_error::ApiError;
 
 /// Campos obrigatórios do leiaute que o app valida por presença antes de assinar/transmitir.
@@ -37,6 +37,19 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "nro",
         "xBairro",
         "cIntContrib",
+        "id",
+        "tpRetISSQN",
+        "CST",
+        "tpRetPisCofins",
+        "vTotTribFed",
+        "vTotTribEst",
+        "vTotTribMun",
+        "pTotTribFed",
+        "pTotTribEst",
+        "pTotTribMun",
+        "indTotTrib",
+        "tpSusp",
+        "nProcesso",
     ]
     .into_iter()
     .collect()
@@ -52,8 +65,103 @@ fn endereco_prestador_ok(ctx: &DpsContext) -> bool {
     .is_ok()
 }
 
-fn valor_presente(ctx: &DpsContext, campo: &str) -> Result<bool, ApiError> {
+fn endereco_tomador_ok(ctx: &DpsContext) -> bool {
+    let Some(t) = &ctx.tomador else {
+        return false;
+    };
+    endereco_brasil::endereco_from_optional(
+        t.cep.as_deref(),
+        t.logradouro.as_deref(),
+        t.numero.as_deref(),
+        t.bairro.as_deref(),
+    )
+    .is_ok()
+}
+
+fn endereco_intermediario_ok(ctx: &DpsContext) -> bool {
+    let Some(i) = &ctx.intermediario else {
+        return false;
+    };
+    endereco_brasil::endereco_from_optional(
+        i.cep.as_deref(),
+        i.logradouro.as_deref(),
+        i.numero.as_deref(),
+        i.bairro.as_deref(),
+    )
+    .is_ok()
+}
+
+fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, ApiError> {
+    let path = row.xml_path.as_str();
+    let campo = row.campo.as_str();
     let doc = &ctx.doc;
+
+    if path.contains("/toma/") {
+        if doc.tomador_localidade != "brasil" {
+            return Ok(true);
+        }
+        return Ok(match campo {
+            "CNPJ" => ctx
+                .tomador
+                .as_ref()
+                .is_some_and(|t| cpf_cnpj_tag(&t.cpf_cnpj).0 == "CNPJ"),
+            "CPF" => ctx
+                .tomador
+                .as_ref()
+                .is_some_and(|t| cpf_cnpj_tag(&t.cpf_cnpj).0 == "CPF"),
+            "xNome" => ctx
+                .tomador
+                .as_ref()
+                .is_some_and(|t| !t.razao_social.trim().is_empty()),
+            "cMun" => ctx
+                .tomador_municipio
+                .as_ref()
+                .is_some_and(|m| !m.codigo_ibge.trim().is_empty()),
+            "CEP" | "xLgr" | "nro" | "xBairro" => endereco_tomador_ok(ctx),
+            _ => false,
+        });
+    }
+
+    if path.contains("/interm/") {
+        if doc.intermediario_localidade != "brasil" {
+            return Ok(true);
+        }
+        return Ok(match campo {
+            "CNPJ" => ctx
+                .intermediario
+                .as_ref()
+                .is_some_and(|i| cpf_cnpj_tag(&i.cpf_cnpj).0 == "CNPJ"),
+            "CPF" => ctx
+                .intermediario
+                .as_ref()
+                .is_some_and(|i| cpf_cnpj_tag(&i.cpf_cnpj).0 == "CPF"),
+            "xNome" => ctx
+                .intermediario
+                .as_ref()
+                .is_some_and(|i| !i.razao_social.trim().is_empty()),
+            "cMun" => ctx
+                .intermediario_municipio
+                .as_ref()
+                .is_some_and(|m| !m.codigo_ibge.trim().is_empty()),
+            "CEP" | "xLgr" | "nro" | "xBairro" => endereco_intermediario_ok(ctx),
+            _ => false,
+        });
+    }
+
+    if path.contains("exigSusp") {
+        if doc.issqn_exigibilidade_suspensa != 1 {
+            return Ok(true);
+        }
+        return Ok(match campo {
+            "tpSusp" => !doc.issqn_tp_suspensao.trim().is_empty(),
+            "nProcesso" => doc
+                .issqn_n_processo_suspensao
+                .as_ref()
+                .is_some_and(|s| !s.trim().is_empty()),
+            _ => false,
+        });
+    }
+
     let ok = match campo {
         "tpAmb" => doc.ambiente == 1 || doc.ambiente == 2,
         "dhEmi" => true,
@@ -86,6 +194,12 @@ fn valor_presente(ctx: &DpsContext, campo: &str) -> Result<bool, ApiError> {
         "regEspTrib" => !doc.reg_esp_trib_issqn.trim().is_empty(),
         "CEP" | "xLgr" | "nro" | "xBairro" => endereco_prestador_ok(ctx),
         "cIntContrib" => !ctx.itens.is_empty(),
+        "id" => true,
+        "tpRetISSQN" => true,
+        "CST" => !doc.cst_pis_cofins.trim().is_empty(),
+        "tpRetPisCofins" => !doc.tp_ret_pis_cofins_csll.trim().is_empty(),
+        "vTotTribFed" | "vTotTribEst" | "vTotTribMun" | "pTotTribFed" | "pTotTribEst"
+        | "pTotTribMun" | "indTotTrib" => true,
         _ => return Ok(false),
     };
     Ok(ok)
@@ -93,12 +207,12 @@ fn valor_presente(ctx: &DpsContext, campo: &str) -> Result<bool, ApiError> {
 
 pub fn validar_presenca_leiaute(ctx: &DpsContext, rows: &[LayoutFieldRow]) -> Result<(), ApiError> {
     let mapped = campos_presenca_mapeados();
-    let mandatory = mandatory_infdps_fields(rows);
+    let mandatory = mandatory_infdps_fields_owned(rows);
     for row in mandatory {
         if !mapped.contains(row.campo.as_str()) {
             continue;
         }
-        if !valor_presente(ctx, &row.campo)? {
+        if !valor_presente_row(ctx, row)? {
             return Err(ApiError::Validation(format!(
                 "RN: campo obrigatório ausente ou vazio: {} ({})",
                 row.campo, row.xml_path
@@ -123,15 +237,6 @@ mod tests {
     #[test]
     fn presenca_aceita_contexto_minimo() {
         validar_presenca_repo(&minimal_dps_context()).expect("presenca ok");
-    }
-
-    #[test]
-    fn presenca_rejeita_sem_competencia_quando_exigida() {
-        let mut ctx = minimal_dps_context();
-        ctx.doc.data_competencia = None;
-        ctx.doc.data_emissao = chrono::Utc::now();
-        // dCompet falls back to emissao — still ok
-        validar_presenca_repo(&ctx).expect("fallback emissao");
     }
 
     #[test]

@@ -4,20 +4,31 @@ use base64::Engine;
 use uuid::Uuid;
 
 use crate::services::api_error::ApiError;
+use crate::services::certificado_pfx::verificar_pfx;
 
 const MAX_BYTES: usize = 2 * 1024 * 1024;
 
-pub fn gravar_certificado_pfx(
-    prestador_id: i64,
-    nome_original: &str,
-    arquivo_base64: &str,
-) -> Result<String, ApiError> {
+pub fn decode_certificado_base64(arquivo_base64: &str) -> Result<Vec<u8>, ApiError> {
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(arquivo_base64.trim())
         .map_err(|_| ApiError::Validation("arquivo_base64 inválido".into()))?;
     if bytes.is_empty() {
         return Err(ApiError::Validation("arquivo do certificado está vazio".into()));
     }
+    if bytes.len() > MAX_BYTES {
+        return Err(ApiError::Validation(format!(
+            "arquivo excede o limite de {} bytes",
+            MAX_BYTES
+        )));
+    }
+    Ok(bytes)
+}
+
+pub fn gravar_certificado_pfx_bytes(
+    prestador_id: i64,
+    nome_original: &str,
+    bytes: &[u8],
+) -> Result<String, ApiError> {
     if bytes.len() > MAX_BYTES {
         return Err(ApiError::Validation(format!(
             "arquivo excede o limite de {} bytes",
@@ -36,6 +47,18 @@ pub fn gravar_certificado_pfx(
         Ok(p) => p.to_string_lossy().into_owned(),
         Err(_) => path.to_string_lossy().into_owned(),
     })
+}
+
+/// Decodifica base64, valida senha do PFX e grava em disco.
+pub fn gravar_certificado_pfx(
+    prestador_id: i64,
+    nome_original: &str,
+    arquivo_base64: &str,
+    senha: &str,
+) -> Result<String, ApiError> {
+    let bytes = decode_certificado_base64(arquivo_base64)?;
+    verificar_pfx(&bytes, senha)?;
+    gravar_certificado_pfx_bytes(prestador_id, nome_original, &bytes)
 }
 
 fn certificados_dir(prestador_id: i64) -> Result<PathBuf, ApiError> {

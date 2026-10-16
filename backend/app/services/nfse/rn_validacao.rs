@@ -64,6 +64,19 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
             "RN: ao menos um item de serviço é obrigatório na DPS".into(),
         ));
     }
+    if doc.issqn_exigibilidade_suspensa == 1 {
+        let proc = doc
+            .issqn_n_processo_suspensao
+            .as_ref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty());
+        if proc.is_none() {
+            return Err(ApiError::Validation(
+                "RN: informe o número do processo quando a exigibilidade ISSQN estiver suspensa"
+                    .into(),
+            ));
+        }
+    }
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
     dps_rn::load_rn_dps_rows(&root)
         .map_err(|e| ApiError::Internal(format!("RN layout indisponível: {e}")))?;
@@ -127,6 +140,8 @@ pub fn minimal_dps_context() -> DpsContext {
                 trib_issqn: "1".into(),
                 reg_esp_trib_issqn: "0".into(),
                 issqn_exigibilidade_suspensa: 0,
+                issqn_tp_suspensao: "1".into(),
+                issqn_n_processo_suspensao: None,
                 issqn_retencao: 0,
                 issqn_beneficio_municipal: 0,
                 issqn_deducao_reducao_bc: 0,

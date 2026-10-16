@@ -12,8 +12,10 @@ import {
   rowLabel,
   useResourceFieldForm,
 } from '@/lib/resourceForm'
+import { formatDateForDisplay, normalizeApiDateToForm } from '@/lib/dateFormat'
 import { toastFromError, toastSuccess } from '@/lib/toast'
 import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
+import { useDateFormat } from '@/theme/DateFormatContext'
 import { ItemTributosPanel } from '@/components/resources/ItemTributosPanel'
 import type { NestedDef } from '@/resources/definitions'
 
@@ -29,6 +31,7 @@ export function NestedResourcePanel({
   const allowDelete = nested.allowDelete === true
   const api = resourceApi<Record<string, unknown>>(path)
   const queryClient = useQueryClient()
+  const dateFormat = useDateFormat()
   const form = useResourceFieldForm(nested.fields)
   const {
     handleSubmit,
@@ -107,6 +110,9 @@ export function NestedResourcePanel({
             className="grid gap-4 md:grid-cols-2"
             onSubmit={handleSubmit((values) => createMutation.mutate(values))}
           >
+            {nested.createHint && (
+              <p className="md:col-span-2 text-sm text-muted-foreground">{nested.createHint}</p>
+            )}
             {nested.fields.map((f) => (
               <ResourceFieldInput
                 key={f.key}
@@ -137,7 +143,23 @@ export function NestedResourcePanel({
             return (
               <li key={String(r.id)} className="list-none space-y-1 pl-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span>{label}</span>
+                  <span>
+                    {label}
+                    {nested.listColumns?.map((col) => {
+                      const raw = r[col.key]
+                      if (raw == null || String(raw).trim() === '') return null
+                      const display =
+                        col.type === 'date'
+                          ? formatDateForDisplay(normalizeApiDateToForm(String(raw)), dateFormat)
+                          : String(raw)
+                      return (
+                        <span key={col.key} className="text-muted-foreground">
+                          {' '}
+                          — {col.label}: {display}
+                        </span>
+                      )
+                    })}
+                  </span>
                   {allowDelete && Number.isFinite(id) && (
                     <Button
                       type="button"

@@ -83,4 +83,18 @@ describe('resourceForm', () => {
     expect(body).toMatchObject({ tipo: 'A1', arquivo_nome: 'test.pfx' })
     expect(body.arquivo_base64).toBe(b64)
   })
+
+  it('nested certificado create body omits data_validade', () => {
+    const body = buildNestedCreateBody(
+      {
+        fields: [
+          { key: 'tipo', label: 'Tipo', type: 'enum', required: true },
+          { key: 'senha', label: 'Senha', required: true },
+        ],
+      },
+      { tipo: 'A1', senha: 'secret' },
+    )
+    expect(body).toEqual({ tipo: 'A1', senha: 'secret' })
+    expect(body).not.toHaveProperty('data_validade')
+  })
 })
