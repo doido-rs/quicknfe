@@ -1,7 +1,8 @@
 //! Montagem do XML da DPS (NFS-e Nacional) alinhada ao `layout_dps_leaiute.csv`.
 
 use super::dps_context::{
-    cpf_cnpj_tag, decimal_xml, gerar_id_inf_dps, only_digits, ParteExterior, DpsContext,
+    cpf_cnpj_tag, decimal_xml, gerar_id_inf_dps, only_digits, serie_dps_para_xml, ParteExterior,
+    DpsContext,
 };
 
 use crate::models::documento_fiscal::Model as Documento;
@@ -14,7 +15,8 @@ pub const DPS_XML_NS: &str = "http://www.sped.fazenda.gov.br/nfse";
 
 /// XML da DPS sem assinatura (rascunho). Prefer [`montar_dps_xml_context`] quando relações estão carregadas.
 pub fn montar_dps_xml(doc: &Documento) -> String {
-    let id = gerar_id_inf_dps(doc.id);
+    // Rascunho legado sem contexto — Id inválido para SEFIN; use [`montar_dps_xml_context`].
+    let id = format!("DPS{:042}", doc.id);
     let competencia = doc
         .data_competencia
         .map(|d| d.format("%Y-%m-%d").to_string())
@@ -36,7 +38,7 @@ pub fn montar_dps_xml(doc: &Documento) -> String {
 </DPS>"#,
         ambiente = doc.ambiente,
         emissao = doc.data_emissao.to_rfc3339(),
-        serie = xml_escape(&doc.serie),
+        serie = xml_escape(&serie_dps_para_xml(&doc.serie)),
         numero = doc.numero_documento,
         valor = decimal_xml(&doc.valor_total_servicos_produtos),
     )
@@ -44,7 +46,7 @@ pub fn montar_dps_xml(doc: &Documento) -> String {
 
 pub fn montar_dps_xml_context(ctx: &DpsContext) -> Result<String, ApiError> {
     let doc = &ctx.doc;
-    let id = gerar_id_inf_dps(doc.id);
+    let id = gerar_id_inf_dps(ctx)?;
     let competencia = doc
         .data_competencia
         .map(|d| d.format("%Y-%m-%d").to_string())
@@ -74,7 +76,7 @@ fn append_identificacao(xml: &mut String, ctx: &DpsContext, competencia: &str) {
     push_elem(xml, 4, "tpAmb", &doc.ambiente.to_string());
     push_elem(xml, 4, "dhEmi", &doc.data_emissao.to_rfc3339());
     push_elem(xml, 4, "verAplic", VER_APLIC);
-    push_elem(xml, 4, "serie", &doc.serie);
+    push_elem(xml, 4, "serie", &serie_dps_para_xml(&doc.serie));
     push_elem(xml, 4, "nDPS", &doc.numero_documento.to_string());
     push_elem(xml, 4, "dCompet", competencia);
     push_elem(xml, 4, "tpEmit", "1");
@@ -627,6 +629,44 @@ mod tests {
         assert!(!xml.contains("http://www.gov.br/nfse"));
         assert!(xml.contains("<infDPS Id="));
         assert!(xml.contains("<tpAmb>2</tpAmb>"));
+    }
+
+    #[test]
+    fn id_inf_dps_tsid_pattern() {
+        use super::super::dps_context::DpsContext;
+
+        let municipio = crate::models::municipio::Model {
+            id: 1,
+            codigo_ibge: "3304557".into(),
+            nome: "Rio de Janeiro".into(),
+            uf: "RJ".into(),
+        };
+        let mut doc = sample_doc();
+        doc.serie = "1".into();
+        doc.numero_documento = 42;
+        let ctx = DpsContext {
+            doc,
+            prestador: sample_prestador(),
+            municipio_emissao: municipio.clone(),
+            municipio_prestacao: municipio.clone(),
+            municipio_prestador: municipio,
+            tomador: None,
+            tomador_municipio: None,
+            tomador_exterior: None,
+            intermediario: None,
+            intermediario_municipio: None,
+            intermediario_exterior: None,
+            itens: vec![],
+        };
+        let id = gerar_id_inf_dps(&ctx).expect("id");
+        assert_eq!(id.len(), 45);
+        assert!(id.starts_with("DPS3304557"));
+        assert!(id[3..].chars().all(|c| c.is_ascii_digit()));
+        assert_eq!(
+            id,
+            "DPS330455721234567800019900001000000000000042"
+        );
+        assert_ne!(id, "DPS000000000000000000000000000000000000000002");
     }
 
     #[test]

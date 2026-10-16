@@ -10,7 +10,7 @@ Antes de **Assinar** / **Transmitir**, `validar_dps_contexto` chama `dps_presenc
 
 | Campo XML | Fonte no app |
 |-----------|----------------|
-| `id` | `gerar_id_inf_dps` (`infDPS` Id) |
+| `id` | `gerar_id_inf_dps` — `DPS` + IBGE emissão (7) + tp inscr. (1) + CPF/CNPJ (14) + série (5) + nDPS (15) |
 | `tpAmb` | `documentos_fiscais.ambiente` |
 | `dhEmi` | `data_emissao` |
 | `verAplic` | constante no builder |

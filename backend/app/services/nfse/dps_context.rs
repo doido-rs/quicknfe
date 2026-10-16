@@ -153,6 +153,72 @@ pub fn cpf_cnpj_tag(cpf_cnpj: &str) -> (&'static str, String) {
     }
 }
 
-pub fn gerar_id_inf_dps(doc_id: i64) -> String {
-    format!("DPS{:042}", doc_id)
+fn pad_ibge7(code: &str) -> String {
+    let digits = only_digits(code);
+    format!("{:0>7}", digits)
 }
+
+/// Valor de `<serie>` no XML (numérico, faixa emissor próprio quando `AUTO`).
+pub fn serie_dps_para_xml(serie: &str) -> String {
+    let digits = only_digits(serie);
+    if digits.is_empty() {
+        return "1".into();
+    }
+    format!("{}", digits.parse::<u64>().unwrap_or(1).min(99_999))
+}
+
+/// Série com 5 dígitos no atributo `Id` (TSIdDPS), alinhada a [`serie_dps_para_xml`].
+fn serie_id_5(serie: &str) -> String {
+    format!("{:05}", serie_dps_para_xml(serie).parse::<u64>().unwrap_or(1))
+}
+
+/// Número DPS com 15 dígitos no atributo `Id` (TSIdDPS).
+fn ndps_id_15(numero: i64) -> Result<String, ApiError> {
+    if numero <= 0 {
+        return Err(ApiError::Validation(
+            "número da DPS deve ser positivo para gerar o identificador infDPS".into(),
+        ));
+    }
+    if numero > 999_999_999_999_999 {
+        return Err(ApiError::Validation(
+            "número da DPS excede 15 dígitos no identificador infDPS".into(),
+        ));
+    }
+    Ok(format!("{:015}", numero))
+}
+
+/// Identificador `infDPS/@Id` — literal `DPS` + 42 dígitos (RN E0004 / TSIdDPS).
+///
+/// Composição: Cód.Mun.Emi. (7) + Tipo Inscrição Federal (1) + Inscrição Federal (14) +
+/// Série DPS (5) + Núm. DPS (15).
+pub fn gerar_id_inf_dps(ctx: &DpsContext) -> Result<String, ApiError> {
+    let doc = &ctx.doc;
+    let c_loc_emi = pad_ibge7(&ctx.municipio_emissao.codigo_ibge);
+    if c_loc_emi.len() != 7 {
+        return Err(ApiError::Validation(
+            "código IBGE do município de emissão inválido para identificador da DPS".into(),
+        ));
+    }
+
+    let insc_digits = only_digits(&ctx.prestador.cpf_cnpj);
+    if insc_digits.is_empty() {
+        return Err(ApiError::Validation(
+            "CPF/CNPJ do prestador é obrigatório para identificador da DPS".into(),
+        ));
+    }
+    let tp_insc = if insc_digits.len() <= 11 { "1" } else { "2" };
+    let insc_14 = format!("{:0>14}", insc_digits);
+    if insc_14.len() != 14 {
+        return Err(ApiError::Validation(
+            "inscrição federal do prestador inválida para identificador da DPS".into(),
+        ));
+    }
+
+    let serie_5 = serie_id_5(&doc.serie);
+    let ndps_15 = ndps_id_15(doc.numero_documento)?;
+
+    Ok(format!(
+        "DPS{c_loc_emi}{tp_insc}{insc_14}{serie_5}{ndps_15}"
+    ))
+}
+
