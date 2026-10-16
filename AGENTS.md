@@ -13,6 +13,61 @@ QuickNFe is a multi-tenant web app for **NFSe (Nota Fiscal de Serviço eletrôni
 
 Stack: Rust/Doido backend (MySQL), React/Vite frontend (Bun), TanStack Query/Router, shadcn/ui. See `docs/architecture/stack.md` and `docs/README.md` for harness, CI, MCP/OAuth notes.
 
+Outbound calls to **government and third-party HTTP APIs** are consolidating under **`backend/app/connectors/`** — see [External connectors (`app/connectors`)](#external-connectors-appconnectors).
+
+---
+
+## External connectors (`app/connectors`)
+
+**Purpose:** one place for **integrations with external systems** — every **outbound HTTP(S)** request (CNC, SEFIN Nacional, future APIs) lives here. In-app API handlers, jobs, and domain code stay free of ad hoc `reqwest` / URL construction.
+
+**Status:** **target architecture** (migration in progress). Today some HTTP still sits under `app/services/` (e.g. `services/cnc/consulta.rs`, `services/nfse/cliente.rs`, transmission HTTP inside `services/nfse/transmissao.rs`). **New code** must use `app/connectors/`; when changing existing integration paths, **move HTTP into a connector** in the same PR or a focused follow-up.
+
+### Layering rules
+
+| Layer | Role | HTTP to externals |
+|-------|------|-------------------|
+| **`app/controllers/`** | Inbound REST/session for the QuickNFe UI and API | **Forbidden** — delegate to services |
+| **`app/services/`** | Tenant scope, validation, DPS/XML, DB, orchestration, mapping to/from DTOs | **Forbidden** — call connectors only |
+| **`app/connectors/`** | Clients, auth/mTLS, retries/timeouts at the wire, request/response types for each external API | **Required** — all outbound HTTP here |
+| **`app/jobs/`** | Async assinar/transmitir, imports, batch work | **Forbidden** — call services; services call connectors |
+
+**In scope for connectors:** CNC consulta, SEFIN Nacional (emissão/consulta DPS), any future Receita/SEFAZ HTTP, webhooks outbound, third-party REST the product calls directly.
+
+**Out of scope (stay where they are today):** **`app/mcp/`** and **`app/oauth/`** (MCP/OAuth protocol surfaces toward clients/agents, not NFSe/CNC wire clients), MySQL, and **inbound** browser/API traffic handled by Doido/Axum.
+
+### Target layout (`backend/app/connectors/`)
+
+Organize **one module (or subfolder) per external system**, not per QuickNFe feature:
+
+| Module (sketch) | Responsibility | Settings / env |
+|-----------------|----------------|----------------|
+| **`cnc/`** | HTTP + mTLS to cadastro nacional consult; raw CNC payload ↔ internal types | `settings.cnc.base_url`, `CNC_BASE_URL`; localhost mock skips mTLS |
+| **`sefin/`** (or `nfse_nacional/`) | HTTP + mTLS to SEFIN Nacional (emissão, consulta DPS); status/body parsing at the wire | `settings.sefin.base_url`, `SEFIN_BASE_URL`, `settings.sefin.ambiente` |
+| **`mod.rs`** | `pub mod` + thin re-exports; no business rules |
+
+Connectors may depend on **`app/settings`**, certificate bytes/identity passed in from services (prestador PFX resolved in `app/services/`), and small shared HTTP helpers **inside** `app/connectors/` (e.g. `http_client.rs`, `mtls.rs`). They must **not** import controllers, jobs, or tenant-specific DB access.
+
+**Services keep:** URL path templates derived from ambiente (`nfse/ambiente.rs`), `validar_dps_contexto`, `montar_dps_xml`, `assinar_dps_xml_rascunho`, `documento_processamento`, mapping CNC rows to `resposta_publica`, persistence and logs.
+
+### Agent workflow
+
+1. **Adding an external API** — add `app/connectors/<system>/` (client + types + tests with mock server or localhost fixture); expose a narrow async API for services.
+2. **Refactoring existing HTTP** — cut HTTP blocks from `app/services/` into the matching connector; leave service function signatures stable for controllers/jobs where possible.
+3. **Controllers / jobs** — unchanged outward contract; only the service → connector boundary moves.
+4. **Tests** — unit-test connectors with mocked HTTP; integration tests may still hit `127.0.0.1` mocks (`SEFIN_BASE_URL`, CNC mock). Connector files follow the same **85%** per-file coverage expectation as `app/services/` once the tree exists (see [Test coverage (product rule)](#test-coverage-product-rule)).
+5. **Frontend** — still calls **QuickNFe** `/api/...` only; no new “connector” layer in the frontend.
+
+### Mapping from current code (migration hints)
+
+| Today (HTTP-ish) | Target home |
+|------------------|-------------|
+| `app/services/cnc/consulta.rs` | `app/connectors/cnc/` |
+| `app/services/nfse/cliente.rs` | `app/connectors/sefin/` (or split client vs domain response types) |
+| HTTP inside `app/services/nfse/transmissao.rs` | `app/connectors/sefin/` emit/consulta calls; service keeps orchestration + DB + logs |
+
+Wire the new module from `src/main.rs` (same `#[path = "../app/connectors/mod.rs"]` pattern as other `app/` trees) when the directory is created.
+
 ---
 
 ## Multi-tenant and session workflow
@@ -224,6 +279,8 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 ## Integration fields and workflows
 
+User-facing flows below are unchanged; **backend wire calls** should go through **`app/connectors/`** as migration completes ([External connectors](#external-connectors-appconnectors)).
+
 ### 1. CNC — Consulta Cadastro (`cncLookup`)
 
 **Purpose**: Prefill prestador/tomador from Receita/cadastro nacional (CNC).
@@ -246,7 +303,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 1. Tenant + prestador scope (`empresa_id` query or active prestador).
 2. **mTLS credentials**: latest certificado for prestador (or `certificado_id`), unless CNC base URL is localhost/127.0.0.1 (mock — no cert).
-3. Proxy to CNC service; map to public DTO (`resposta_publica`).
+3. **Connector** (`app/connectors/cnc/` — target) calls CNC over HTTP/mTLS; service maps to public DTO (`resposta_publica`). Until migration, `services/cnc/consulta.rs` still performs the HTTP call.
 
 **Field mapping** (`CncLookupDef`):
 
@@ -301,7 +358,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 | Download | `GET /api/documentos/{id}/xml` | **Baixar XML** | Priority: `xml_processado` → `xml_assinado` → rascunho DPS |
 | Transmitir SEFIN | `POST /api/documentos/{id}/transmitir` | **Transmitir SEFIN** on documento show | **202** — enfileira `transmitir_documento_nfse` (mTLS, optional `certificado_id`, logs) |
 
-Core logic lives in `backend/app/services/nfse/` (`assinatura.rs`, `transmissao.rs`, `documento_processamento.rs`, ambiente URLs, resposta parsing, logs). **Do not** add retry/scheduling logic in controllers — use jobs and `documento_enqueue.rs`.
+Core logic lives in `backend/app/services/nfse/` (`assinatura.rs`, `transmissao.rs`, `documento_processamento.rs`, ambiente URLs, resposta parsing, logs). **Outbound SEFIN HTTP** belongs in `app/connectors/sefin/` (target); keep new `reqwest` usage out of services/controllers. **Do not** add retry/scheduling logic in controllers — use jobs and `documento_enqueue.rs`.
 
 ### Async assinatura e transmissão
 
@@ -578,25 +635,26 @@ QuickNFe treats automated test coverage as a **merge gate**: the repo must stay 
 | Layer | Tooling | Scope |
 |-------|---------|--------|
 | **Frontend** | Vitest + `@vitest/coverage-v8` (`bun run test:coverage`, `make test-coverage-frontend`) | **Lines ≥ 85%** (`COVERAGE_MIN` / `vite.config.ts`). Functions, statements, and branches use the same target with a short ramp (see thresholds in `vite.config.ts`). Exclusions: shadcn `components/ui/`, heavy show pages, dashboard charts, and context glue listed in `coverage.exclude`. |
-| **Backend** | `cargo llvm-cov` + `scripts/check_app_layer_coverage.py` | **`app/controllers/` + `app/services/`** — aggregate and per-file floors in `backend/coverage/app_layer_floors.json` (target **85%**; floors ratchet up as tests land). `backend/.llvm-cov.toml` keeps migrations, entities, OAuth/MCP, jobs, etc. out of the llvm report; **do not** re-ignore controllers or services. |
+| **Backend** | `cargo llvm-cov` + `scripts/check_app_layer_coverage.py` | **`app/controllers/` + `app/services/`** (+ **`app/connectors/`** once present) — aggregate and per-file floors in `backend/coverage/app_layer_floors.json` (target **85%**; floors ratchet up as tests land). `backend/.llvm-cov.toml` keeps migrations, entities, OAuth/MCP, jobs, etc. out of the llvm report; **do not** re-ignore controllers, services, or connectors. |
 
 Run **`make test-coverage`** (CI: `frontend-coverage` + `backend-coverage` in `.github/workflows/ci.yml`). **`COVERAGE_MIN`** defaults to **85** in the `Makefile`.
 
 **Implementation status:** harness and CI gates are wired. Backend aggregate coverage on the full controller/service tree is still below **85%** — raise floors in `app_layer_floors.json` when adding tests; new files default to **85%** minimum via the checker when absent from the floors file.
 
-### Per-file threshold — `app/controllers` and `app/services`
+### Per-file threshold — `app/controllers`, `app/services`, and `app/connectors`
 
 Every Rust source file under:
 
-- `backend/app/controllers/` (API and session controllers), and  
-- `backend/app/services/` (NFSe, certificados, tenant helpers, etc.)
+- `backend/app/controllers/` (API and session controllers),  
+- `backend/app/services/` (NFSe, certificados, tenant helpers, etc.), and  
+- `backend/app/connectors/` (external HTTP clients — when the tree exists)
 
-must maintain **at least 85% line coverage on that file alone**, not only contribute to the global backend percentage. Add or extend **unit tests** (`#[cfg(test)]` in-module) and/or **integration tests** (`backend/tests/`, e.g. `tenant_api_test`) so new endpoints and service paths are exercised; refactors that drop a file below 85% must add tests in the same change.
+must maintain **at least 85% line coverage on that file alone**, not only contribute to the global backend percentage. Add or extend **unit tests** (`#[cfg(test)]` in-module) and/or **integration tests** (`backend/tests/`, e.g. `tenant_api_test`) so new endpoints, service paths, and connector clients are exercised; refactors that drop a file below 85% must add tests in the same change.
 
 **Agent expectations:**
 
 1. New controller actions → request/response cases (happy path, validation errors, tenant scope).
-2. New service modules → pure logic tested without DB when possible; DB-bound flows via integration tests.
+2. New service modules → pure logic tested without DB when possible; DB-bound flows via integration tests. New **connectors** → HTTP mocked at the connector boundary; no duplicate HTTP tests inside services.
 3. Do not merge features that leave any file in those two trees under **85%** without an explicit product exception (rare; document in PR).
 4. When raising thresholds in harness config (`vite.config.ts`, `.llvm-cov.toml`, `COVERAGE_MIN`), keep **AGENTS.md**, `frontend/README.md`, and `docs/harness/makefile.md` aligned.
 
@@ -610,7 +668,7 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 2. **Documento changes**: update both `buildDocumentoBody` / `flattenDocumentoRowToForm` and backend `DocumentoForm` + normalizers.
 3. **CNC**: keep mock-friendly behavior (localhost CNC URL skips mTLS); do not break `applyCncItemToForm` mapping.
 4. **Scoped relations**: tomador/intermediário must keep `relationScopeFromField: 'empresa_id'`.
-5. **Tests**: frontend Vitest (`frontend/src/**/*.test.ts`, `ResourceCrud.test.tsx`); backend `cargo test`; integration `make test-integration` (MySQL). Respect **[Test coverage (product rule)](#test-coverage-product-rule)** — **85%** global and **85% per file** in `backend/app/controllers/` and `backend/app/services/`.
+5. **Tests**: frontend Vitest (`frontend/src/**/*.test.ts`, `ResourceCrud.test.tsx`); backend `cargo test`; integration `make test-integration` (MySQL). Respect **[Test coverage (product rule)](#test-coverage-product-rule)** — **85%** global and **85% per file** in `backend/app/controllers/`, `backend/app/services/`, and `backend/app/connectors/`.
 6. **Minimal diffs**: match existing patterns (`NestedResourcePanel`, `buildNestedCreateBody`, resource pages).
 7. **Unsaved changes**: guard navigation when dirty on all mutating forms; see [Unsaved changes — required behavior](#unsaved-changes--required-behavior). Do not bypass with ad-hoc “leave anyway” flows.
 8. **Date format**: all calendar dates in the UI use the user preference via shared helpers; see [User preferences — date format](#user-preferences--date-format). API and XML stay ISO/`YYYY-MM-DD`.
@@ -619,6 +677,7 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 11. **DPS signing cert**: **Assinar** must use prestador **certificado digital** (A1 PFX) for real XML-DSig; never rely on stub signatures for SEFIN-bound notas—see [Certificado para assinatura XML](#certificado-para-assinatura-xml).
 12. **Async sign/transmit**: assinar + transmitir **use doido-jobs** today; keep controllers thin (validate + enqueue only) — see [Async assinatura e transmissão](#async-assinatura-e-transmissão).
 13. **Certificado upload**: on nested create, **verify PKCS#12 senha** and set **`data_validade` from cert notAfter** — do not rely on manual validade from the client; see [Certificado upload — senha e validade](#certificado-upload--senha-e-validade).
+14. **External HTTP**: all outbound HTTP to CNC, SEFIN, and other third-party APIs lives in **`backend/app/connectors/`** — services orchestrate, connectors execute the wire protocol; do not add new `reqwest` calls in controllers, jobs, or services; see [External connectors (`app/connectors`)](#external-connectors-appconnectors).
 
 ---
 
@@ -635,9 +694,10 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 | Unsaved + Salvar | `UnsavedConfirmDialog.tsx`, `useRegisterUnsavedSave`, `ResourceEditPage.tsx` |
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | Prestador show | `PrestadorShowView.tsx`, `ResourceShowPage.tsx`, `definitions.ts` `prestadores.nested`, `NestedResourcePanel.tsx` |
-| CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
+| CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController`; wire client → **`app/connectors/cnc/`** (target; today `services/cnc/consulta.rs`) |
+| External connectors | **`backend/app/connectors/`** (`cnc/`, `sefin/` — target); `settings.cnc` / `settings.sefin`, `CNC_BASE_URL`, `SEFIN_BASE_URL` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
-| NFSe sign/transmit + enqueue | `documento_enqueue.rs`, `nfse/documento_processamento.rs`, `nfse/assinatura.rs`, `nfse/transmissao.rs`, `app/jobs/assinar_documento.rs`, `app/jobs/transmitir_documento.rs`, `config/*yml` `jobs.queues` |
+| NFSe sign/transmit + enqueue | `documento_enqueue.rs`, `nfse/documento_processamento.rs`, `nfse/assinatura.rs`, `nfse/transmissao.rs` (orchestration; SEFIN HTTP → **`app/connectors/sefin/`**), `app/jobs/assinar_documento.rs`, `app/jobs/transmitir_documento.rs`, `config/*yml` `jobs.queues` |
 | Documento actions UI | `DocumentoAssinarButton.tsx`, `DocumentoTransmitirButton.tsx`, `DocumentoCertificadoSelect.tsx`, `useDocumentoProcessamentoPoll.ts`, `components/ui/tabs.tsx`, `api/documentos.ts`, `api/lotes.ts`, `LoteTransmitirButton.tsx` |
 | DPS layout spec | `layout_dps_leaiute.csv`, `layout_dps.csv` (repo root); `nfse/dps.rs` (XML builder), `nfse/dps_layout.rs`, `nfse/dps_rn.rs`, `nfse/rn_validacao.rs`, `nfse/assinatura.rs` |
 | SEFIN/CNC config | `backend/config/development.yml`, `production.yml`, env `SEFIN_BASE_URL`, `CNC_BASE_URL` |
@@ -647,4 +707,4 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Test coverage policy: 85% global; 85% per file in `app/controllers` and `app/services`.** Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** **Target:** outbound HTTP → **`app/connectors/`** (migration from `services/cnc`, `services/nfse/cliente`, transmission HTTP). Doido **0.0.32-test2**.*
