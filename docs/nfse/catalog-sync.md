@@ -26,7 +26,7 @@ Carga automática da **lista nacional de CNA**, **regras de incidência** (`MUN.
 
 ## Bootstrap
 
-`cargo doido db seed` enfileira **uma** execução de `sync_nfse_catalog_daily` se não houver job `catalog` pendente com esse nome.
+`cargo doido db seed` enfileira **uma** execução de `import_nfse_anexo_a` (fila `default`) e de `sync_nfse_catalog_daily` (fila `catalog`) quando `municipio_cna_parametrizacao` estiver **vazia** e não houver job pendente/agendado com o mesmo nome (jobs `dead` não bloqueiam novo bootstrap).
 
 ## API
 

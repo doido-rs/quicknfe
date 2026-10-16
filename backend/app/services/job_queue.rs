@@ -12,3 +12,8 @@ pub fn default_job_queue() -> Arc<dyn JobQueue> {
         .get_or_init(|| build_db_queue(doido::model::pool::pool().clone()))
         .clone()
 }
+
+/// Fila para enqueue fora do HTTP/worker (ex.: `db seed`), quando o pool global ainda não foi init.
+pub fn queue_for(db: doido::model::sea_orm::DatabaseConnection) -> Arc<dyn JobQueue> {
+    build_db_queue(db)
+}

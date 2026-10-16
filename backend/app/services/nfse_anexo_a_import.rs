@@ -24,16 +24,29 @@ pub struct ImportStats {
     pub paises_skipped: u32,
 }
 
+pub fn resolve_download_url(url: Option<&str>) -> &str {
+    url.filter(|s| !s.trim().is_empty())
+        .unwrap_or(DEFAULT_XLSX_URL)
+}
+
+async fn load_xlsx_bytes(url: Option<&str>) -> doido_core::Result<Vec<u8>> {
+    let target = resolve_download_url(url);
+    if target.starts_with("http://") || target.starts_with("https://") {
+        return reqwest::get(target)
+            .await
+            .map_err(|e| doido_core::anyhow::anyhow!("download anexo A: {e}"))?
+            .error_for_status()
+            .map_err(|e| doido_core::anyhow::anyhow!("download anexo A HTTP: {e}"))?
+            .bytes()
+            .await
+            .map(|b| b.to_vec())
+            .map_err(|e| doido_core::anyhow::anyhow!("read anexo A body: {e}"));
+    }
+    std::fs::read(target).map_err(|e| doido_core::anyhow::anyhow!("ler anexo A local: {e}"))
+}
+
 pub async fn run(db: &DatabaseConnection, url: Option<&str>) -> doido_core::Result<ImportStats> {
-    let url = url.unwrap_or(DEFAULT_XLSX_URL);
-    let bytes = reqwest::get(url)
-        .await
-        .map_err(|e| doido_core::anyhow::anyhow!("download anexo A: {e}"))?
-        .error_for_status()
-        .map_err(|e| doido_core::anyhow::anyhow!("download anexo A HTTP: {e}"))?
-        .bytes()
-        .await
-        .map_err(|e| doido_core::anyhow::anyhow!("read anexo A body: {e}"))?;
+    let bytes = load_xlsx_bytes(url).await?;
 
     let cursor = Cursor::new(bytes.to_vec());
     let mut workbook: Xlsx<_> = Xlsx::new(cursor)
@@ -294,5 +307,16 @@ mod tests {
     fn normalize_ibge_pads() {
         assert_eq!(normalize_ibge("1100015".into()), "1100015");
         assert_eq!(normalize_ibge("3550308".into()), "3550308");
+    }
+
+    #[test]
+    fn resolve_download_url_ignores_blank_override() {
+        assert_eq!(resolve_download_url(None), DEFAULT_XLSX_URL);
+        assert_eq!(resolve_download_url(Some("")), DEFAULT_XLSX_URL);
+        assert_eq!(resolve_download_url(Some("  ")), DEFAULT_XLSX_URL);
+        assert_eq!(
+            resolve_download_url(Some("https://example.test/anexo.xlsx")),
+            "https://example.test/anexo.xlsx"
+        );
     }
 }

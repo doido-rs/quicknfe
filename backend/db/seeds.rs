@@ -82,8 +82,7 @@ fn dec_frac(int: i64, scale: u32) -> Decimal {
     Decimal::new(int, scale)
 }
 
-/// Enfileira carga inicial do catálogo NFS-e (worker `cargo doido worker`, fila `catalog`).
-async fn bootstrap_catalog_sync_job(db: &DatabaseConnection) -> doido::Result<()> {
+async fn doido_jobs_table_exists(db: &DatabaseConnection) -> doido::Result<bool> {
     let backend = db.get_database_backend();
     let row = SchemaColCount::find_by_statement(Statement::from_string(
         backend,
@@ -93,39 +92,91 @@ async fn bootstrap_catalog_sync_job(db: &DatabaseConnection) -> doido::Result<()
     ))
     .one(db)
     .await?;
-    if row.map(|r| r.n).unwrap_or(0) == 0 {
-        return Ok(());
-    }
+    Ok(row.map(|r| r.n).unwrap_or(0) > 0)
+}
 
-    let pending = SchemaColCount::find_by_statement(Statement::from_string(
+async fn table_exists(db: &DatabaseConnection, table_name: &str) -> doido::Result<bool> {
+    let backend = db.get_database_backend();
+    let sql = format!(
+        "SELECT COUNT(*) AS n FROM information_schema.TABLES \
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{table_name}'"
+    );
+    let row = SchemaColCount::find_by_statement(Statement::from_string(backend, sql))
+        .one(db)
+        .await?;
+    Ok(row.map(|r| r.n).unwrap_or(0) > 0)
+}
+
+/// Parametrização municipal (ADN) ainda não carregada — sinal para bootstrap do catálogo.
+async fn municipio_cna_parametrizacao_is_empty(db: &DatabaseConnection) -> doido::Result<bool> {
+    if !table_exists(db, "municipio_cna_parametrizacao").await? {
+        return Ok(true);
+    }
+    let backend = db.get_database_backend();
+    let row = SchemaColCount::find_by_statement(Statement::from_string(
         backend,
-        "SELECT COUNT(*) AS n FROM doido_jobs \
-         WHERE queue = 'catalog' AND status IN ('pending','scheduled') \
-         AND data LIKE '%sync_nfse_catalog_daily%'"
-            .to_string(),
+        "SELECT COUNT(*) AS n FROM municipio_cna_parametrizacao".to_string(),
     ))
     .one(db)
     .await?;
-    if pending.map(|r| r.n).unwrap_or(0) > 0 {
+    Ok(row.map(|r| r.n).unwrap_or(0) == 0)
+}
+
+async fn pending_doido_job_count(
+    db: &DatabaseConnection,
+    queue: &str,
+    job_name: &str,
+) -> doido::Result<i64> {
+    let backend = db.get_database_backend();
+    let pattern = format!("%{job_name}%");
+    let sql = format!(
+        "SELECT COUNT(*) AS n FROM doido_jobs \
+         WHERE queue = '{queue}' AND status IN ('pending','scheduled') \
+         AND data LIKE '{pattern}'"
+    );
+    let pending = SchemaColCount::find_by_statement(Statement::from_string(backend, sql))
+        .one(db)
+        .await?;
+    Ok(pending.map(|r| r.n).unwrap_or(0))
+}
+
+/// Enfileira Anexo A (municípios/países) e sync diário do catálogo (`cargo doido worker`).
+async fn bootstrap_nfse_catalog_jobs(db: &DatabaseConnection) -> doido::Result<()> {
+    if !doido_jobs_table_exists(db).await? {
+        return Ok(());
+    }
+    if !municipio_cna_parametrizacao_is_empty(db).await? {
         return Ok(());
     }
 
-    use crate::jobs::sync_nfse_catalog_daily::{
-        SyncNfseCatalogDailyJob, SyncNfseCatalogDailyJobPayload,
-    };
-    use crate::services::job_queue;
+    let queue = crate::services::job_queue::queue_for(db.clone());
 
-    let queue = job_queue::default_job_queue();
-    SyncNfseCatalogDailyJob::new(SyncNfseCatalogDailyJobPayload::default())
-        .enqueue(queue.as_ref())
-        .await
-        .map_err(|e| DbErr::Custom(format!("enqueue catalog sync: {e}")))?;
+    if pending_doido_job_count(db, "default", "import_nfse_anexo_a").await? == 0 {
+        use crate::jobs::import_nfse_anexo_a::{
+            ImportNfseAnexoAJob, ImportNfseAnexoAJobPayload,
+        };
+        ImportNfseAnexoAJob::new(ImportNfseAnexoAJobPayload::default())
+            .enqueue(queue.as_ref())
+            .await
+            .map_err(|e| DbErr::Custom(format!("enqueue import anexo A: {e}")))?;
+    }
+
+    if pending_doido_job_count(db, "catalog", "sync_nfse_catalog_daily").await? == 0 {
+        use crate::jobs::sync_nfse_catalog_daily::{
+            SyncNfseCatalogDailyJob, SyncNfseCatalogDailyJobPayload,
+        };
+        SyncNfseCatalogDailyJob::new(SyncNfseCatalogDailyJobPayload::default())
+            .enqueue(queue.as_ref())
+            .await
+            .map_err(|e| DbErr::Custom(format!("enqueue catalog sync: {e}")))?;
+    }
+
     Ok(())
 }
 
 pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
     assert_seed_schema(db).await?;
-    bootstrap_catalog_sync_job(db).await?;
+    bootstrap_nfse_catalog_jobs(db).await?;
     seed_prestador_bayan_cnc(db).await?;
     repair_seed_fixture_data(db).await?;
 

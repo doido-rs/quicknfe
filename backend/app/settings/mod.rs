@@ -158,12 +158,24 @@ fn load_from_config_file() -> Settings {
         }
     };
     match serde_norway::from_str::<ConfigRoot>(&rendered) {
-        Ok(root) => root.settings,
+        Ok(root) => normalize_settings(root.settings),
         Err(e) => {
             eprintln!("warning: falha ao ler settings de {path}: {e}; usando settings padrão");
             Settings::default()
         }
     }
+}
+
+fn blank_to_none(value: Option<String>) -> Option<String> {
+    value.filter(|s| !s.trim().is_empty())
+}
+
+fn normalize_settings(mut settings: Settings) -> Settings {
+    settings.nfse_catalog.anexo_a_url = blank_to_none(settings.nfse_catalog.anexo_a_url);
+    settings.nfse_catalog.incidencia_xlsx_url =
+        blank_to_none(settings.nfse_catalog.incidencia_xlsx_url);
+    settings.nfse_catalog.anexo_b_url = blank_to_none(settings.nfse_catalog.anexo_b_url);
+    settings
 }
 
 /// Carrega (ou reutiliza) settings do YAML do ambiente atual.
@@ -185,5 +197,15 @@ mod tests {
             normalize_base_url("  http://127.0.0.1:8090/API/SefinNacional/  "),
             "http://127.0.0.1:8090/API/SefinNacional"
         );
+    }
+
+    #[test]
+    fn blank_catalog_urls_become_none() {
+        let mut s = Settings::default();
+        s.nfse_catalog.anexo_a_url = Some("   ".into());
+        s.nfse_catalog.incidencia_xlsx_url = Some("".into());
+        let s = normalize_settings(s);
+        assert!(s.nfse_catalog.anexo_a_url.is_none());
+        assert!(s.nfse_catalog.incidencia_xlsx_url.is_none());
     }
 }
