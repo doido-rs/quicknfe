@@ -7,7 +7,7 @@ use super::ambiente::AmbienteNfse;
 use super::cliente::{enviar_dps_assinada, CredenciaisMtls};
 use super::dps_context::load_dps_context;
 use super::resposta::ResultadoTransmissao;
-use super::rn_validacao::validar_dps_contexto;
+use super::rn_validacao::validar_dps_contexto_com_catalogo;
 use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEntity};
 use crate::models::documento_fiscal::ActiveModel as DocActive;
 use crate::models::log_mensagem_retorno::ActiveModel as LogActive;
@@ -90,7 +90,7 @@ pub async fn transmitir_documento(
     }
 
     let dps_ctx = load_dps_context(db, documento.clone()).await?;
-    validar_dps_contexto(&dps_ctx)?;
+    validar_dps_contexto_com_catalogo(db, &dps_ctx).await?;
 
     let ambiente = AmbienteNfse::from_codigo(documento.ambiente)?;
     let cert = certificado_para_envio(db, params.empresa_id, params.certificado_id).await?;

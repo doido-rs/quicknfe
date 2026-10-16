@@ -14,7 +14,7 @@ cache:
   type: memory
 jobs:
   type: db
-  queues: [default]
+  queues: [default, catalog]
   concurrency: 5
 storage:
   driver: local
@@ -43,3 +43,10 @@ settings:
   sefin:
     ambiente: 1
     base_url: "https://sefin.nfse.gov.br/SefinNacional"
+  adn:
+    base_url: '{{ get_env(name="ADN_BASE_URL", default="https://adn.nfse.gov.br") }}'
+  nfse_catalog:
+    queue: catalog
+    batch_size: 50
+    sleep_ms: 100
+    daily_hour: 3

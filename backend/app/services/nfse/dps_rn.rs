@@ -81,10 +81,6 @@ pub fn load_rn_recepcao_rows(repo_root: &Path) -> Result<Vec<RnRow>, String> {
     load_rn_rows_filtered(repo_root, Some(SHEET_RN_RECEPCAO))
 }
 
-/// Todas as linhas RN (ambas abas) — útil para motor de regras incremental.
-pub fn load_rn_all_rows(repo_root: &Path) -> Result<Vec<RnRow>, String> {
-    load_rn_rows_filtered(repo_root, None)
-}
 
 #[cfg(test)]
 mod tests {

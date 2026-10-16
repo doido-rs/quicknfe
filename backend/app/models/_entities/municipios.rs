@@ -23,6 +23,8 @@ pub enum Relation {
     Clientes,
     #[sea_orm(has_many = "super::empresas::Entity")]
     Empresas,
+    #[sea_orm(has_many = "super::municipio_cna_parametrizacao::Entity")]
+    MunicipioCnaParametrizacao,
 }
 
 impl Related<super::clientes::Entity> for Entity {
@@ -34,5 +36,11 @@ impl Related<super::clientes::Entity> for Entity {
 impl Related<super::empresas::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Empresas.def()
+    }
+}
+
+impl Related<super::municipio_cna_parametrizacao::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::MunicipioCnaParametrizacao.def()
     }
 }

@@ -14,6 +14,7 @@ const DPS_VERSAO: &str = "1.01";
 pub const DPS_XML_NS: &str = "http://www.sped.fazenda.gov.br/nfse";
 
 /// XML da DPS sem assinatura (rascunho). Prefer [`montar_dps_xml_context`] quando relações estão carregadas.
+#[cfg(test)]
 pub fn montar_dps_xml(doc: &Documento) -> String {
     // Rascunho legado sem contexto — Id inválido para SEFIN; use [`montar_dps_xml_context`].
     let id = format!("DPS{:042}", doc.id);
@@ -482,8 +483,9 @@ pub fn xml_escape(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+#[cfg(test)]
 pub mod coverage {
-    use super::super::dps_layout::{load_infdps_leiaute, mandatory_infdps_fields};
+    use super::super::dps_layout::load_infdps_leiaute;
     use std::collections::HashSet;
     use std::path::Path;
 

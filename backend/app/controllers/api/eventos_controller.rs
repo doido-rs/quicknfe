@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use doido::controller::controller;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::evento_documento_fiscal::{

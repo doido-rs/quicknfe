@@ -4,8 +4,6 @@ use base64::Engine;
 use uuid::Uuid;
 
 use crate::services::api_error::ApiError;
-use crate::services::certificado_pfx::verificar_pfx;
-
 const MAX_BYTES: usize = 2 * 1024 * 1024;
 
 pub fn decode_certificado_base64(arquivo_base64: &str) -> Result<Vec<u8>, ApiError> {
@@ -47,18 +45,6 @@ pub fn gravar_certificado_pfx_bytes(
         Ok(p) => p.to_string_lossy().into_owned(),
         Err(_) => path.to_string_lossy().into_owned(),
     })
-}
-
-/// Decodifica base64, valida senha do PFX e grava em disco.
-pub fn gravar_certificado_pfx(
-    prestador_id: i64,
-    nome_original: &str,
-    arquivo_base64: &str,
-    senha: &str,
-) -> Result<String, ApiError> {
-    let bytes = decode_certificado_base64(arquivo_base64)?;
-    verificar_pfx(&bytes, senha)?;
-    gravar_certificado_pfx_bytes(prestador_id, nome_original, &bytes)
 }
 
 fn certificados_dir(prestador_id: i64) -> Result<PathBuf, ApiError> {

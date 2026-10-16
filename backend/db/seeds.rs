@@ -82,8 +82,50 @@ fn dec_frac(int: i64, scale: u32) -> Decimal {
     Decimal::new(int, scale)
 }
 
+/// Enfileira carga inicial do catálogo NFS-e (worker `cargo doido worker`, fila `catalog`).
+async fn bootstrap_catalog_sync_job(db: &DatabaseConnection) -> doido::Result<()> {
+    let backend = db.get_database_backend();
+    let row = SchemaColCount::find_by_statement(Statement::from_string(
+        backend,
+        "SELECT COUNT(*) AS n FROM information_schema.TABLES \
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'doido_jobs'"
+            .to_string(),
+    ))
+    .one(db)
+    .await?;
+    if row.map(|r| r.n).unwrap_or(0) == 0 {
+        return Ok(());
+    }
+
+    let pending = SchemaColCount::find_by_statement(Statement::from_string(
+        backend,
+        "SELECT COUNT(*) AS n FROM doido_jobs \
+         WHERE queue = 'catalog' AND status IN ('pending','scheduled') \
+         AND data LIKE '%sync_nfse_catalog_daily%'"
+            .to_string(),
+    ))
+    .one(db)
+    .await?;
+    if pending.map(|r| r.n).unwrap_or(0) > 0 {
+        return Ok(());
+    }
+
+    use crate::jobs::sync_nfse_catalog_daily::{
+        SyncNfseCatalogDailyJob, SyncNfseCatalogDailyJobPayload,
+    };
+    use crate::services::job_queue;
+
+    let queue = job_queue::default_job_queue();
+    SyncNfseCatalogDailyJob::new(SyncNfseCatalogDailyJobPayload::default())
+        .enqueue(queue.as_ref())
+        .await
+        .map_err(|e| DbErr::Custom(format!("enqueue catalog sync: {e}")))?;
+    Ok(())
+}
+
 pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
     assert_seed_schema(db).await?;
+    bootstrap_catalog_sync_job(db).await?;
     seed_prestador_bayan_cnc(db).await?;
     repair_seed_fixture_data(db).await?;
 

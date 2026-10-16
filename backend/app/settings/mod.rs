@@ -13,6 +13,8 @@ static SETTINGS: OnceLock<Settings> = OnceLock::new();
 pub struct Settings {
     pub sefin: SefinSettings,
     pub cnc: CncSettings,
+    pub adn: AdnSettings,
+    pub nfse_catalog: NfseCatalogSettings,
 }
 
 impl Default for Settings {
@@ -20,6 +22,8 @@ impl Default for Settings {
         Self {
             sefin: SefinSettings::default(),
             cnc: CncSettings::default(),
+            adn: AdnSettings::default(),
+            nfse_catalog: NfseCatalogSettings::default(),
         }
     }
 }
@@ -68,6 +72,61 @@ impl Default for SefinSettings {
 impl SefinSettings {
     pub fn base_url_normalized(&self) -> String {
         normalize_base_url(&self.base_url)
+    }
+}
+
+/// API ADN — parametrização municipal (alíquotas / códigos administrados).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct AdnSettings {
+    pub base_url: String,
+}
+
+impl Default for AdnSettings {
+    fn default() -> Self {
+        Self {
+            base_url: "https://adn.producaorestrita.nfse.gov.br".into(),
+        }
+    }
+}
+
+impl AdnSettings {
+    pub fn base_url_normalized(&self) -> String {
+        normalize_base_url(&self.base_url)
+    }
+}
+
+/// Sync diário: lista nacional, incidência e parametrização por município.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct NfseCatalogSettings {
+    /// Fila doido-jobs para jobs de catálogo.
+    pub queue: String,
+    /// Tamanho do lote de municípios por job filho.
+    pub batch_size: u32,
+    /// Pausa entre chamadas ADN por município (ms).
+    pub sleep_ms: u64,
+    /// Hora local (America/Sao_Paulo) para próxima execução diária (0–23).
+    pub daily_hour: u32,
+    /// URL do Anexo A (municípios IBGE); vazio = padrão em `nfse_anexo_a_import`.
+    pub anexo_a_url: Option<String>,
+    /// URL planilha com aba MUN.INCID_INFO.SERV.; vazio = `layout_dps.xlsx` no repo.
+    pub incidencia_xlsx_url: Option<String>,
+    /// URL Anexo B (lista nacional); opcional — incidência cobre códigos se falhar.
+    pub anexo_b_url: Option<String>,
+}
+
+impl Default for NfseCatalogSettings {
+    fn default() -> Self {
+        Self {
+            queue: "catalog".into(),
+            batch_size: 50,
+            sleep_ms: 100,
+            daily_hour: 3,
+            anexo_a_url: None,
+            incidencia_xlsx_url: None,
+            anexo_b_url: None,
+        }
     }
 }
 

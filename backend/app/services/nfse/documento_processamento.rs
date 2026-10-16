@@ -15,11 +15,11 @@ use crate::services::dto::decode_certificado_senha;
 use crate::services::tenant_scope;
 
 use super::{
-    assinar_dps_xml_rascunho, load_dps_context, montar_dps_xml_context, validar_dps_contexto,
+    assinar_dps_xml_rascunho, load_dps_context, montar_dps_xml_context,
+    validar_dps_contexto_com_catalogo,
 };
 
 pub mod documento_status {
-    pub const NOVO: &str = "novo";
     pub const ASSINANDO: &str = "assinando";
     pub const ASSINADO: &str = "assinado";
     pub const TRANSMITINDO: &str = "transmitindo";
@@ -78,7 +78,7 @@ pub async fn assinar_documento_nfse(
     certificado_id: Option<i64>,
 ) -> Result<Documento, ApiError> {
     let dps_ctx = load_dps_context(db, doc.clone()).await?;
-    validar_dps_contexto(&dps_ctx)?;
+    validar_dps_contexto_com_catalogo(db, &dps_ctx).await?;
     // Sempre remonta a DPS a partir dos dados atuais (leiaute/namespace); não reutiliza xml_assinado.
     let base_xml = montar_dps_xml_context(&dps_ctx)?;
     let cert = certificado_para_assinatura(db, doc.empresa_id, certificado_id).await?;

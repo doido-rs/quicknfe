@@ -4,4 +4,4 @@ mod tipos;
 
 pub use consulta::consulta_cad;
 pub use resposta_public::resposta_publica;
-pub use tipos::{ConsultaCadParams, RespostaConsultaCad};
+pub use tipos::ConsultaCadParams;

@@ -15,16 +15,30 @@ pub struct Model {
     pub codigo: String,
     #[sea_orm(column_type = "Text")]
     pub descricao: String,
+    pub incid_ep: i8,
+    pub incid_lp: i8,
+    pub incid_et: i8,
+    pub grupo_obra: i8,
+    pub grupo_atv_evento: i8,
+    pub synced_at: Option<DateTime>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::itens_documento_fiscal::Entity")]
     ItensDocumentoFiscal,
+    #[sea_orm(has_many = "super::municipio_cna_parametrizacao::Entity")]
+    MunicipioCnaParametrizacao,
 }
 
 impl Related<super::itens_documento_fiscal::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::ItensDocumentoFiscal.def()
+    }
+}
+
+impl Related<super::municipio_cna_parametrizacao::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::MunicipioCnaParametrizacao.def()
     }
 }

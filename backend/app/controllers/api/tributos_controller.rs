@@ -1,6 +1,6 @@
 use doido::controller::controller;
 use doido::model::sea_orm::prelude::Decimal;
-use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 
 use crate::models::tributo_item::{

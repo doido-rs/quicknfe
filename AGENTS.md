@@ -44,6 +44,7 @@ Organize **one module (or subfolder) per external system**, not per QuickNFe fea
 |-----------------|----------------|----------------|
 | **`cnc/`** | HTTP + mTLS to cadastro nacional consult; raw CNC payload ↔ internal types | `settings.cnc.base_url`, `CNC_BASE_URL`; localhost mock skips mTLS |
 | **`sefin/`** (or `nfse_nacional/`) | HTTP + mTLS to SEFIN Nacional (emissão, consulta DPS); status/body parsing at the wire | `settings.sefin.base_url`, `SEFIN_BASE_URL`, `settings.sefin.ambiente` |
+| **`adn/`** | HTTP público — parametrização municipal (`parametros_municipais/{ibge}/aliquotas`) para sync CNA / E0312 | `settings.adn.base_url`, `ADN_BASE_URL` |
 | **`mod.rs`** | `pub mod` + thin re-exports; no business rules |
 
 Connectors may depend on **`app/settings`**, certificate bytes/identity passed in from services (prestador PFX resolved in `app/services/`), and small shared HTTP helpers **inside** `app/connectors/` (e.g. `http_client.rs`, `mtls.rs`). They must **not** import controllers, jobs, or tenant-specific DB access.
@@ -695,7 +696,8 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
 | Prestador show | `PrestadorShowView.tsx`, `ResourceShowPage.tsx`, `definitions.ts` `prestadores.nested`, `NestedResourcePanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController`; wire → **`app/connectors/cnc/`**; orchestration → `services/cnc/consulta.rs` |
-| External connectors | **`backend/app/connectors/`** (`cnc/`, `sefin/`, `mtls.rs`); `settings.cnc` / `settings.sefin`, `CNC_BASE_URL`, `SEFIN_BASE_URL` |
+| External connectors | **`backend/app/connectors/`** (`cnc/`, `sefin/`, `adn/`, `mtls.rs`); `settings.cnc` / `settings.sefin` / `settings.adn`, `CNC_BASE_URL`, `SEFIN_BASE_URL`, `ADN_BASE_URL` |
+| Catálogo NFS-e (E0312) | Jobs fila `catalog`: `sync_nfse_catalog_daily`, `sync_municipio_cna_*`; `docs/nfse/catalog-sync.md`; validação `validar_dps_contexto_com_catalogo`; `GET /api/municipios/{id}/cnas` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
 | NFSe sign/transmit + enqueue | `documento_enqueue.rs`, `nfse/documento_processamento.rs`, `nfse/assinatura.rs`, `nfse/transmissao.rs`, `nfse/cliente.rs` (facade); SEFIN wire → **`app/connectors/sefin/`**; `app/jobs/assinar_documento.rs`, `app/jobs/transmitir_documento.rs`, `config/*yml` `jobs.queues` |
 | Documento actions UI | `DocumentoAssinarButton.tsx`, `DocumentoTransmitirButton.tsx`, `DocumentoCertificadoSelect.tsx`, `useDocumentoProcessamentoPoll.ts`, `components/ui/tabs.tsx`, `api/documentos.ts`, `api/lotes.ts`, `LoteTransmitirButton.tsx` |

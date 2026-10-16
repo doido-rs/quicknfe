@@ -73,38 +73,6 @@ pub async fn switch_company(
     Ok(set_cookie)
 }
 
-pub async fn switch_prestador(
-    api_router: &Router,
-    session_cookie: &str,
-    empresa_id: i64,
-) -> Result<String, String> {
-    let body = serde_json::json!({ "empresa_id": empresa_id }).to_string();
-    let req = Request::builder()
-        .method("POST")
-        .uri("/tenant/prestador")
-        .header(header::ACCEPT, "application/json")
-        .header(header::CONTENT_TYPE, "application/json")
-        .header(header::COOKIE, session_cookie)
-        .body(Body::from(body))
-        .map_err(|e| e.to_string())?;
-
-    let resp = api_router
-        .clone()
-        .oneshot(req)
-        .await
-        .map_err(|e| e.to_string())?;
-    if resp.status() != StatusCode::NO_CONTENT {
-        return Err(format!("prestador switch failed: {}", resp.status()));
-    }
-    let set_cookie = resp
-        .headers()
-        .get(header::SET_COOKIE)
-        .and_then(|v| v.to_str().ok())
-        .map(|c| session_cookie_from_set_cookie(c))
-        .unwrap_or_else(|| session_cookie.to_string());
-    Ok(set_cookie)
-}
-
 pub async fn default_company_for_user(user_id: i64) -> Option<i64> {
     use doido::model::sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
     use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEntity};

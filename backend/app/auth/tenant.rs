@@ -1,15 +1,11 @@
 //! Company (tenant) + prestador ativo (`empresas`) na sessão.
 
-use doido::controller::axum::extract::FromRequestParts;
-use doido::controller::axum::http::request::Parts;
 use doido::controller::axum::http::StatusCode;
 use doido::controller::axum::response::{IntoResponse, Response};
-use doido::controller::secret::key_base;
-use doido::controller::session::{EncryptedCookieSessionStore, Session};
+use doido::controller::session::Session;
 use serde_json::Value;
 use doido::model::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
-use doido_auth::extractors::CurrentUser;
-use doido_auth::session::{SESSION_COOKIE, USER_ID_KEY};
+use doido_auth::session::USER_ID_KEY;
 use doido_auth::AuthUser;
 
 use crate::models::company::Model as Company;
@@ -83,27 +79,6 @@ pub async fn user_company_ids(db: &DatabaseConnection, user_id: i64) -> doido::R
         .all(db)
         .await?;
     Ok(rows.into_iter().map(|r| r.company_id).collect())
-}
-
-fn session_from_parts(parts: &Parts) -> Option<Session> {
-    let header_value = parts.headers.get(doido::controller::axum::http::header::COOKIE)?.to_str().ok()?;
-    let raw = header_value
-        .split(';')
-        .filter_map(|pair| pair.trim().split_once('='))
-        .find(|(k, _)| *k == SESSION_COOKIE)
-        .map(|(_, v)| v.to_string())?;
-    let store = EncryptedCookieSessionStore::new(key_base());
-    store.decode(&raw)
-}
-
-pub fn company_id_from_session(parts: &Parts) -> Option<i64> {
-    let session = session_from_parts(parts)?;
-    session.get(COMPANY_ID_KEY)
-}
-
-pub fn prestador_id_from_session(parts: &Parts) -> Option<i64> {
-    let session = session_from_parts(parts)?;
-    session.get(PRESTADOR_ID_KEY)
 }
 
 pub fn set_company_in_session(session: &mut Session, company_id: i64) {
@@ -204,52 +179,4 @@ pub async fn tenant_from_ctx(
         prestador,
         papel,
     })
-}
-
-/// Exige usuário autenticado + company/prestador válidos na sessão.
-pub struct CurrentTenant(pub TenantAccess);
-
-impl<S> FromRequestParts<S> for CurrentTenant
-where
-    S: Send + Sync,
-{
-    type Rejection = TenantError;
-
-    fn from_request_parts(
-        parts: &mut Parts,
-        state: &S,
-    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
-        async move {
-            let CurrentUser(user) = CurrentUser::<User>::from_request_parts(parts, state)
-                .await
-                .map_err(|_| TenantError::Unauthorized)?;
-
-            let session = session_from_parts(parts).ok_or(TenantError::Unauthorized)?;
-            let db = doido_auth::state::global().db.clone();
-            let (company_id, prestador_id) = resolve_tenant_ids(&db, &session).await?;
-            let Some(papel) = membership(&db, user.id, company_id)
-                .await
-                .map_err(|e| TenantError::Internal(e.to_string()))?
-            else {
-                return Err(TenantError::Forbidden);
-            };
-
-            let Some(company) = crate::models::company::Entity::find_by_id(company_id)
-                .one(&db)
-                .await
-                .map_err(|e| TenantError::Internal(e.to_string()))?
-            else {
-                return Err(TenantError::Forbidden);
-            };
-
-            let prestador = load_prestador_for_company(&db, company_id, prestador_id).await?;
-
-            Ok(CurrentTenant(TenantAccess {
-                user,
-                company,
-                prestador,
-                papel,
-            }))
-        }
-    }
 }

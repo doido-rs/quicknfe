@@ -4,7 +4,7 @@ use super::resposta::{interpretar_resposta_http, ResultadoTransmissao};
 use crate::connectors::sefin;
 use crate::services::api_error::ApiError;
 
-pub use crate::connectors::mtls::{build_mtls_client, CredenciaisMtls};
+pub use crate::connectors::mtls::CredenciaisMtls;
 
 /// Envia DPS assinada (XML) para `POST /nfse` com mTLS.
 pub async fn enviar_dps_assinada(

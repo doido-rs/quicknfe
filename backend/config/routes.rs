@@ -31,6 +31,7 @@ pub fn router() -> axum::Router {
 
         get!("/api/municipios", ApiMunicipiosController::index);
         get!("/api/municipios/{id}", ApiMunicipiosController::show);
+        get!("/api/municipios/{id}/cnas", ApiMunicipiosController::cnas);
 
         get!("/api/cnas", ApiCnasController::index);
         get!("/api/cnas/{id}", ApiCnasController::show);

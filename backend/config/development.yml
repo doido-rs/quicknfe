@@ -15,7 +15,7 @@ cache:
   type: memory
 jobs:
   type: db
-  queues: [default]
+  queues: [default, catalog]
   concurrency: 5
 storage:
   driver: local
@@ -72,3 +72,13 @@ settings:
   cnc:
     # CNC_BASE_URL=http://127.0.0.1:8090/cnc/consulta com sefin-mock (sem mTLS).
     base_url: '{{ get_env(name="CNC_BASE_URL", default="https://adn.producaorestrita.nfse.gov.br/cnc/consulta") }}'
+  adn:
+    base_url: '{{ get_env(name="ADN_BASE_URL", default="https://adn.producaorestrita.nfse.gov.br") }}'
+  nfse_catalog:
+    queue: catalog
+    batch_size: 50
+    sleep_ms: 100
+    daily_hour: 3
+    anexo_a_url: '{{ get_env(name="NFSE_ANEXO_A_URL", default="") }}'
+    incidencia_xlsx_url: '{{ get_env(name="NFSE_INCIDENCIA_XLSX_URL", default="") }}'
+    anexo_b_url: '{{ get_env(name="NFSE_ANEXO_B_URL", default="") }}'

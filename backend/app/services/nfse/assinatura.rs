@@ -4,9 +4,12 @@ use std::fs;
 
 use oxixml_c14n::CanonicalizationAlgorithm;
 use oxixml_dsig::{
-    DigestAlgorithm, KeyInfoSpec, ReferenceSpec, RsaPrivateKey, Signature, SignatureAlgorithm,
-    SignatureBuilder, SigningKey, TransformSpec, TrustedCertificates, Verifier, sign,
+    DigestAlgorithm, KeyInfoSpec, ReferenceSpec, RsaPrivateKey, SignatureAlgorithm,
+    SignatureBuilder, SigningKey, TransformSpec, sign,
 };
+
+#[cfg(test)]
+use oxixml_dsig::{Signature, TrustedCertificates, Verifier};
 use oxixml_dom::{build, SerializeOptions, XmlDeclaration};
 
 use super::xml_prolog::garantir_prolog_utf8;

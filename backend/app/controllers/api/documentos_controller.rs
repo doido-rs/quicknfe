@@ -11,12 +11,11 @@ use crate::services::api_error::{
     db, id_param, json_body, json_with_status, require_tenant, scoped, to_response, ApiError,
 };
 use crate::services::documento_presentacao::{documento_detalhe, documentos_list_items};
-use crate::services::dto::{DocumentoDto, ParteExteriorDto, TransmitirDocumentoResponse};
-use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEntity};
-use crate::services::dto::decode_certificado_senha;
+use crate::services::dto::ParteExteriorDto;
 use crate::services::documento_enqueue::{enqueue_assinar, enqueue_transmitir};
 use crate::services::nfse::{
-    load_dps_context, montar_dps_xml_context, validar_dps_contexto, DocumentoAssinarParams,
+    load_dps_context, montar_dps_xml_context, validar_dps_contexto_com_catalogo,
+    DocumentoAssinarParams,
 };
 use crate::services::pagination::PageResponse;
 use crate::services::municipio::require_municipio;
@@ -262,20 +261,8 @@ async fn documento_xml_content(
         return Ok(xml.clone());
     }
     let ctx = load_dps_context(db, doc.clone()).await?;
-    validar_dps_contexto(&ctx)?;
+    validar_dps_contexto_com_catalogo(db, &ctx).await?;
     montar_dps_xml_context(&ctx)
-}
-
-async fn ultimo_certificado_empresa(
-    db: &doido::model::sea_orm::DatabaseConnection,
-    empresa_id: i64,
-) -> Result<Option<crate::models::certificado_digital::Model>, ApiError> {
-    CertEntity::find()
-        .filter(CertColumn::EmpresaId.eq(empresa_id))
-        .order_by_desc(CertColumn::CriadoEm)
-        .one(db)
-        .await
-        .map_err(|e| ApiError::Internal(e.to_string()))
 }
 
 fn xml_download_filename(doc: &Documento) -> String {
@@ -490,7 +477,9 @@ impl ApiDocumentosController {
         let dps_ctx = crate::api!(to_response(
             load_dps_context(ctx.db(), existing.clone()).await,
         ));
-        crate::api!(to_response(validar_dps_contexto(&dps_ctx)));
+        crate::api!(to_response(
+            validar_dps_contexto_com_catalogo(ctx.db(), &dps_ctx).await,
+        ));
         let form: AssinarForm = match ctx.body_json().await {
             Ok(f) => f,
             Err(_) => AssinarForm::default(),

@@ -228,6 +228,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/CncConsultaCadPublic'
 
+  /api/municipios/{id}/cnas:
+    get:
+      tags: [Empresa]
+      summary: CNAs administrados pelo município (sync ADN)
+      operationId: listMunicipioCnas
+      security:
+        - cookieSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: competencia
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filtra parametrização vigente na competência (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Lista de CNAs administrados naquele IBGE
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CnaDto'
+
   /api/clientes:
     get:
       tags: [Clientes]
@@ -1297,6 +1327,17 @@ components:
         email:
           type: string
         telefone:
+          type: string
+    CnaDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        codigo:
+          type: string
+          description: Código de tributação nacional (6 dígitos, cTribNac)
+        descricao:
           type: string
     ClienteDto:
       allOf:

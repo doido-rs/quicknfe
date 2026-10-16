@@ -8,6 +8,15 @@ use super::dps_rn;
 use super::dps_rn_engine;
 use crate::services::api_error::ApiError;
 
+/// Valida documento + contexto (RN + presença + E0312 com catálogo municipal).
+pub async fn validar_dps_contexto_com_catalogo(
+    db: &doido::model::sea_orm::DatabaseConnection,
+    ctx: &DpsContext,
+) -> Result<(), ApiError> {
+    validar_dps_contexto(ctx)?;
+    super::e0312_validacao::validar_e0312_catalogo(db, ctx).await
+}
+
 /// Valida documento + contexto carregado (espelha RN críticas do leiaute / formulário).
 pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
     let doc = &ctx.doc;
@@ -127,7 +136,7 @@ pub fn minimal_dps_context() -> DpsContext {
                 status: "novo".into(),
                 processamento_mensagem: None,
                 data_emissao: Utc::now(),
-                data_competencia: None,
+                data_competencia: Some(chrono::Utc::now().date_naive()),
                 serie_numero_automatico: 1,
                 municipio_emissao_id: 1,
                 municipio_prestacao_id: 1,

@@ -26,6 +26,7 @@ mod m20261014100000_user_date_format;
 mod m20261014210000_partes_endereco_br;
 mod m20261014220000_documento_processamento_mensagem;
 mod m20261015000000_documento_issqn_exig_susp;
+mod m20261016140000_nfse_catalog_sync;
 // @generated-migrations-mod — `doido generate model` inserts `mod` declarations above this line. Do not remove.
 
 pub struct Migrator;
@@ -62,6 +63,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261014210000_partes_endereco_br::Migration),
             Box::new(m20261014220000_documento_processamento_mensagem::Migration),
             Box::new(m20261015000000_documento_issqn_exig_susp::Migration),
+            Box::new(m20261016140000_nfse_catalog_sync::Migration),
             // @generated-migrations-list
         ]
     }

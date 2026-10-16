@@ -114,12 +114,3 @@ pub fn json_with_status<T: Serialize>(status: u16, data: T) -> Response {
         .expect("valid json response")
 }
 
-pub trait ApiErrExt<T> {
-    fn api(self) -> ApiResponse<T>;
-}
-
-impl<T, E: Into<ApiError>> ApiErrExt<T> for Result<T, E> {
-    fn api(self) -> ApiResponse<T> {
-        self.map_err(|e| e.into().into_response())
-    }
-}

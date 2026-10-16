@@ -57,3 +57,10 @@ settings:
     base_url: '{{ get_env(name="SEFIN_BASE_URL", default="https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional") }}'
   cnc:
     base_url: '{{ get_env(name="CNC_BASE_URL", default="http://127.0.0.1:8090/cnc/consulta") }}'
+  adn:
+    base_url: '{{ get_env(name="ADN_BASE_URL", default="http://127.0.0.1:8090") }}'
+  nfse_catalog:
+    queue: catalog
+    batch_size: 10
+    sleep_ms: 0
+    daily_hour: 3
