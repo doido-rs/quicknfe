@@ -29,6 +29,9 @@ export function useDocumentoProcessamentoPoll(
         const s = String(fresh.status ?? '')
         if (!documentoProcessamentoInFlight(s)) {
           queryClient.invalidateQueries({ queryKey: ['documentos', 'list'] })
+          queryClient.invalidateQueries({
+            queryKey: [`/api/documentos/${documentoId}/logs-retorno`],
+          })
           if (documentoTerminalError(s)) {
             const msg =
               typeof fresh.processamento_mensagem === 'string'

@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { DocumentoAssinarButton } from '@/components/resources/DocumentoAssinarButton'
 import { DocumentoTransmitirButton } from '@/components/resources/DocumentoTransmitirButton'
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
+import { DocumentoLogsRetornoPanel } from '@/components/resources/DocumentoLogsRetornoPanel'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -38,8 +39,6 @@ export function DocumentoShowView({
 
   const nesteds = resourceNesteds(def)
   const itensNested = nesteds.find((n) => n.path(recordId).includes('/itens'))
-  const logsNested = nesteds.find((n) => n.path(recordId).includes('/logs-retorno'))
-
   const processamentoMsg =
     typeof row.processamento_mensagem === 'string' ? row.processamento_mensagem.trim() : ''
   const showProcessamentoMsg = processamentoMsg.length > 0
@@ -105,9 +104,7 @@ export function DocumentoShowView({
         </TabsContent>
 
         <TabsContent value="logs">
-          {logsNested ? (
-            <NestedResourcePanel parentId={recordId} nested={logsNested} />
-          ) : null}
+          <DocumentoLogsRetornoPanel documentoId={recordId} />
         </TabsContent>
       </Tabs>
     </div>
