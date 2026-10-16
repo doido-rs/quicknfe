@@ -19,7 +19,6 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "nDPS",
         "dCompet",
         "tpEmit",
-        "tpEmis",
         "cLocEmi",
         "CNPJ",
         "CPF",
@@ -44,10 +43,6 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "vTotTribFed",
         "vTotTribEst",
         "vTotTribMun",
-        "pTotTribFed",
-        "pTotTribEst",
-        "pTotTribMun",
-        "indTotTrib",
         "tpSusp",
         "nProcesso",
     ]
@@ -170,7 +165,6 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
         "nDPS" => doc.serie_numero_automatico != 0 || doc.numero_documento > 0,
         "dCompet" => doc.data_competencia.is_some() || !doc.data_emissao.to_string().is_empty(),
         "tpEmit" => true,
-        "tpEmis" => doc.tipo_emissao > 0,
         "cLocEmi" => !ctx.municipio_emissao.codigo_ibge.trim().is_empty(),
         "CNPJ" => cpf_cnpj_tag(&ctx.prestador.cpf_cnpj).0 == "CNPJ",
         "CPF" => cpf_cnpj_tag(&ctx.prestador.cpf_cnpj).0 == "CPF",
@@ -198,8 +192,7 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
         "tpRetISSQN" => true,
         "CST" => !doc.cst_pis_cofins.trim().is_empty(),
         "tpRetPisCofins" => !doc.tp_ret_pis_cofins_csll.trim().is_empty(),
-        "vTotTribFed" | "vTotTribEst" | "vTotTribMun" | "pTotTribFed" | "pTotTribEst"
-        | "pTotTribMun" | "indTotTrib" => true,
+        "vTotTribFed" | "vTotTribEst" | "vTotTribMun" => true,
         _ => return Ok(false),
     };
     Ok(ok)

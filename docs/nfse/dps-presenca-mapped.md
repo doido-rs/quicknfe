@@ -16,7 +16,7 @@ Antes de **Assinar** / **Transmitir**, `validar_dps_contexto` chama `dps_presenc
 | `verAplic` | constante no builder |
 | `serie` / `nDPS` | `serie`, `numero_documento` (ou `serie_numero_automatico`) |
 | `dCompet` | `data_competencia` ou fallback emissão |
-| `tpEmit` / `tpEmis` | constante `1` / `tipo_emissao` |
+| `tpEmit` | constante `1` (prestador). `tpEmis` é da NFS-e processada (`infNFSe`), não entra no XML da DPS. |
 | `cLocEmi` / `cLocPrestacao` | municípios emissão/prestação |
 | `CNPJ`/`CPF`, `xNome`, `cMun` | prestador + município prestador |
 | `CEP`, `xLgr`, `nro`, `xBairro` | endereço do **prestador** (`empresas.*`); tomador/intermediário Brasil quando `end` é emitido (Phase 3B) |

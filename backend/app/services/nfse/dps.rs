@@ -80,7 +80,6 @@ fn append_identificacao(xml: &mut String, ctx: &DpsContext, competencia: &str) {
     push_elem(xml, 4, "nDPS", &doc.numero_documento.to_string());
     push_elem(xml, 4, "dCompet", competencia);
     push_elem(xml, 4, "tpEmit", "1");
-    push_elem(xml, 4, "tpEmis", &doc.tipo_emissao.to_string());
     push_elem(
         xml,
         4,
@@ -455,6 +454,7 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
     xml.push_str("    </valores>\n");
 }
 
+/// `totTrib` é **choice** no XSD: `vTotTrib` **ou** `pTotTrib` **ou** `indTotTrib` **ou** `pTotTribSN`.
 fn append_tot_trib(xml: &mut String) {
     xml.push_str("        <totTrib>\n");
     xml.push_str("          <vTotTrib>\n");
@@ -462,12 +462,6 @@ fn append_tot_trib(xml: &mut String) {
     push_elem(xml, 12, "vTotTribEst", "0.00");
     push_elem(xml, 12, "vTotTribMun", "0.00");
     xml.push_str("          </vTotTrib>\n");
-    xml.push_str("          <pTotTrib>\n");
-    push_elem(xml, 12, "pTotTribFed", "0.00");
-    push_elem(xml, 12, "pTotTribEst", "0.00");
-    push_elem(xml, 12, "pTotTribMun", "0.00");
-    xml.push_str("          </pTotTrib>\n");
-    push_elem(xml, 10, "indTotTrib", "0");
     xml.push_str("        </totTrib>\n");
 }
 
@@ -496,7 +490,7 @@ pub mod coverage {
     /// Tags de elemento (`campo`) que o builder emite hoje (fases 3A–3H).
     pub fn emitted_tags() -> HashSet<&'static str> {
         [
-            "id", "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "tpEmis", "cLocEmi",
+            "id", "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
@@ -504,8 +498,7 @@ pub mod coverage {
             "vRetCP",
             "vRetIRRF", "vRetCSLL",
             "infoCompl", "cIntContrib", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
-            "vTotTribFed", "vTotTribEst", "vTotTribMun", "pTotTribFed", "pTotTribEst", "pTotTribMun",
-            "indTotTrib", "tpSusp", "nProcesso",
+            "vTotTribFed", "vTotTribEst", "vTotTribMun", "tpSusp", "nProcesso",
         ]
         .into_iter()
         .collect()
@@ -799,7 +792,8 @@ mod tests {
         };
         let xml = montar_dps_xml_context(&ctx).expect("xml");
         for tag in [
-            "<tpEmis>",
+            "<tpEmit>",
+            "<cLocEmi>",
             "<cTribNac>",
             "<xDescServ>",
             "<tribISSQN>",
@@ -808,5 +802,9 @@ mod tests {
         ] {
             assert!(xml.contains(tag), "missing {tag}");
         }
+        assert!(
+            !xml.contains("<pTotTrib>"),
+            "totTrib é choice — não emitir pTotTrib junto com vTotTrib"
+        );
     }
 }
