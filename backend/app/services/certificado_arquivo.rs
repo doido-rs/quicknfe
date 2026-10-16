@@ -43,6 +43,18 @@ fn certificados_dir(prestador_id: i64) -> Result<PathBuf, ApiError> {
     Ok(root.join("storage").join("certificados").join(prestador_id.to_string()))
 }
 
+/// Remove PFX gravado pelo app (`storage/certificados/…`). Ignora caminhos fora desse diretório.
+pub fn tentar_remover_arquivo_certificado(caminho: &str) {
+    let normalized = caminho.replace('\\', "/");
+    if !normalized.contains("/storage/certificados/") {
+        return;
+    }
+    let path = Path::new(caminho);
+    if path.is_file() {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
 fn extension_permitida(nome: &str) -> Result<&'static str, ApiError> {
     let path = Path::new(nome);
     let ext = path

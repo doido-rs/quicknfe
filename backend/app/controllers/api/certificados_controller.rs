@@ -7,7 +7,7 @@ use crate::models::certificado_digital::{
     ActiveModel as CertActive, Column as CertColumn, Entity as CertEntity,
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response, ApiError};
-use crate::services::certificado_arquivo::gravar_certificado_pfx;
+use crate::services::certificado_arquivo::{gravar_certificado_pfx, tentar_remover_arquivo_certificado};
 use crate::services::certificado_tipo::validar_certificado_tipo;
 use crate::services::dto::{encode_certificado_senha, CertificadoDto};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
@@ -178,9 +178,12 @@ impl ApiCertificadosController {
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
         ));
         let id = crate::api!(id_param(&ctx, "id"));
-        crate::api!(scoped(
+        let existing = crate::api!(scoped(
             tenant_scope::certificado_for_tenant(ctx.db(), prestador_id, id).await,
         ));
+        if let Some(caminho) = existing.caminho_arquivo.as_deref() {
+            tentar_remover_arquivo_certificado(caminho);
+        }
         crate::api!(db(CertEntity::delete_by_id(id).exec(ctx.db()).await));
         ctx.status(204)
     }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { resourceApi } from '@/api/client'
+import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
 import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,6 +26,7 @@ export function NestedResourcePanel({
 }) {
   const path = nested.path(parentId)
   const allowCreate = nested.allowCreate !== false
+  const allowDelete = nested.allowDelete === true
   const api = resourceApi<Record<string, unknown>>(path)
   const queryClient = useQueryClient()
   const form = useResourceFieldForm(nested.fields)
@@ -36,6 +38,7 @@ export function NestedResourcePanel({
   useUnsavedFormGuard(allowCreate && isDirty)
   const [files, setFiles] = useState<Record<string, File | undefined>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Record<string, unknown> | null>(null)
 
   const { data: page } = useQuery({
     queryKey: [path, 'list'],
@@ -79,6 +82,20 @@ export function NestedResourcePanel({
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [path] })
+      setDeleteTarget(null)
+      toastSuccess('Registro excluído')
+    },
+    onError: (err) => toastFromError(err, 'Não foi possível excluir'),
+  })
+
+  const onDeleteClick = useCallback((row: Record<string, unknown>) => {
+    setDeleteTarget(row)
+  }, [])
+
   return (
     <Card>
       <CardHeader>
@@ -118,8 +135,20 @@ export function NestedResourcePanel({
             const id = Number(r.id)
             const label = rowLabel(r, nested.fields)
             return (
-              <li key={String(r.id)} className="space-y-1">
-                <span>{label}</span>
+              <li key={String(r.id)} className="list-none space-y-1 pl-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>{label}</span>
+                  {allowDelete && Number.isFinite(id) && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onDeleteClick(r)}
+                    >
+                      Excluir
+                    </Button>
+                  )}
+                </div>
                 {nested.itemTributos && Number.isFinite(id) && (
                   <ItemTributosPanel
                     itemId={id}
@@ -131,6 +160,23 @@ export function NestedResourcePanel({
             )
           })}
         </ul>
+        <DeleteConfirmDialog
+          open={deleteTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setDeleteTarget(null)
+          }}
+          description={
+            deleteTarget
+              ? `Esta ação não pode ser desfeita. Registro: ${rowLabel(deleteTarget, nested.fields)} (ID ${deleteTarget.id}).`
+              : undefined
+          }
+          pending={deleteMutation.isPending}
+          onConfirm={() => {
+            if (deleteTarget?.id) {
+              deleteMutation.mutate(Number(deleteTarget.id))
+            }
+          }}
+        />
       </CardContent>
     </Card>
   )

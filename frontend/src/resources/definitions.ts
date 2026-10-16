@@ -126,6 +126,8 @@ export interface NestedDef {
   createButtonLabel?: string
   /** Padrão: true. Use false para painéis somente leitura (ex.: logs SEFAZ). */
   allowCreate?: boolean
+  /** Padrão: false. Use true quando a API expõe DELETE no path aninhado (ex.: certificados). */
+  allowDelete?: boolean
   /** Ajusta o JSON antes do POST (ex.: preencher `descricao` a partir da descrição do serviço). */
   prepareCreateBody?: (body: Record<string, unknown>) => Record<string, unknown>
   /** Tributos por linha de item (ex.: itens da nota). */
@@ -622,6 +624,7 @@ export const resources: ResourceDef[] = [
       label: 'Certificados digitais',
       path: (prestadorId) => `/api/prestadores/${prestadorId}/certificados`,
       createButtonLabel: 'Enviar certificado',
+      allowDelete: true,
       fields: [
         {
           key: 'tipo',

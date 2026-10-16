@@ -61,6 +61,7 @@ describe('resources', () => {
       nested && !Array.isArray(nested) ? nested.path(7) : undefined
     expect(certPath).toBe('/api/prestadores/7/certificados')
     expect(resources.some((r) => r.key === 'certificados')).toBe(false)
+    expect(nested && !Array.isArray(nested) && nested.allowDelete).toBe(true)
   })
 
   it('groups nota fiscal form: identificação, prestador|partes, extras', () => {
