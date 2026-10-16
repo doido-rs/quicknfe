@@ -7,7 +7,9 @@ use oxixml_dsig::{
     DigestAlgorithm, KeyInfoSpec, ReferenceSpec, RsaPrivateKey, Signature, SignatureAlgorithm,
     SignatureBuilder, SigningKey, TransformSpec, TrustedCertificates, Verifier, sign,
 };
-use oxixml_dom::build;
+use oxixml_dom::{build, SerializeOptions, XmlDeclaration};
+
+use super::xml_prolog::garantir_prolog_utf8;
 
 use super::dps::DPS_XML_NS;
 use crate::services::api_error::ApiError;
@@ -114,7 +116,9 @@ fn assinar_com_chave(
         ApiError::Validation(format!("falha ao assinar XML da DPS: {e}"))
     })?;
 
-    Ok(document.to_xml())
+    document.set_encoding(Some(super::xml_prolog::DPS_XML_ENCODING));
+    let options = SerializeOptions::new().with_xml_declaration(XmlDeclaration::Include);
+    Ok(garantir_prolog_utf8(&document.to_xml_with(&options)))
 }
 
 fn extrair_id_inf_dps(xml: &str) -> Result<String, ApiError> {
@@ -187,6 +191,10 @@ mod tests {
         assert!(out.contains("<SignatureValue>"));
         assert!(out.contains("<X509Certificate>"));
         assert!(out.contains("rsa-sha1"));
+        assert!(
+            out.contains(r#"encoding="UTF-8""#),
+            "SEFIN E1229 exige declaração UTF-8"
+        );
 
         let document = build::parse_str(&out).expect("parse signed");
         let signature = Signature::find(&document).expect("signature");

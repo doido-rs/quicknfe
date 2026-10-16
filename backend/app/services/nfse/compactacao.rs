@@ -7,8 +7,11 @@ use flate2::Compression;
 
 use crate::services::api_error::ApiError;
 
+use super::xml_prolog::garantir_prolog_utf8;
+
 /// Compacta o XML da DPS assinada no formato exigido pela API (`gzip` + Base64).
 pub fn xml_para_dps_gzip_b64(xml: &str) -> Result<String, ApiError> {
+    let xml = garantir_prolog_utf8(xml);
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     encoder
         .write_all(xml.as_bytes())
@@ -41,6 +44,7 @@ mod tests {
         let original = r#"<?xml version="1.0"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse"><infDPS Id="x"/></DPS>"#;
         let b64 = xml_para_dps_gzip_b64(original).unwrap();
         let back = gzip_b64_para_xml(&b64).unwrap();
-        assert_eq!(back, original);
+        assert!(back.contains(r#"encoding="UTF-8""#));
+        assert!(back.contains("<DPS"));
     }
 }

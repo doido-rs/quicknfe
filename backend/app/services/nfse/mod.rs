@@ -17,6 +17,7 @@ mod dps_rn_engine;
 mod resposta;
 mod rn_validacao;
 mod transmissao;
+mod xml_prolog;
 
 pub use assinatura::assinar_dps_xml_rascunho;
 pub use dps::{montar_dps_xml, montar_dps_xml_context};
