@@ -40,7 +40,7 @@ All CRUD screens are generated from `frontend/src/resources/definitions.ts`:
 | Sidebar | `sidebarResources()` — `menuPlacement` defaults to `sidebar` |
 | Settings hub | `/app/configuracoes` — `settingsResources()` (`menuPlacement: 'settings'`: CNA, municípios) |
 | List | `ResourceListPage` — infinite query, `page_size` / `page_token`; **documentos** use `DocumentoListTable` |
-| Show | Generic `ResourceShowPage` except **documentos** → `DocumentoShowView` (**tabs**: dados / itens / logs SEFAZ); **prestadores** → **target** tabbed show (dados / certificados) — see [Prestador (cadastro) — show UX](#prestador-cadastro--show-ux) |
+| Show | Generic `ResourceShowPage` except **documentos** → `DocumentoShowView` (**tabs**: dados / itens / logs SEFAZ); **prestadores** → `PrestadorShowView` (**tabs**: dados / certificados) — see [Prestador (cadastro) — show UX](#prestador-cadastro--show-ux) |
 | New / Edit | `ResourceNewPage` / `ResourceEditPage`; documentos use `buildDocumentoBody` / `flattenDocumentoRowToForm` |
 
 ### Registered resources (summary)
@@ -50,7 +50,7 @@ All CRUD screens are generated from `frontend/src/resources/definitions.ts`:
 | `documentos` | Nota fiscal | `/api/documentos` | Custom list/show; nested itens + logs; assinar/XML |
 | `lotes` | Nota fiscal | `/api/lotes` | Transmission batches |
 | `logs-retorno` | (no menu) | `/api/logs-retorno` | Global log index; also nested under documento |
-| `prestadores` | Cadastros | `/api/prestadores` | CNC lookup; nested certificados; **target** show **tabs** (dados / certificados) |
+| `prestadores` | Cadastros | `/api/prestadores` | CNC lookup; show **tabs** (dados / certificados); nested certificados + delete |
 | `clientes` | Cadastros | `/api/clientes` | Tomadores; CNC lookup; scoped by prestador |
 | `intermediarios` | Cadastros | `/api/intermediarios` | Scoped by prestador |
 | `municipios` | Configurações | `/api/municipios` | Read-only UI (no create/delete) |
@@ -148,7 +148,7 @@ Shown on **show** (and logs read-only) via `NestedResourcePanel`:
 - Delete: when `NestedDef.allowDelete === true` (certificados do prestador) — confirm dialog + `DELETE parentPath/{id}`
 - **`prepareCreateBody`**: e.g. itens copy `descricao` from `descricao_servico` before POST
 - File nested fields use `buildCreateBodyWithFiles` (base64)
-- **Prestador show (target):** certificados nested panel lives in the **Certificados digitais** tab, not stacked under the detalhes card — see [Prestador (cadastro) — show UX](#prestador-cadastro--show-ux)
+- **Prestador show:** certificados nested panel lives in the **Certificados digitais** tab (`PrestadorShowView`) — see [Prestador (cadastro) — show UX](#prestador-cadastro--show-ux)
 
 **Nota fiscal — create flow**: `ResourceNewPage` adds `DocumentoItensDraftPanel` (local draft). On **Criar**:
 
@@ -203,7 +203,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 ## Prestador (cadastro) — show UX
 
-**Status:** **target (not implemented)** — today prestador **show** still uses generic `ResourceShowPage`: a **Detalhes** card (read-only `fields`) and the **Certificados digitais** `NestedResourcePanel` stacked on the same scroll page. **Product target:** a dedicated show layout with **tabs**, aligned with `DocumentoShowView` (`components/ui/tabs.tsx`).
+**Status:** **implemented** — `PrestadorShowView` (branch in `ResourceShowPage` when `def.key === 'prestadores'`), aligned with `DocumentoShowView` (`components/ui/tabs.tsx`).
 
 | Tab | Content |
 |-----|---------|
@@ -218,7 +218,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 - Inactive tab content **unmounts** so nested list/create queries for certificados run when the user opens **Certificados digitais**.
 - Unsaved-changes guard applies to the nested upload form when that tab is active (`useUnsavedFormGuard` on `NestedResourcePanel`).
 
-**Implementation sketch for agents:** branch `ResourceShowPage` when `def.key === 'prestadores'` or add `PrestadorShowView.tsx`; keep `ResourceDef.nested` in `definitions.ts` as the single source for certificado fields and `allowDelete`; do not duplicate certificado field lists in the tab component.
+**Implementation:** `PrestadorShowView.tsx` + branch in `ResourceShowPage`; keep `ResourceDef.nested` in `definitions.ts` as the single source for certificado fields and `allowDelete`; do not duplicate certificado field lists in the tab component.
 
 ---
 
@@ -262,9 +262,7 @@ When `serie_numero_automatico === true`, frontend sends `numero_documento: 0`, `
 
 **Purpose**: Store digital certificate files (typically **A1** PFX) for mTLS (CNC, NFSe transmission) and XML-DSig.
 
-**UI (today):** `NestedResourcePanel` on generic prestador **show** (`ResourceShowPage`), stacked below Detalhes.
-
-**UI (target):** **Certificados digitais** tab on prestador show — see [Prestador (cadastro) — show UX](#prestador-cadastro--show-ux).
+**UI:** **Certificados digitais** tab on prestador show (`PrestadorShowView` + `NestedResourcePanel`) — see [Prestador (cadastro) — show UX](#prestador-cadastro--show-ux).
 
 | Field | `FieldDef` | Notes |
 |-------|------------|--------|
@@ -585,7 +583,7 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 | Certificado enum | `frontend/src/lib/certificadoTipo.ts`, `backend/app/services/certificado_tipo.rs` |
 | Unsaved + Salvar | `UnsavedConfirmDialog.tsx`, `useRegisterUnsavedSave`, `ResourceEditPage.tsx` |
 | Documento | `documentoParteLocalidade.ts`, `documentoItens.ts`, `DocumentoShowView.tsx`, `DocumentoListTable.tsx`, `DocumentoItensDraftPanel.tsx` |
-| Prestador show (target tabs) | `ResourceShowPage.tsx` (today); planned `PrestadorShowView.tsx` + `components/ui/tabs.tsx`; `definitions.ts` `prestadores.nested`, `NestedResourcePanel.tsx` |
+| Prestador show | `PrestadorShowView.tsx`, `ResourceShowPage.tsx`, `definitions.ts` `prestadores.nested`, `NestedResourcePanel.tsx` |
 | CNC UI/API | `CncConsultaField.tsx`, `lib/cncConsulta.ts`, `api/cnc.ts`, `ApiCncController` |
 | Documento API | `documentos_controller.rs`, `documento_presentacao.rs`, `nfse/dps.rs` |
 | NFSe sign/transmit + enqueue | `documento_enqueue.rs`, `nfse/documento_processamento.rs`, `nfse/assinatura.rs`, `nfse/transmissao.rs`, `app/jobs/assinar_documento.rs`, `app/jobs/transmitir_documento.rs`, `config/*yml` `jobs.queues` |
@@ -597,4 +595,4 @@ OpenAPI: `docs/api/openapi.yaml` (inclui `assinar`, `xml`, `transmitir`, lote `t
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador certificados nested **delete** + **target** prestador show **tabs** (dados / certificados) documented; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; endereços Brasil + DPS partial leiaute (`dps-slice-dod.md`); draft itens, item tributos, certificado `tipo` enum, tributação sections, pagination, Sonner, unsaved guard. User date format. Doido **0.0.32-test2**.*

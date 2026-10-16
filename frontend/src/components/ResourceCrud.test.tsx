@@ -108,6 +108,56 @@ describe('Resource pages', () => {
     })
   })
 
+  it('opens certificados tab on prestador show without prefetching certificados list', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const method = init?.method ?? 'GET'
+      if (url.includes('/api/me')) {
+        return jsonResponse({
+          user: { id: 1, email: 'u@test.com' },
+          companies: [],
+          company_ativa: { id: 1, nome: 'C' },
+          prestadores: [],
+          prestador_ativo: { id: 1, cpf_cnpj: '1', razao_social: 'E' },
+          papel: 'p',
+        })
+      }
+      if (method === 'GET' && url.endsWith('/api/prestadores/3')) {
+        return jsonResponse({
+          id: 3,
+          cpf_cnpj: '12345678000199',
+          razao_social: 'Prestador Tab Ltda',
+          regime_tributario: '1',
+          municipio_id: 1,
+        })
+      }
+      if (method === 'GET' && url.includes('/api/prestadores/3/certificados')) {
+        return jsonResponse(asPage([]))
+      }
+      return jsonResponse('missing', 404)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await renderWithProviders({ route: '/app/prestadores/3' })
+    expect(await screen.findByRole('tab', { name: /dados do prestador/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /certificados digitais/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^editar$/i })).toBeInTheDocument()
+
+    const certCallsBeforeTab = fetchMock.mock.calls.filter(([u]) =>
+      String(u).includes('/api/prestadores/3/certificados'),
+    )
+    expect(certCallsBeforeTab).toHaveLength(0)
+
+    await userEvent.click(screen.getByRole('tab', { name: /certificados digitais/i }))
+    expect(await screen.findByRole('button', { name: /enviar certificado/i })).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(([u]) => String(u).includes('/api/prestadores/3/certificados')),
+      ).toBe(true)
+    })
+  })
+
   it('opens nested itens on documento show', async () => {
     stubFetch((url, method) => {
       if (method === 'GET' && url.endsWith('/api/documentos/9')) {

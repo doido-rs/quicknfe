@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
 import { DocumentoShowView } from '@/components/resources/DocumentoShowView'
+import { PrestadorShowView } from '@/components/resources/PrestadorShowView'
 import { DeleteConfirmDialog } from '@/components/resources/DeleteConfirmDialog'
 import { LoteTransmitirButton } from '@/components/resources/LoteTransmitirButton'
 import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
@@ -71,6 +72,29 @@ export function ResourceShowPage() {
             </Button>
           </div>
         )}
+        <DeleteConfirmDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          title={`Excluir ${def.title.toLowerCase()}?`}
+          description={`Esta ação não pode ser desfeita. Registro: ${rowLabel(row, def.fields)} (ID ${row.id}).`}
+          pending={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate()}
+        />
+      </div>
+    )
+  }
+
+  if (def.key === 'prestadores') {
+    return (
+      <div className="space-y-6">
+        <PageTitle>{def.title}</PageTitle>
+        <PrestadorShowView
+          def={def}
+          recordId={recordId}
+          row={row}
+          allowDelete={allowDelete}
+          onRequestDelete={() => setDeleteOpen(true)}
+        />
         <DeleteConfirmDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
