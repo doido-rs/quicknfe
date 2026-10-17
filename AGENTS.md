@@ -6,7 +6,7 @@ This document describes what the system implements today, how the **resource-dri
 
 QuickNFe is a multi-tenant web app for **NFSe (Nota Fiscal de Serviço eletrônica)** lifecycle management in Brazil:
 
-- Cadastros: prestadores (emitters), tomadores (`clientes`), intermediários, municípios (IBGE), CNA (código tributação nacional).
+- Cadastros: prestadores (emitters), tomadores (`clientes`), intermediários, **contas fiscais** (código CNA da operação + código municipal da operação — ver [Contas fiscais (cadastro)](#contas-fiscais-cadastro)), municípios (IBGE), CNA (código tributação nacional).
 - **Notas fiscais** (`documentos`): structured form aligned with the **DPS XML layout** in `layout_dps_leaiute.csv` + `layout_dps.csv` (competência, partes, municípios, valores, ISSQN, PIS/COFINS federal panel, itens).
 - **Itens** per nota, **certificados digitais** per prestador, **lotes** and **logs de retorno (SEFAZ)**.
 - Outbound **CNC** (cadastro nacional consult) and **SEFIN Nacional** transmission (backend), with local mock/dev paths. **Assinar** and **transmitir** enqueue **doido-jobs** (`202 Accepted`); run **`cargo doido worker`** for processing (see [Async assinatura e transmissão](#async-assinatura-e-transmissão)).
@@ -109,8 +109,47 @@ All CRUD screens are generated from `frontend/src/resources/definitions.ts`:
 | `prestadores` | Cadastros | `/api/prestadores` | CNC lookup; show **tabs** (dados / certificados); nested certificados + delete |
 | `clientes` | Cadastros | `/api/clientes` | Tomadores; CNC lookup; scoped by prestador |
 | `intermediarios` | Cadastros | `/api/intermediarios` | Scoped by prestador |
+| `contas-fiscais` | Cadastros | `/api/contas-fiscais` | **Obrigatório:** código CNA da operação + código municipal da operação; UI via `definitions.ts` — ver [Contas fiscais (cadastro)](#contas-fiscais-cadastro) |
 | `municipios` | Configurações | `/api/municipios` | Read-only UI (no create/delete) |
 | `cnas` | Configurações | `/api/cnas` | Read-only UI |
+
+---
+
+## Contas fiscais (cadastro)
+
+Cadastro de **contas fiscais** do tenant (por prestador): identificadores internos usados na operação contábil/fiscal que devem estar sempre ligados aos códigos de serviço exigidos na DPS/ISSQN.
+
+### Product rule — códigos obrigatórios
+
+Cada conta fiscal **deve** persistir e exibir, no mínimo:
+
+| Conceito (UI) | Wire / persistência | DPS / leiaute | Regras |
+|---------------|---------------------|---------------|--------|
+| **Código CNA da operação** | `cna_id` (relação ao catálogo `cnas`) e/ou `codigo_tributacao_nacional` denormalizado (6 dígitos, `cTribNac`) | `NFSe/…/serv/cServ/cTribNac` | Obrigatório em create/update; alinhar normalização com `normalize_c_trib_nac` em `nfse/codigo_servico.rs`. Ao selecionar CNA, copiar `codigo` do catálogo para o código nacional (mesmo padrão dos [itens da nota](#4-itens-da-nota)). |
+| **Código municipal para operação** | `codigo_tributacao_municipal` (3 dígitos, `cTribMun`) | `NFSe/…/serv/cServ/cTribMun` | Obrigatório em create/update; não aceitar vazio nem `000` (RN E0315 em `layout_dps.csv`). Formato 3 dígitos, coerente com `codigo_trib_mun` em `municipio_cna_parametrizacao` / parametrização ADN. |
+
+Create e update no backend devem rejeitar contas fiscais sem esses dois códigos (`ApiError::Validation` com mensagem clara). Opcionalmente validar combinação nacional+municipal contra `municipio_cna_parametrizacao` do município de incidência do prestador (E0312/E0314) quando o catálogo municipal estiver sincronizado — ver `docs/nfse/catalog-sync.md`.
+
+### Frontend (resource-driven UI)
+
+**Status:** regra de produto documentada; **implementar/atualizar** o cadastro no frontend conforme abaixo.
+
+1. **Registrar** o recurso `contas-fiscais` em `frontend/src/resources/definitions.ts` (`menuSection: 'Cadastros'`, escopo por prestador via `empresa_id` / `relationScopeFromField` alinhado a clientes/intermediários).
+2. **Campos obrigatórios** no formulário de create/edit:
+   - `cna_id` — `type: 'relation'`, `relationResource: 'cnas'`; `relationCopyTo` para preencher/read-only `codigo_tributacao_nacional` quando aplicável.
+   - `codigo_tributacao_municipal` — texto ou número com validação de 3 dígitos (rótulo: *Código municipal para operação*).
+3. **Listagem e show** — exibir ambos os códigos (e label do CNA quando houver relação); não omitir o municipal na tabela.
+4. **API client** — tipos e `list`/`create`/`update` em `frontend/src/api/` espelhando `/api/contas-fiscais`; invalidação TanStack Query como nos demais cadastros.
+5. **Testes** — estender `definitions.test.ts` / `ResourceCrud.test.tsx` para garantir que o body de create inclui CNA e código municipal e que campos obrigatórios estão marcados.
+
+Integração futura com **itens da nota**: ao escolher uma conta fiscal na linha do serviço, copiar `codigo_tributacao_nacional` e `codigo_tributacao_municipal` para o item (e emitir `cTribMun` no XML quando o leiaute exigir presença municipal).
+
+### Agent checklist
+
+1. Migration + entidade + CRUD API escopado ao tenant/prestador.
+2. Validação server-side dos dois códigos antes de persistir.
+3. Entrada em `definitions.ts`, rotas sidebar, OpenAPI e este documento mantidos alinhados.
+4. Cobertura de testes conforme [Test coverage (product rule)](#test-coverage-product-rule).
 
 ---
 
@@ -421,7 +460,7 @@ Implementation: `ultimo_certificado_empresa` (or explicit `certificado_id`) + `a
 ### 4. Itens da nota
 
 - **Cadastro:** apenas em **Editar nota** (`ResourceEditPage` + `NestedResourcePanel`); **Novo** cria só o cabeçalho.
-- Fields: número, descrição serviço, **CNA** relation, NCM, quantidade, unitário, desconto, total bruto; API preenche `descricao` (linha) e `codigo_tributacao_nacional` a partir do CNA.
+- Fields: número, descrição serviço, **CNA** relation, NCM, quantidade, unitário, desconto, total bruto; API preenche `descricao` (linha) e `codigo_tributacao_nacional` a partir do CNA. **Código municipal da operação** (`codigo_tributacao_municipal` / `cTribMun`) deve acompanhar o item quando exigido pelo município — preferencialmente via [conta fiscal](#contas-fiscais-cadastro) ou campo explícito no item, alinhado ao XML (`montar_dps_xml`).
 - **Show:** `DocumentoItensShowPanel` lista todos os atributos (`ItemDto` + `documentoItemShowFields`).
 - Nested **tributos** per item: API `/api/itens/{item_id}/tributos`; expandível no show (read-only) e editável na edição (`ItemTributosPanel`).
 
@@ -614,7 +653,7 @@ Separator may be `/` or `-` as long as it is consistent per pattern; agents shou
 Core routes in `backend/config/routes.rs`:
 
 - Session/tenant: `/api/me`, `/tenant/company`, `/tenant/prestador`, `/api/dashboard`
-- CRUD: prestadores, clientes, intermediários, lotes, documentos
+- CRUD: prestadores, clientes, intermediários, **contas-fiscais**, lotes, documentos
 - Documento actions: `…/xml`, `…/assinar`, `…/transmitir` (**202** enqueue — [Async assinatura e transmissão](#async-assinatura-e-transmissão))
 - Lote actions: **`POST /api/lotes/{id}/transmitir`** (**202**, batch enqueue per nota)
 - Nested: `documentos/{doc_id}/itens`, `logs-retorno`
@@ -680,6 +719,7 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 12. **Async sign/transmit**: assinar + transmitir **use doido-jobs** today; keep controllers thin (validate + enqueue only) — see [Async assinatura e transmissão](#async-assinatura-e-transmissão).
 13. **Certificado upload**: on nested create, **verify PKCS#12 senha** and set **`data_validade` from cert notAfter** — do not rely on manual validade from the client; see [Certificado upload — senha e validade](#certificado-upload--senha-e-validade).
 14. **External HTTP**: all outbound HTTP to CNC, SEFIN, and other third-party APIs lives in **`backend/app/connectors/`** — services orchestrate, connectors execute the wire protocol; do not add new `reqwest` calls in controllers, jobs, or services; see [External connectors (`app/connectors`)](#external-connectors-appconnectors).
+15. **Contas fiscais**: todo cadastro deve incluir **código CNA da operação** e **código municipal para operação**; manter CRUD no frontend via `definitions.ts` — ver [Contas fiscais (cadastro)](#contas-fiscais-cadastro).
 
 ---
 
@@ -688,6 +728,7 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 | Area | Files |
 |------|--------|
 | Resource definitions | `frontend/src/resources/definitions.ts` |
+| Contas fiscais | `definitions.ts` (`contas-fiscais`), API `/api/contas-fiscais`, DPS `cTribNac`/`cTribMun` — [Contas fiscais (cadastro)](#contas-fiscais-cadastro) |
 | Form core | `frontend/src/lib/resourceForm.ts`, `ResourceFormFields.tsx`, `ResourceFieldInput.tsx` |
 | Date format | `frontend/src/lib/dateFormat.ts`, `frontend/src/theme/DateFormatContext.tsx`, `SettingsPage.tsx` → Preferências; `users.date_format`, `session_controller` `update_me` |
 | Item tributos UI | `ItemTributosPanel.tsx`, `NestedResourcePanel` + `definitions.ts` `itemTributos` |
@@ -710,4 +751,4 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; documento itens só na **edição** + show read-only completo; item tributos; certificado `tipo` enum; tributação sections; pagination; Sonner; unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Outbound CNC + SEFIN + ADN parametrizacao** in **`app/connectors/`**. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; documento itens só na **edição** + show read-only completo; item tributos; certificado `tipo` enum; tributação sections; pagination; Sonner; unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Contas fiscais:** product rule — CNA da operação + código municipal obrigatórios; frontend via `definitions.ts` (implementação pendente). **Outbound CNC + SEFIN + ADN parametrizacao** in **`app/connectors/`**. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** Doido **0.0.32-test2**.*
