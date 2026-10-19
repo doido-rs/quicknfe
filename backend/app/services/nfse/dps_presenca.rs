@@ -26,6 +26,7 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "cMun",
         "cLocPrestacao",
         "cTribNac",
+        "cTribMun",
         "xDescServ",
         "vServ",
         "tribISSQN",
@@ -175,6 +176,11 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
             i.codigo_tributacao_nacional
                 .as_ref()
                 .is_some_and(|s| !s.trim().is_empty())
+        }),
+        "cTribMun" => ctx.itens.iter().any(|i| {
+            i.codigo_tributacao_municipal
+                .as_ref()
+                .is_some_and(|s| !s.trim().is_empty() && s.trim() != "000")
         }),
         "xDescServ" => ctx.itens.iter().any(|i| {
             i.descricao_servico

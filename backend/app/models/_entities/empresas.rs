@@ -40,6 +40,8 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Companies,
+    #[sea_orm(has_many = "super::contas_fiscais::Entity")]
+    ContasFiscais,
     #[sea_orm(has_many = "super::documentos_fiscais::Entity")]
     DocumentosFiscais,
     #[sea_orm(has_many = "super::intermediarios::Entity")]
@@ -71,6 +73,12 @@ impl Related<super::clientes::Entity> for Entity {
 impl Related<super::companies::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Companies.def()
+    }
+}
+
+impl Related<super::contas_fiscais::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ContasFiscais.def()
     }
 }
 

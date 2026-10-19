@@ -9,7 +9,9 @@ use std::str::FromStr;
 use crate::services::api_error::ApiError;
 use crate::settings;
 
-pub use codigo::{format_codigo_servico_adn, parse_codigo_parametrizacao};
+pub use codigo::{
+    format_codigo_servico_adn, normalize_c_trib_mun, parse_codigo_parametrizacao,
+};
 
 #[derive(Debug, Clone)]
 pub struct AliquotaParametrizacao {

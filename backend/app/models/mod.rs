@@ -11,6 +11,7 @@ pub mod certificado_digital;
 pub mod cliente;
 pub mod company;
 pub mod company_usuario;
+pub mod conta_fiscal;
 pub mod documento_fiscal;
 pub mod empresa;
 pub mod evento_documento_fiscal;

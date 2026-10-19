@@ -1,5 +1,6 @@
 use crate::controllers::{
-    ApiCertificadosController, ApiCncController, ApiClientesController, ApiDashboardController,
+    ApiCertificadosController, ApiCncController, ApiClientesController,
+    ApiContasFiscaisController, ApiDashboardController,
     ApiDocumentosController,
     ApiEventosController, ApiIntermediariosController, ApiItensController, ApiLogsController,
     ApiPrestadoresController,
@@ -49,6 +50,12 @@ pub fn router() -> axum::Router {
         get!("/api/intermediarios/{id}", ApiIntermediariosController::show);
         patch!("/api/intermediarios/{id}", ApiIntermediariosController::update);
         delete!("/api/intermediarios/{id}", ApiIntermediariosController::destroy);
+
+        get!("/api/contas-fiscais", ApiContasFiscaisController::index);
+        post!("/api/contas-fiscais", ApiContasFiscaisController::create);
+        get!("/api/contas-fiscais/{id}", ApiContasFiscaisController::show);
+        patch!("/api/contas-fiscais/{id}", ApiContasFiscaisController::update);
+        delete!("/api/contas-fiscais/{id}", ApiContasFiscaisController::destroy);
 
         get!(
             "/api/prestadores/{prestador_id}/certificados",

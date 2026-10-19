@@ -281,8 +281,11 @@ fn append_servico(xml: &mut String, ctx: &DpsContext) {
     );
     xml.push_str("      </locPrest>\n");
     xml.push_str("      <cServ>\n");
-    let (c_trib, x_desc) = servico_from_itens(&ctx.itens, &ctx.doc);
+    let (c_trib, c_trib_mun, x_desc) = servico_from_itens(&ctx.itens, &ctx.doc);
     push_elem(xml, 8, "cTribNac", &c_trib);
+    if let Some(mun) = c_trib_mun.as_ref().filter(|s| !s.is_empty()) {
+        push_elem(xml, 8, "cTribMun", mun);
+    }
     push_elem(xml, 8, "xDescServ", &xml_escape(&x_desc));
     if let Some(item) = ctx.itens.first() {
         push_elem(xml, 8, "cIntContrib", &item.numero_item.to_string());
@@ -327,14 +330,16 @@ fn info_complementar_text(ctx: &DpsContext) -> Option<String> {
 fn servico_from_itens(
     itens: &[crate::models::item_documento_fiscal::Model],
     doc: &Documento,
-) -> (String, String) {
+) -> (String, Option<String>, String) {
     if itens.is_empty() {
         return (
             "010101".into(),
+            None,
             "Serviço prestado".into(),
         );
     }
     let mut desc_parts = Vec::new();
+    let mut c_trib_mun = itens[0].codigo_tributacao_municipal.clone();
     let mut c_trib = itens[0]
         .codigo_tributacao_nacional
         .clone()
@@ -351,6 +356,9 @@ fn servico_from_itens(
                 }
             }
         }
+        if c_trib_mun.is_none() {
+            c_trib_mun = item.codigo_tributacao_municipal.clone();
+        }
         let d = item
             .descricao_servico
             .as_deref()
@@ -365,7 +373,7 @@ fn servico_from_itens(
     if x_desc.is_empty() {
         x_desc = format!("Nota fiscal {}", doc.numero_documento);
     }
-    (c_trib, x_desc)
+    (c_trib, c_trib_mun, x_desc)
 }
 
 fn append_valores(xml: &mut String, ctx: &DpsContext) {
@@ -494,7 +502,7 @@ pub mod coverage {
         [
             "id", "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
-            "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac",
+            "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac", "cTribMun",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
             "pAliq", "vBC", "vISSQN", "tpRetISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins",
             "vRetCP",
@@ -738,7 +746,9 @@ mod tests {
                 descricao_servico: Some("Consultoria".into()),
                 codigo_ncm: None,
                 codigo_tributacao_nacional: Some("010101".into()),
+                codigo_tributacao_municipal: Some("001".into()),
                 cna_id: None,
+                conta_fiscal_id: None,
                 quantidade: Decimal::from(1),
                 valor_unitario: Decimal::from(100),
                 valor_total_bruto: Decimal::from(100),
@@ -786,7 +796,9 @@ mod tests {
                 descricao_servico: Some("Serviço".into()),
                 codigo_ncm: None,
                 codigo_tributacao_nacional: Some("010101".into()),
+                codigo_tributacao_municipal: Some("001".into()),
                 cna_id: None,
+                conta_fiscal_id: None,
                 quantidade: Decimal::from(1),
                 valor_unitario: Decimal::from(100),
                 valor_total_bruto: Decimal::from(100),
@@ -798,6 +810,7 @@ mod tests {
             "<tpEmit>",
             "<cLocEmi>",
             "<cTribNac>",
+            "<cTribMun>",
             "<xDescServ>",
             "<tribISSQN>",
             "<totTrib>",

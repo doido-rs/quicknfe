@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { buildBody } from '@/lib/resourceForm'
 import {
+  documentoEventosNested,
   documentoItemShowFields,
   resources,
   settingsResources,
@@ -16,6 +18,7 @@ describe('resources', () => {
     expect(sidebarKeys).toContain('prestadores')
     expect(sidebarKeys).toContain('clientes')
     expect(sidebarKeys).toContain('intermediarios')
+    expect(sidebarKeys).toContain('contas-fiscais')
     expect(settingsKeys).toEqual(['cnas', 'municipios'])
   })
 
@@ -25,6 +28,25 @@ describe('resources', () => {
     expect(keys).toContain('clientes')
     expect(keys).toContain('documentos')
     expect(keys).toContain('intermediarios')
+    expect(keys).toContain('contas-fiscais')
+  })
+
+  it('contas fiscais create body requires cna_id and codigo municipal', () => {
+    const def = resources.find((r) => r.key === 'contas-fiscais')
+    expect(def).toBeDefined()
+    const body = buildBody(def!.fields, {
+      codigo: 'CF-100',
+      descricao: 'Serviços',
+      cna_id: '42',
+      codigo_tributacao_nacional: '010101',
+      codigo_tributacao_municipal: '001',
+    }) as Record<string, unknown>
+    expect(body.cna_id).toBe(42)
+    expect(body.codigo_tributacao_municipal).toBe('001')
+    expect(body.codigo).toBe('CF-100')
+    expect(
+      def!.fields.filter((f) => f.required).map((f) => f.key),
+    ).toEqual(expect.arrayContaining(['codigo', 'cna_id', 'codigo_tributacao_municipal']))
   })
 
   it('lists notas fiscais first in the menu', () => {
@@ -48,6 +70,9 @@ describe('resources', () => {
     expect(nesteds[0]?.path(42)).toBe('/api/documentos/42/itens')
     expect(nesteds[1]?.path(42)).toBe('/api/documentos/42/logs-retorno')
     expect(nesteds[1]?.allowCreate).toBe(false)
+    const eventos = documentoEventosNested(documentos!)
+    expect(eventos?.path(42)).toBe('/api/documentos/42/eventos')
+    expect(eventos?.allowDelete).toBe(true)
   })
 
   it('enables CNC lookup on prestador and tomador', () => {

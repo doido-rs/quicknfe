@@ -21,7 +21,7 @@ Outbound calls to **government and third-party HTTP APIs** are consolidating und
 
 **Purpose:** one place for **integrations with external systems** — every **outbound HTTP(S)** request (CNC, SEFIN Nacional, future APIs) lives here. In-app API handlers, jobs, and domain code stay free of ad hoc `reqwest` / URL construction.
 
-**Status:** **implemented** for CNC consulta and SEFIN emissão (`POST /nfse`). Wire clients live in [`backend/app/connectors/`](backend/app/connectors/) (`cnc/`, `sefin/`, shared `mtls.rs`); [`services/cnc/consulta.rs`](backend/app/services/cnc/consulta.rs) and [`services/nfse/cliente.rs`](backend/app/services/nfse/cliente.rs) orchestrate validation, URL/payload prep, and response mapping only. **Remaining exception:** outbound HTTP in [`services/nfse_anexo_a_import.rs`](backend/app/services/nfse_anexo_a_import.rs) (catalog import) — move to a connector when that path is next touched. **New** CNC/SEFIN HTTP must go through `app/connectors/`.
+**Status:** **implemented** for CNC consulta and SEFIN emissão (`POST /nfse`). Wire clients live in [`backend/app/connectors/`](backend/app/connectors/) (`cnc/`, `sefin/`, shared `mtls.rs`); [`services/cnc/consulta.rs`](backend/app/services/cnc/consulta.rs) and [`services/nfse/cliente.rs`](backend/app/services/nfse/cliente.rs) orchestrate validation, URL/payload prep, and response mapping only. **Anexo A download** — HTTP(S) em [`app/connectors/anexo_a/`](backend/app/connectors/anexo_a/mod.rs); parsing XLSX permanece em `nfse_anexo_a_import.rs`. **New** CNC/SEFIN HTTP must go through `app/connectors/`.
 
 ### Layering rules
 
@@ -132,7 +132,7 @@ Create e update no backend devem rejeitar contas fiscais sem esses dois códigos
 
 ### Frontend (resource-driven UI)
 
-**Status:** regra de produto documentada; **implementar/atualizar** o cadastro no frontend conforme abaixo.
+**Status:** **implemented** — CRUD backend + recurso `contas-fiscais` em `definitions.ts` (CNA + código municipal obrigatórios).
 
 1. **Registrar** o recurso `contas-fiscais` em `frontend/src/resources/definitions.ts` (`menuSection: 'Cadastros'`, escopo por prestador via `empresa_id` / `relationScopeFromField` alinhado a clientes/intermediários).
 2. **Campos obrigatórios** no formulário de create/edit:
@@ -657,7 +657,7 @@ Core routes in `backend/config/routes.rs`:
 - Documento actions: `…/xml`, `…/assinar`, `…/transmitir` (**202** enqueue — [Async assinatura e transmissão](#async-assinatura-e-transmissão))
 - Lote actions: **`POST /api/lotes/{id}/transmitir`** (**202**, batch enqueue per nota)
 - Nested: `documentos/{doc_id}/itens`, `logs-retorno`
-- **Eventos** (`documentos/{doc_id}/eventos`): CRUD API only — **no resource UI** yet
+- **Eventos** (`documentos/{doc_id}/eventos`): CRUD API + aba **Eventos** no show da nota (`DocumentoShowView` + `documentoEventosNested`)
 - Itens tributos, global logs-retorno
 - Reference: municipios, cnas (index/show)
 - Integration: **`GET /api/cnc/cad`**
@@ -751,4 +751,4 @@ must maintain **at least 85% line coverage on that file alone**, not only contri
 
 ---
 
-*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; documento itens só na **edição** + show read-only completo; item tributos; certificado `tipo` enum; tributação sections; pagination; Sonner; unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Contas fiscais:** product rule — CNA da operação + código municipal obrigatórios; frontend via `definitions.ts` (implementação pendente). **Outbound CNC + SEFIN + ADN parametrizacao** in **`app/connectors/`**. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** Doido **0.0.32-test2**.*
+*Last aligned with codebase features: multi-tenant NFSe CRUD, CNC consult, documento list/show/**tabs**/XML; **assinar/transmitir async** (`202` + worker, poll, `processamento_mensagem` alert); lote transmit UI + API; `certificado_id` select on assinar/transmitir; prestador show **tabs** (dados / certificados) + certificados nested **delete**; documento itens só na **edição** + show read-only completo; item tributos; certificado `tipo` enum; tributação sections; pagination; Sonner; unsaved guard. User date format. Certificado upload verifies PFX senha and derives `data_validade`. **Contas fiscais** CRUD (CNA + código municipal) backend + `definitions.ts`. **Outbound CNC + SEFIN + ADN parametrizacao** in **`app/connectors/`**. **Test coverage policy: 85% global; 85% per file in `app/controllers`, `app/services`, and `app/connectors`.** Doido **0.0.32-test2**.*

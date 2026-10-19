@@ -44,6 +44,20 @@ pub async fn cliente_for_tenant(
         .ok_or(ApiError::NotFound)
 }
 
+pub async fn conta_fiscal_for_tenant(
+    db: &DatabaseConnection,
+    empresa_id: i64,
+    id: i64,
+) -> Result<crate::models::conta_fiscal::Model, ApiError> {
+    use crate::models::conta_fiscal::{Column as ContaFiscalColumn, Entity as ContaFiscalEntity};
+    ContaFiscalEntity::find_by_id(id)
+        .filter(ContaFiscalColumn::EmpresaId.eq(empresa_id))
+        .one(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?
+        .ok_or(ApiError::NotFound)
+}
+
 pub async fn intermediario_for_tenant(
     db: &DatabaseConnection,
     empresa_id: i64,

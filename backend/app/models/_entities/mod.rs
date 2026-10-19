@@ -7,6 +7,7 @@ pub mod clientes;
 pub mod cnas;
 pub mod companies;
 pub mod companies_usuarios;
+pub mod contas_fiscais;
 pub mod documentos_fiscais;
 pub mod empresas;
 pub mod eventos_documento_fiscal;

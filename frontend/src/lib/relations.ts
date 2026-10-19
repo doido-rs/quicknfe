@@ -8,6 +8,7 @@ const FK_RESOURCE: Record<string, string> = {
   documento_fiscal_id: 'documentos',
   municipio_id: 'municipios',
   cna_id: 'cnas',
+  conta_fiscal_id: 'contas-fiscais',
   empresa_id: 'prestadores',
 }
 
@@ -23,6 +24,14 @@ export function relationApiPath(resourceKey: string): string | undefined {
 }
 
 export function relationOptionLabel(resourceKey: string, row: Record<string, unknown>): string {
+  if (resourceKey === 'contas-fiscais') {
+    const codigo = row.codigo != null ? String(row.codigo) : ''
+    const nac = row.codigo_tributacao_nacional != null ? String(row.codigo_tributacao_nacional) : ''
+    const mun =
+      row.codigo_tributacao_municipal != null ? String(row.codigo_tributacao_municipal) : ''
+    const parts = [codigo, nac && mun ? `${nac}/${mun}` : nac].filter(Boolean)
+    return parts.length > 0 ? parts.join(' · ') : `#${String(row.id ?? '')}`
+  }
   if (resourceKey === 'cnas') {
     const codigo = row.codigo != null ? String(row.codigo) : ''
     const descricao = row.descricao != null ? String(row.descricao) : ''

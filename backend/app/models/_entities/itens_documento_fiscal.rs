@@ -21,7 +21,9 @@ pub struct Model {
     pub descricao_servico: Option<String>,
     pub codigo_ncm: Option<String>,
     pub codigo_tributacao_nacional: Option<String>,
+    pub codigo_tributacao_municipal: Option<String>,
     pub cna_id: Option<i64>,
+    pub conta_fiscal_id: Option<i64>,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]
     pub quantidade: Decimal,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))")]
@@ -43,6 +45,14 @@ pub enum Relation {
     )]
     Cnas,
     #[sea_orm(
+        belongs_to = "super::contas_fiscais::Entity",
+        from = "Column::ContaFiscalId",
+        to = "super::contas_fiscais::Column::Id",
+        on_update = "NoAction",
+        on_delete = "SetNull"
+    )]
+    ContasFiscais,
+    #[sea_orm(
         belongs_to = "super::documentos_fiscais::Entity",
         from = "Column::DocumentoFiscalId",
         to = "super::documentos_fiscais::Column::Id",
@@ -57,6 +67,12 @@ pub enum Relation {
 impl Related<super::cnas::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Cnas.def()
+    }
+}
+
+impl Related<super::contas_fiscais::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ContasFiscais.def()
     }
 }
 

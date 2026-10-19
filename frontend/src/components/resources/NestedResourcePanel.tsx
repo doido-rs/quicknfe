@@ -22,9 +22,11 @@ import type { NestedDef } from '@/resources/definitions'
 export function NestedResourcePanel({
   parentId,
   nested,
+  relationScopeValues,
 }: {
   parentId: number
   nested: NestedDef
+  relationScopeValues?: Record<string, string>
 }) {
   const path = nested.path(parentId)
   const allowCreate = nested.allowCreate !== false
@@ -120,6 +122,7 @@ export function NestedResourcePanel({
                 form={form}
                 idPrefix={`nested-${f.key}`}
                 attachedFile={files[f.key]}
+                relationScopeValues={relationScopeValues}
                 onFileChange={(key, file) =>
                   setFiles((prev) => ({ ...prev, [key]: file ?? undefined }))
                 }

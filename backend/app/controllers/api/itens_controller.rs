@@ -10,6 +10,7 @@ use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
 use crate::services::cna::require_cna;
 use crate::services::dto::ItemDto;
+use crate::services::item_documento::resolve_item_tributacao;
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
@@ -19,6 +20,8 @@ pub struct ItemForm {
     pub descricao_servico: Option<String>,
     pub codigo_ncm: Option<String>,
     pub cna_id: Option<i64>,
+    pub codigo_tributacao_municipal: Option<String>,
+    pub conta_fiscal_id: Option<i64>,
     pub quantidade: Decimal,
     pub valor_unitario: Decimal,
     pub valor_total_bruto: Decimal,
@@ -83,12 +86,20 @@ impl ApiItensController {
     pub async fn create(mut ctx: doido::controller::Context) -> doido::controller::Response {
         let access = crate::api!(require_tenant(ctx).await);
         let doc_id = crate::api!(id_param(&ctx, "doc_id"));
-        crate::api!(scoped(
+        let doc = crate::api!(scoped(
             tenant_scope::documento_for_company(ctx.db(), access.company.id, doc_id).await,
         ));
         let form: ItemForm = crate::api!(json_body(ctx).await);
-        let codigo_tributacao =
-            crate::api!(to_response(codigo_tributacao_from_cna(ctx.db(), form.cna_id).await));
+        let trib = crate::api!(to_response(
+            resolve_item_tributacao(
+                ctx.db(),
+                doc.empresa_id,
+                form.cna_id,
+                form.codigo_tributacao_municipal.as_deref(),
+                form.conta_fiscal_id,
+            )
+            .await,
+        ));
         let created = crate::api!(db(
             ItemActive {
                 documento_fiscal_id: Set(doc_id),
@@ -96,8 +107,10 @@ impl ApiItensController {
                 descricao: Set(form.descricao),
                 descricao_servico: Set(form.descricao_servico),
                 codigo_ncm: Set(form.codigo_ncm),
-                cna_id: Set(form.cna_id),
-                codigo_tributacao_nacional: Set(codigo_tributacao),
+                cna_id: Set(trib.cna_id),
+                codigo_tributacao_nacional: Set(trib.codigo_tributacao_nacional),
+                codigo_tributacao_municipal: Set(trib.codigo_tributacao_municipal),
+                conta_fiscal_id: Set(trib.conta_fiscal_id),
                 quantidade: Set(form.quantidade),
                 valor_unitario: Set(form.valor_unitario),
                 valor_total_bruto: Set(form.valor_total_bruto),
@@ -121,15 +134,25 @@ impl ApiItensController {
             tenant_scope::item_for_tenant_and_doc(ctx.db(), doc.empresa_id, doc_id, id).await,
         ));
         let form: ItemForm = crate::api!(json_body(ctx).await);
-        let codigo_tributacao =
-            crate::api!(to_response(codigo_tributacao_from_cna(ctx.db(), form.cna_id).await));
+        let trib = crate::api!(to_response(
+            resolve_item_tributacao(
+                ctx.db(),
+                doc.empresa_id,
+                form.cna_id,
+                form.codigo_tributacao_municipal.as_deref(),
+                form.conta_fiscal_id,
+            )
+            .await,
+        ));
         let mut record: ItemActive = existing.into();
         record.numero_item = Set(form.numero_item);
         record.descricao = Set(form.descricao);
         record.descricao_servico = Set(form.descricao_servico);
         record.codigo_ncm = Set(form.codigo_ncm);
-        record.cna_id = Set(form.cna_id);
-        record.codigo_tributacao_nacional = Set(codigo_tributacao);
+        record.cna_id = Set(trib.cna_id);
+        record.codigo_tributacao_nacional = Set(trib.codigo_tributacao_nacional);
+        record.codigo_tributacao_municipal = Set(trib.codigo_tributacao_municipal);
+        record.conta_fiscal_id = Set(trib.conta_fiscal_id);
         record.quantidade = Set(form.quantidade);
         record.valor_unitario = Set(form.valor_unitario);
         record.valor_total_bruto = Set(form.valor_total_bruto);

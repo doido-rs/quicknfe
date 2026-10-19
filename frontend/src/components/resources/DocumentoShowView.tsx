@@ -5,6 +5,7 @@ import { DocumentoTransmitirButton } from '@/components/resources/DocumentoTrans
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
 import { DocumentoLogsRetornoPanel } from '@/components/resources/DocumentoLogsRetornoPanel'
 import { DocumentoItensShowPanel } from '@/components/resources/DocumentoItensShowPanel'
+import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +18,11 @@ import { buildDocumentoRelationLabels } from '@/lib/documentoShowLabels'
 import { rowToForm, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceEditTo, resourceListTo } from '@/lib/resourcePaths'
 import { useDocumentoProcessamentoPoll } from '@/hooks/useDocumentoProcessamentoPoll'
-import { documentoItensNested, type ResourceDef } from '@/resources/definitions'
+import {
+  documentoEventosNested,
+  documentoItensNested,
+  type ResourceDef,
+} from '@/resources/definitions'
 
 export function DocumentoShowView({
   def,
@@ -38,6 +43,7 @@ export function DocumentoShowView({
   }, [row, def.fields, form])
 
   const itensNested = documentoItensNested(def)
+  const eventosNested = documentoEventosNested(def)
   const processamentoMsg =
     typeof row.processamento_mensagem === 'string' ? row.processamento_mensagem.trim() : ''
   const showProcessamentoMsg = processamentoMsg.length > 0
@@ -83,6 +89,7 @@ export function DocumentoShowView({
           <TabsTrigger value="dados">Dados da nota</TabsTrigger>
           <TabsTrigger value="itens">Itens da nota</TabsTrigger>
           <TabsTrigger value="logs">Logs SEFAZ</TabsTrigger>
+          <TabsTrigger value="eventos">Eventos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dados">
@@ -104,6 +111,12 @@ export function DocumentoShowView({
 
         <TabsContent value="logs">
           <DocumentoLogsRetornoPanel documentoId={recordId} />
+        </TabsContent>
+
+        <TabsContent value="eventos">
+          {eventosNested ? (
+            <NestedResourcePanel parentId={recordId} nested={eventosNested} />
+          ) : null}
         </TabsContent>
       </Tabs>
     </div>

@@ -508,10 +508,27 @@ export const resources: ResourceDef[] = [
             required: true,
           },
           {
+            key: 'conta_fiscal_id',
+            label: 'Conta fiscal',
+            type: 'relation',
+            relationResource: 'contas-fiscais',
+            relationScopeFromField: 'empresa_id',
+            relationCopyTo: {
+              cna_id: 'cna_id',
+              codigo_tributacao_nacional: 'codigo_tributacao_nacional',
+              codigo_tributacao_municipal: 'codigo_tributacao_municipal',
+            },
+          },
+          {
             key: 'cna_id',
             label: 'Código de Tributação Nacional',
             type: 'relation',
             relationResource: 'cnas',
+            required: true,
+          },
+          {
+            key: 'codigo_tributacao_municipal',
+            label: 'Código municipal para operação (cTribMun)',
             required: true,
           },
           { key: 'codigo_ncm', label: 'Código NCM' },
@@ -703,6 +720,40 @@ export const resources: ResourceDef[] = [
     ],
   },
   {
+    key: 'contas-fiscais',
+    title: 'Contas fiscais',
+    menuSection: 'Cadastros',
+    path: '/api/contas-fiscais',
+    listColumns: [
+      { key: 'codigo', label: 'Código' },
+      { key: 'codigo_tributacao_nacional', label: 'Cód. CNA (nacional)' },
+      { key: 'codigo_tributacao_municipal', label: 'Cód. municipal' },
+      { key: 'descricao', label: 'Descrição' },
+    ],
+    fields: [
+      { key: 'codigo', label: 'Código da conta', required: true },
+      { key: 'descricao', label: 'Descrição' },
+      {
+        key: 'cna_id',
+        label: 'Código CNA da operação',
+        type: 'relation',
+        relationResource: 'cnas',
+        relationCopyTo: { codigo_tributacao_nacional: 'codigo' },
+        required: true,
+      },
+      {
+        key: 'codigo_tributacao_nacional',
+        label: 'Cód. tributação nacional (cTribNac)',
+        readOnly: true,
+      },
+      {
+        key: 'codigo_tributacao_municipal',
+        label: 'Código municipal para operação (cTribMun)',
+        required: true,
+      },
+    ],
+  },
+  {
     key: 'intermediarios',
     title: 'Intermediários',
     menuSection: 'Cadastros',
@@ -744,6 +795,42 @@ export function documentoItensNested(def: ResourceDef): NestedDef | undefined {
   return resourceNesteds(def).find((n) => n.path(0).includes('/itens'))
 }
 
+/** Eventos da nota — aba no show (não aparece na edição de itens). */
+export function documentoEventosNested(def: ResourceDef): NestedDef | undefined {
+  if (def.key !== 'documentos') return undefined
+  return {
+    label: 'Eventos da nota',
+    path: (docId) => `/api/documentos/${docId}/eventos`,
+    createButtonLabel: 'Registrar evento',
+    allowDelete: true,
+    fields: [
+      { key: 'tipo_evento', label: 'Tipo do evento', required: true },
+      {
+        key: 'sequencial_evento',
+        label: 'Sequencial',
+        type: 'number',
+        required: true,
+        defaultValue: '1',
+      },
+      {
+        key: 'data_hora_evento',
+        label: 'Data/hora do evento (ISO 8601)',
+        required: true,
+      },
+      {
+        key: 'ambiente',
+        label: 'Ambiente',
+        type: 'number',
+        required: true,
+        defaultValue: '2',
+      },
+      { key: 'protocolo_evento', label: 'Protocolo' },
+      { key: 'descricao_motivo', label: 'Motivo', type: 'textarea' },
+      { key: 'xml_evento', label: 'XML do evento', type: 'textarea' },
+    ],
+  }
+}
+
 /** Campos read-only na aba Itens do show (alinhado a `ItemDto` + formulário nested). */
 export function documentoItemShowFields(nested: NestedDef): FieldDef[] {
   const byKey = new Map<string, FieldDef>()
@@ -776,6 +863,8 @@ export function documentoItemShowFields(nested: NestedDef): FieldDef[] {
     'descricao_servico',
     'cna_id',
     'codigo_tributacao_nacional',
+    'codigo_tributacao_municipal',
+    'conta_fiscal_id',
     'codigo_ncm',
     'quantidade',
     'valor_unitario',

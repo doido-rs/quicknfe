@@ -22,6 +22,7 @@ export function ResourceFieldInput({
   readOnly,
   relationDisplayLabels,
   displayRow,
+  relationScopeValues,
 }: {
   field: FieldDef
   form: UseFormReturn<Record<string, string>>
@@ -31,6 +32,7 @@ export function ResourceFieldInput({
   readOnly?: boolean
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
+  relationScopeValues?: Record<string, string>
 }) {
   const { preference: dateFormat } = useDateFormat()
 
@@ -53,7 +55,9 @@ export function ResourceFieldInput({
 
   const relationKey = relationResourceKey(field)
   const scopeField = field.relationScopeFromField
-  const scopeRaw = scopeField ? form.watch(scopeField) : ''
+  const scopeRaw = scopeField
+    ? (relationScopeValues?.[scopeField] ?? form.watch(scopeField))
+    : ''
   const scopeEmpresaId =
     scopeRaw.trim() === '' || scopeRaw == null ? undefined : Number(scopeRaw)
 

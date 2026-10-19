@@ -10,6 +10,7 @@ use crate::models::company::Model as Company;
 use crate::models::empresa::Model as Empresa;
 use crate::models::regime_tributario::RegimeTributario;
 use crate::models::evento_documento_fiscal::Model as Evento;
+use crate::models::conta_fiscal::Model as ContaFiscal;
 use crate::models::intermediario::Model as Intermediario;
 use crate::models::item_documento_fiscal::Model as Item;
 use crate::models::log_mensagem_retorno::Model as LogRetorno;
@@ -247,6 +248,31 @@ pub struct IntermediarioDto {
     pub bairro: Option<String>,
 }
 
+#[derive(Serialize)]
+pub struct ContaFiscalDto {
+    pub id: i64,
+    pub empresa_id: i64,
+    pub codigo: String,
+    pub descricao: Option<String>,
+    pub cna_id: i64,
+    pub codigo_tributacao_nacional: String,
+    pub codigo_tributacao_municipal: String,
+}
+
+impl From<ContaFiscal> for ContaFiscalDto {
+    fn from(c: ContaFiscal) -> Self {
+        Self {
+            id: c.id,
+            empresa_id: c.empresa_id,
+            codigo: c.codigo,
+            descricao: c.descricao,
+            cna_id: c.cna_id,
+            codigo_tributacao_nacional: c.codigo_tributacao_nacional,
+            codigo_tributacao_municipal: c.codigo_tributacao_municipal,
+        }
+    }
+}
+
 impl From<Intermediario> for IntermediarioDto {
     fn from(i: Intermediario) -> Self {
         Self {
@@ -465,7 +491,9 @@ pub struct ItemDto {
     pub descricao_servico: Option<String>,
     pub codigo_ncm: Option<String>,
     pub codigo_tributacao_nacional: Option<String>,
+    pub codigo_tributacao_municipal: Option<String>,
     pub cna_id: Option<i64>,
+    pub conta_fiscal_id: Option<i64>,
     pub quantidade: Decimal,
     pub valor_unitario: Decimal,
     pub valor_total_bruto: Decimal,
@@ -482,7 +510,9 @@ impl From<Item> for ItemDto {
             descricao_servico: i.descricao_servico,
             codigo_ncm: i.codigo_ncm,
             codigo_tributacao_nacional: i.codigo_tributacao_nacional,
+            codigo_tributacao_municipal: i.codigo_tributacao_municipal,
             cna_id: i.cna_id,
+            conta_fiscal_id: i.conta_fiscal_id,
             quantidade: i.quantidade,
             valor_unitario: i.valor_unitario,
             valor_total_bruto: i.valor_total_bruto,

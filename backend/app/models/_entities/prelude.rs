@@ -7,6 +7,7 @@ pub use super::clientes::Entity as Clientes;
 pub use super::cnas::Entity as Cnas;
 pub use super::companies::Entity as Companies;
 pub use super::companies_usuarios::Entity as CompaniesUsuarios;
+pub use super::contas_fiscais::Entity as ContasFiscais;
 pub use super::documentos_fiscais::Entity as DocumentosFiscais;
 pub use super::empresas::Entity as Empresas;
 pub use super::eventos_documento_fiscal::Entity as EventosDocumentoFiscal;

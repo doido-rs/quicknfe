@@ -31,18 +31,7 @@ pub fn resolve_download_url(url: Option<&str>) -> &str {
 
 async fn load_xlsx_bytes(url: Option<&str>) -> doido_core::Result<Vec<u8>> {
     let target = resolve_download_url(url);
-    if target.starts_with("http://") || target.starts_with("https://") {
-        return reqwest::get(target)
-            .await
-            .map_err(|e| doido_core::anyhow::anyhow!("download anexo A: {e}"))?
-            .error_for_status()
-            .map_err(|e| doido_core::anyhow::anyhow!("download anexo A HTTP: {e}"))?
-            .bytes()
-            .await
-            .map(|b| b.to_vec())
-            .map_err(|e| doido_core::anyhow::anyhow!("read anexo A body: {e}"));
-    }
-    std::fs::read(target).map_err(|e| doido_core::anyhow::anyhow!("ler anexo A local: {e}"))
+    crate::connectors::anexo_a::download_bytes(target).await
 }
 
 pub async fn run(db: &DatabaseConnection, url: Option<&str>) -> doido_core::Result<ImportStats> {

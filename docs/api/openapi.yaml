@@ -410,6 +410,87 @@ paths:
         '204':
           description: Deleted
 
+  /api/contas-fiscais:
+    get:
+      tags: [ContasFiscais]
+      summary: List contas fiscais
+      operationId: listContasFiscais
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContaFiscalDto'
+                  next_page_token:
+                    type: string
+    post:
+      tags: [ContasFiscais]
+      summary: Create conta fiscal
+      operationId: createContaFiscal
+      security:
+        - cookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContaFiscalForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContaFiscalDto'
+
+  /api/contas-fiscais/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [ContasFiscais]
+      summary: Get conta fiscal
+      operationId: getContaFiscal
+      security:
+        - cookieSession: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContaFiscalDto'
+    patch:
+      tags: [ContasFiscais]
+      summary: Update conta fiscal
+      operationId: updateContaFiscal
+      security:
+        - cookieSession: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContaFiscalForm'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContaFiscalDto'
+    delete:
+      tags: [ContasFiscais]
+      summary: Delete conta fiscal
+      operationId: deleteContaFiscal
+      security:
+        - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+
   # Certificado `tipo`: enum A1 | A3 | PFX | PEM (see AGENTS.md)
   /api/prestadores/{prestador_id}/certificados:
     parameters:
@@ -1368,6 +1449,32 @@ components:
     IntermediarioDto:
       allOf:
         - $ref: '#/components/schemas/IntermediarioForm'
+        - type: object
+          properties:
+            id:
+              type: integer
+            empresa_id:
+              type: integer
+    ContaFiscalForm:
+      type: object
+      required:
+        - codigo
+        - cna_id
+        - codigo_tributacao_municipal
+      properties:
+        codigo:
+          type: string
+        descricao:
+          type: string
+        cna_id:
+          type: integer
+        codigo_tributacao_nacional:
+          type: string
+        codigo_tributacao_municipal:
+          type: string
+    ContaFiscalDto:
+      allOf:
+        - $ref: '#/components/schemas/ContaFiscalForm'
         - type: object
           properties:
             id:

@@ -30,11 +30,12 @@ mod rn_validacao;
 mod transmissao;
 mod xml_prolog;
 
+pub use codigo_servico::normalize_c_trib_nac;
 pub use assinatura::assinar_dps_xml_rascunho;
 pub use dps::montar_dps_xml_context;
 pub use dps_context::load_dps_context;
 pub use catalog_sync_schedule::next_daily_catalog_run;
-pub use municipio_cna_sync::sync_municipios_batch;
+pub use municipio_cna_sync::{municipio_tem_parametrizacao, sync_municipios_batch};
 pub use municipio_cnas::list_cnas_administrados;
 pub use nfse_catalogo_nacional_import::run as import_catalogo_nacional;
 pub use nfse_incidencia_import::run as import_incidencia_cna;

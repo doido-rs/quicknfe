@@ -36,7 +36,9 @@ use doido::controller::stack::MiddlewareStack;
 use doido::model::password::hash_password;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use doido::controller::axum::http::header;
+use models::cna::{Column as CnaColumn, Entity as CnaEntity};
 use models::cliente::{Column as ClienteColumn, Entity as ClienteEntity};
+use models::conta_fiscal::{Column as ContaFiscalColumn, Entity as ContaFiscalEntity};
 use models::company::ActiveModel as CompanyActive;
 use models::company_usuario::ActiveModel as CompanyMembroActive;
 use models::empresa::ActiveModel as EmpresaActive;
@@ -351,5 +353,122 @@ async fn login_me_and_tenant_cliente_flow() {
     assert!(
         status == StatusCode::NOT_FOUND || status == StatusCode::FORBIDDEN,
         "cross-tenant patch must not succeed, got {status}"
+    );
+}
+
+async fn tenant_session(
+    app: &doido::controller::axum::Router,
+    fx: &TenantFixture,
+) -> String {
+    let cookie = sign_in(app, &fx.user_email, &fx.password).await;
+    let (status, _, switch_cookie) = send_json(
+        app,
+        "POST",
+        "/tenant/company",
+        &format!(r#"{{"company_id":{}}}"#, fx.company_id),
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let mut session = switch_cookie
+        .as_ref()
+        .map(|c| session_cookie(c))
+        .unwrap_or(cookie);
+    let (status, _, switch_cookie) = send_json(
+        app,
+        "POST",
+        "/tenant/prestador",
+        &format!(r#"{{"empresa_id":{}}}"#, fx.prestador_id),
+        Some(&session),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    if let Some(c) = switch_cookie {
+        session = session_cookie(&c);
+    }
+    session
+}
+
+#[tokio::test]
+async fn contas_fiscais_crud_and_validation() {
+    let _guard = setup_runtime().await;
+    let app = test_router();
+    let fx = seed_two_tenant_fixture().await;
+    let session = tenant_session(&app, &fx).await;
+
+    let cna = CnaEntity::find()
+        .filter(CnaColumn::Codigo.eq("010101"))
+        .one(doido::model::pool::pool())
+        .await
+        .unwrap()
+        .expect("cna seed");
+
+    let (status, body, _) = send_json(
+        &app,
+        "POST",
+        "/api/contas-fiscais",
+        &format!(
+            r#"{{"codigo":"CF-001","descricao":"Conta teste","cna_id":{},"codigo_tributacao_municipal":"001"}}"#,
+            cna.id
+        ),
+        Some(&session),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "create conta fiscal: {body}");
+    assert!(body.contains("010101"));
+    assert!(body.contains("\"001\""));
+
+    let (status, body, _) = send_json(
+        &app,
+        "POST",
+        "/api/contas-fiscais",
+        &format!(
+            r#"{{"codigo":"CF-BAD","cna_id":{},"codigo_tributacao_municipal":"000"}}"#,
+            cna.id
+        ),
+        Some(&session),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "E0315: {body}");
+
+    let (status, _, _) = send_json(
+        &app,
+        "POST",
+        "/api/contas-fiscais",
+        r#"{"codigo":"CF-NOCNA","codigo_tributacao_municipal":"001"}"#,
+        Some(&session),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    let rows = ContaFiscalEntity::find()
+        .filter(ContaFiscalColumn::EmpresaId.eq(fx.prestador_id))
+        .all(doido::model::pool::pool())
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), 1);
+    let conta_id = rows[0].id;
+
+    let (status, _, _) = send_json(
+        &app,
+        "GET",
+        &format!("/api/contas-fiscais/{conta_id}"),
+        "",
+        Some(&session),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, _, _) = send_json(
+        &app,
+        "GET",
+        &format!("/api/contas-fiscais/{conta_id}"),
+        "",
+        Some(&sign_in(&app, &fx.user_email, &fx.password).await),
+    )
+    .await;
+    assert!(
+        status == StatusCode::FORBIDDEN || status == StatusCode::NOT_FOUND,
+        "cross-tenant show got {status}"
     );
 }

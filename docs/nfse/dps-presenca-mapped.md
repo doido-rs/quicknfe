@@ -20,7 +20,7 @@ Antes de **Assinar** / **Transmitir**, `validar_dps_contexto` chama `dps_presenc
 | `cLocEmi` / `cLocPrestacao` | municípios emissão/prestação |
 | `CNPJ`/`CPF`, `xNome`, `cMun` | prestador + município prestador |
 | `CEP`, `xLgr`, `nro`, `xBairro` | endereço do **prestador** (`empresas.*`); tomador/intermediário Brasil quando `end` é emitido (Phase 3B) |
-| `cTribNac`, `xDescServ` | itens da nota |
+| `cTribNac`, `cTribMun`, `xDescServ` | itens da nota (`codigo_tributacao_nacional`, `codigo_tributacao_municipal`) |
 | `cIntContrib` | `itens.numero_item` (primeira linha) |
 | `vServ` | `valor_total_servicos_produtos` |
 | `tribISSQN`, `tpRetISSQN`, `regEspTrib` | tributação documento |

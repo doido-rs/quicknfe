@@ -46,7 +46,12 @@ export function ResourceEditPage() {
   const {
     handleSubmit,
     formState: { isDirty },
+    watch,
   } = form
+  const itemRelationScope =
+    def.key === 'documentos'
+      ? { empresa_id: watch('empresa_id') ?? '' }
+      : undefined
   useUnsavedFormGuard(isDirty)
 
   const updateMutation = useMutation({
@@ -135,7 +140,11 @@ export function ResourceEditPage() {
       </Card>
 
       {itensNested && recordId != null && (
-        <NestedResourcePanel parentId={recordId} nested={itensNested} />
+        <NestedResourcePanel
+          parentId={recordId}
+          nested={itensNested}
+          relationScopeValues={itemRelationScope}
+        />
       )}
     </div>
   )
