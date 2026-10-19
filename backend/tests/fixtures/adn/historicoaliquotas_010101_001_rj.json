@@ -1,0 +1,13 @@
+{
+  "aliquotas": {
+    "01.01.01.001": [
+      {
+        "Incidencia": "SIM",
+        "Aliq": 5.0,
+        "DtIni": "2025-09-17T00:00:00",
+        "DtFim": null
+      }
+    ]
+  },
+  "mensagem": "Histórico de alíquotas recuperadas com sucesso."
+}

@@ -1,5 +1,7 @@
 /target
 .env
+certificado.pfx
+*.p12
 config/master.key
 config/credentials.yml.enc
 *.db
@@ -8,8 +10,12 @@ config/credentials.yml.enc
 # Rust / cargo coverage reports (llvm-cov, tarpaulin, grcov, etc.)
 /coverage/
 /storage/
+/tmp/
 lcov.info
 tarpaulin-report.html
 cobertura.xml
 *.profraw
 *.profdata
+
+execute.sh
+cerficado.pfx

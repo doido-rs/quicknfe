@@ -1,7 +1,6 @@
 pub use doido::model::sea_orm_migration::prelude::*;
 
 mod m20260101000000_create_storage_tables;
-mod m20260101000001_create_doido_jobs_table;
 mod m20260924120000_create_documentos_fiscais_schema;
 mod m20260924_202000_create_users_table;
 mod m20260924121500_create_empresas_usuarios_table;
@@ -40,7 +39,6 @@ impl MigratorTrait for Migrator {
         // entries above the marker below. Do not remove the marker.
         vec![
             Box::new(m20260101000000_create_storage_tables::Migration),
-            Box::new(m20260101000001_create_doido_jobs_table::Migration),
             Box::new(m20260924120000_create_documentos_fiscais_schema::Migration),
             Box::new(m20260924_202000_create_users_table::Migration),
             Box::new(m20260924121500_create_empresas_usuarios_table::Migration),

@@ -45,6 +45,8 @@ settings:
     base_url: "https://sefin.nfse.gov.br/SefinNacional"
   adn:
     base_url: '{{ get_env(name="ADN_BASE_URL", default="https://adn.nfse.gov.br") }}'
+    mtls_pfx_path: '{{ get_env(name="ADN_MTLS_PFX_PATH", default="./certificado.pfx") }}'
+    mtls_pfx_password: '{{ get_env(name="ADN_MTLS_PFX_PASSWORD", default="") }}'
   nfse_catalog:
     queue: catalog
     batch_size: 50

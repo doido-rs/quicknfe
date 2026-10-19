@@ -13,18 +13,19 @@ pub struct CredenciaisMtls {
 }
 
 pub fn build_mtls_client(credenciais: &CredenciaisMtls) -> Result<Client, ApiError> {
-    ensure_legacy_providers_for_pkcs12();
     let pfx = fs::read(&credenciais.caminho_pfx).map_err(|e| {
         ApiError::Validation(format!(
             "não foi possível ler o certificado em {}: {e}",
             credenciais.caminho_pfx
         ))
     })?;
-    let identity = Identity::from_pkcs12_der(&pfx, &credenciais.senha_pfx).map_err(|e| {
-        ApiError::Validation(format!(
-            "certificado PFX inválido ou senha incorreta ({}): {e}",
-            credenciais.caminho_pfx
-        ))
+    build_mtls_client_from_pfx_bytes(&pfx, &credenciais.senha_pfx)
+}
+
+pub fn build_mtls_client_from_pfx_bytes(pfx: &[u8], senha: &str) -> Result<Client, ApiError> {
+    ensure_legacy_providers_for_pkcs12();
+    let identity = Identity::from_pkcs12_der(pfx, senha).map_err(|e| {
+        ApiError::Validation(format!("certificado PFX inválido ou senha incorreta: {e}"))
     })?;
     Client::builder()
         .identity(identity)

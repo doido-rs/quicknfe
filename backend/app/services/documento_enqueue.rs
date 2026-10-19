@@ -40,8 +40,11 @@ pub async fn enqueue_assinar(
         company_id: params.company_id,
         certificado_id: params.certificado_id,
     };
+    let queue = job_queue::default_job_queue()
+        .await
+        .map_err(|e| ApiError::Internal(format!("falha ao preparar fila de jobs: {e}")))?;
     let job_id = assinar_documento::AssinarDocumentoJob::new(payload)
-        .enqueue(job_queue::default_job_queue().as_ref())
+        .enqueue(queue.as_ref())
         .await
         .map_err(|e| ApiError::Internal(format!("falha ao enfileirar assinatura: {e}")))?;
 
@@ -90,7 +93,9 @@ pub async fn enqueue_transmitir(
         company_id,
         certificado_id,
     };
-    let queue = job_queue::default_job_queue();
+    let queue = job_queue::default_job_queue()
+        .await
+        .map_err(|e| ApiError::Internal(format!("falha ao preparar fila de jobs: {e}")))?;
     let job_id = if let Some(at) = run_at.filter(|t| *t > Utc::now()) {
         transmitir_documento::TransmitirDocumentoNfseJob::new(payload)
             .at(at)

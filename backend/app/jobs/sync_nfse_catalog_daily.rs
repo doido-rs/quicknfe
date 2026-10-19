@@ -25,7 +25,7 @@ pub async fn sync_nfse_catalog_daily(
     catalog_daily::record_nacional_run(db, stats.clone()).await?;
 
     let coordinator_payload = SyncMunicipioCnaCoordinatorJobPayload::default();
-    let queue = job_queue::default_job_queue();
+    let queue = job_queue::default_job_queue().await?;
     SyncMunicipioCnaCoordinatorJob::new(coordinator_payload)
         .enqueue(queue.as_ref())
         .await
@@ -56,7 +56,7 @@ pub async fn sync_municipio_cna_coordinator(
     let cfg = settings::get();
     let codes = catalog_daily::list_all_ibge_codes(db).await?;
     let batches = catalog_daily::chunk_ibge(&codes, cfg.nfse_catalog.batch_size);
-    let queue = job_queue::default_job_queue();
+    let queue = job_queue::default_job_queue().await?;
     let mut enqueued = 0u32;
     for batch in batches {
         SyncMunicipioCnaLoteJob::new(SyncMunicipioCnaLoteJobPayload {

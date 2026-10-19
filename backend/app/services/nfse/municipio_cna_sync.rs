@@ -138,3 +138,27 @@ pub async fn municipio_tem_parametrizacao(
         .map_err(|e| doido_core::anyhow::anyhow!("count parametrizacao: {e}"))?;
     Ok(n > 0)
 }
+
+#[cfg(test)]
+mod catalog_sync_adn_tests {
+    use super::*;
+    use crate::connectors::adn;
+
+    /// Mesmo JSON que `./execute.sh adn` / OpenAPI → linhas para `municipio_cna_parametrizacao`.
+    #[test]
+    fn job_import_parses_historico_fixture() {
+        let body =
+            include_str!("../../../tests/fixtures/adn/historicoaliquotas_010101.json");
+        let params = adn::parse_historico_aliquotas_body(body).expect("parse fixture");
+        assert_eq!(params.len(), 2);
+        assert_eq!(params[0].codigo_trib_nac, "010101");
+        assert_eq!(params[0].codigo_trib_mun, "000");
+    }
+
+    #[test]
+    fn job_import_not_found_fixture_is_empty_batch() {
+        let body = include_str!("../../../tests/fixtures/adn/historicoaliquotas_not_found.json");
+        let params = adn::parse_historico_aliquotas_body(body).expect("parse");
+        assert!(params.is_empty());
+    }
+}

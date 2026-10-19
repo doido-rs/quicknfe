@@ -1,11 +1,21 @@
 //! Cliente HTTP ADN — parametrização municipal (`/parametrizacao/...`).
+//!
+//! OpenAPI: `{base}/parametrizacao/docs` — sync municipal usa
+//! `GET /{codigoMunicipio}/{codigoServico}/historicoaliquotas`.
 
 mod codigo;
+mod pfx;
 
 use doido::model::sea_orm::prelude::Decimal;
 use std::collections::HashSet;
 use std::str::FromStr;
+use std::time::Duration;
 
+use reqwest::Client;
+
+use crate::connectors::mtls::build_mtls_client_from_pfx_bytes;
+
+use pfx::{adn_pfx_password, load_adn_pfx_bytes};
 use crate::services::api_error::ApiError;
 use crate::settings;
 
@@ -23,9 +33,38 @@ pub struct AliquotaParametrizacao {
     pub vigencia_fim: Option<chrono::NaiveDate>,
 }
 
+/// Mock/local ADN não exige mTLS (mesma regra do CNC).
+pub fn adn_usa_mtls(base_url: &str) -> bool {
+    let lower = base_url.to_ascii_lowercase();
+    !(lower.contains("127.0.0.1") || lower.contains("localhost"))
+}
+
+/// URL do histórico de alíquotas (OpenAPI `Aliquotas` → `historicoaliquotas`).
+pub fn historico_aliquotas_url(codigo_ibge: &str, codigo_servico: &str) -> String {
+    let base = settings::get().adn.base_url_normalized();
+    format!(
+        "{base}/parametrizacao/{}/{}/historicoaliquotas",
+        codigo_ibge.trim(),
+        codigo_servico.trim()
+    )
+}
+
+/// URL alíquota na competência (`/{competencia}/aliquota`, `competencia` ISO date-time).
+pub fn aliquota_competencia_url(
+    codigo_ibge: &str,
+    codigo_servico: &str,
+    competencia_iso: &str,
+) -> String {
+    let base = settings::get().adn.base_url_normalized();
+    let comp = urlencoding::encode(competencia_iso.trim());
+    format!(
+        "{base}/parametrizacao/{}/{}/{comp}/aliquota",
+        codigo_ibge.trim(),
+        codigo_servico.trim()
+    )
+}
+
 /// Consulta parametrização por município, iterando códigos nacionais do catálogo (`cnas`).
-///
-/// API oficial: `GET {ADN}/parametrizacao/{codigoMunicipio}/{codigoServico}` (histórico/desdobros no JSON).
 pub async fn get_aliquotas_municipio(
     codigo_ibge: &str,
     codigos_nacionais: &[String],
@@ -37,30 +76,69 @@ pub async fn get_aliquotas_municipio(
     let mut seen = HashSet::new();
 
     for raw in codigos_nacionais {
-        let Some(codigo_servico) = format_codigo_servico_adn(raw, "000") else {
-            continue;
-        };
-        let rows = fetch_parametrizacao_servico(&client, ibge, &codigo_servico).await?;
+        let rows = fetch_historico_for_nacional(&client, ibge, raw, sleep_ms).await?;
         for row in rows {
             let key = (row.codigo_trib_nac.clone(), row.codigo_trib_mun.clone());
             if seen.insert(key) {
                 out.push(row);
             }
         }
-        if sleep_ms > 0 {
-            tokio::time::sleep(std::time::Duration::from_millis(sleep_ms)).await;
-        }
     }
     Ok(out)
 }
 
-async fn fetch_parametrizacao_servico(
-    client: &reqwest::Client,
+/// Histórico ADN por CNA nacional. Municípios como RJ publicam em `…001`, não `…000`.
+async fn fetch_historico_for_nacional(
+    client: &Client,
+    ibge: &str,
+    raw_nacional: &str,
+    sleep_ms: u64,
+) -> Result<Vec<AliquotaParametrizacao>, ApiError> {
+    let desdobro_max = settings::get().nfse_catalog.desdobro_scan_max;
+    let desdobro_stop = settings::get().nfse_catalog.desdobro_scan_stop_after_misses;
+    let mut rows = Vec::new();
+
+    if let Some(codigo) = format_codigo_servico_adn(raw_nacional, "000") {
+        rows = fetch_historico_aliquotas(client, ibge, &codigo).await?;
+        if sleep_ms > 0 {
+            tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
+        }
+    }
+
+    if rows.is_empty() {
+        let max = desdobro_max.max(1);
+        let stop_after = desdobro_stop.max(1);
+        let mut misses = 0u32;
+        for n in 1..=max {
+            let mun = format!("{n:03}");
+            let Some(codigo) = format_codigo_servico_adn(raw_nacional, &mun) else {
+                continue;
+            };
+            let batch = fetch_historico_aliquotas(client, ibge, &codigo).await?;
+            if batch.is_empty() {
+                misses += 1;
+                if misses >= stop_after {
+                    break;
+                }
+            } else {
+                misses = 0;
+                rows.extend(batch);
+            }
+            if sleep_ms > 0 {
+                tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
+            }
+        }
+    }
+
+    Ok(rows)
+}
+
+async fn fetch_historico_aliquotas(
+    client: &Client,
     ibge: &str,
     codigo_servico: &str,
 ) -> Result<Vec<AliquotaParametrizacao>, ApiError> {
-    let base = settings::get().adn.base_url_normalized();
-    let url = format!("{base}/parametrizacao/{ibge}/{codigo_servico}");
+    let url = historico_aliquotas_url(ibge, codigo_servico);
 
     let response = client
         .get(&url)
@@ -86,14 +164,26 @@ async fn fetch_parametrizacao_servico(
         )));
     }
 
-    parse_aliquotas_json(&body)
+    parse_historico_aliquotas_body(&body)
 }
 
-fn http_client() -> Result<reqwest::Client, ApiError> {
-    reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
+fn http_client() -> Result<Client, ApiError> {
+    let adn = settings::get().adn.base_url_normalized();
+    if adn_usa_mtls(&adn) {
+        if let Some(bytes) = load_adn_pfx_bytes()? {
+            let senha = adn_pfx_password();
+            return build_mtls_client_from_pfx_bytes(&bytes, &senha);
+        }
+    }
+    Client::builder()
+        .timeout(Duration::from_secs(60))
         .build()
         .map_err(|e| ApiError::Internal(format!("cliente HTTP ADN: {e}")))
+}
+
+/// Parse resposta OpenAPI `ResultadoConsultaAliquotas` (histórico / alíquota).
+pub fn parse_historico_aliquotas_body(body: &str) -> Result<Vec<AliquotaParametrizacao>, ApiError> {
+    parse_aliquotas_json(body)
 }
 
 fn truncate(s: &str, max: usize) -> String {
@@ -235,6 +325,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn adn_mock_nao_exige_mtls() {
+        assert!(!adn_usa_mtls("http://127.0.0.1:8090"));
+        assert!(adn_usa_mtls("https://adn.producaorestrita.nfse.gov.br"));
+    }
+
+    #[test]
+    fn historico_url_matches_openapi() {
+        settings::init();
+        let url = historico_aliquotas_url("3304557", "01.01.01.000");
+        assert!(url.ends_with("/parametrizacao/3304557/01.01.01.000/historicoaliquotas"));
+    }
+
+    #[test]
     fn parse_json_array_body() {
         let body = r#"[
             {"codigoServico":"01.01.01.000","aliquota":2.0},
@@ -268,5 +371,54 @@ mod tests {
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0].codigo_trib_mun, "000");
         assert_eq!(rows[1].codigo_trib_mun, "001");
+    }
+
+    fn adn_fixture(name: &str) -> String {
+        std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/adn")
+                .join(name),
+        )
+        .unwrap_or_else(|e| panic!("fixture adn/{name}: {e}"))
+    }
+
+    /// Corpo alinhado ao OpenAPI / saída de `./execute.sh adn` (sucesso).
+    #[test]
+    fn parse_catalog_sync_fixture_historico_010101() {
+        let body = adn_fixture("historicoaliquotas_010101.json");
+        let rows = parse_historico_aliquotas_body(&body).expect("parse");
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].codigo_trib_nac, "010101");
+        assert_eq!(rows[0].codigo_trib_mun, "000");
+        assert!(rows[0].aliquota.is_some());
+    }
+
+    /// Resposta 404 / placeholder do script → sync municipal insere 0 linhas para o serviço.
+    #[test]
+    fn parse_catalog_sync_fixture_not_found_empty() {
+        let body = adn_fixture("historicoaliquotas_not_found.json");
+        let rows = parse_historico_aliquotas_body(&body).expect("parse");
+        assert!(rows.is_empty());
+    }
+
+    /// Rio de Janeiro: CNA 010101 parametrizado como `01.01.01.001`, não `.000`.
+    #[test]
+    fn parse_rj_fixture_010101_desdobro_001() {
+        let body = adn_fixture("historicoaliquotas_010101_001_rj.json");
+        let rows = parse_historico_aliquotas_body(&body).expect("parse");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].codigo_trib_nac, "010101");
+        assert_eq!(rows[0].codigo_trib_mun, "001");
+    }
+
+    #[test]
+    fn convenio_fixture_from_execute_script() {
+        let body = adn_fixture("convenio_3304557.json");
+        let v: serde_json::Value = serde_json::from_str(&body).expect("json");
+        assert!(v.get("parametrosConvenio").is_some());
+        assert_eq!(
+            v.get("mensagem").and_then(|m| m.as_str()),
+            Some("Parâmetros do convênio recuperados com sucesso.")
+        );
     }
 }

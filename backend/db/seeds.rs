@@ -82,19 +82,6 @@ fn dec_frac(int: i64, scale: u32) -> Decimal {
     Decimal::new(int, scale)
 }
 
-async fn doido_jobs_table_exists(db: &DatabaseConnection) -> doido::Result<bool> {
-    let backend = db.get_database_backend();
-    let row = SchemaColCount::find_by_statement(Statement::from_string(
-        backend,
-        "SELECT COUNT(*) AS n FROM information_schema.TABLES \
-         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'doido_jobs'"
-            .to_string(),
-    ))
-    .one(db)
-    .await?;
-    Ok(row.map(|r| r.n).unwrap_or(0) > 0)
-}
-
 async fn table_exists(db: &DatabaseConnection, table_name: &str) -> doido::Result<bool> {
     let backend = db.get_database_backend();
     let sql = format!(
@@ -142,14 +129,11 @@ async fn pending_doido_job_count(
 
 /// Enfileira Anexo A (municípios/países) e sync diário do catálogo (`cargo doido worker`).
 async fn bootstrap_nfse_catalog_jobs(db: &DatabaseConnection) -> doido::Result<()> {
-    if !doido_jobs_table_exists(db).await? {
-        return Ok(());
-    }
     if !municipio_cna_parametrizacao_is_empty(db).await? {
         return Ok(());
     }
 
-    let queue = crate::services::job_queue::queue_for(db.clone());
+    let queue = crate::services::job_queue::queue_for(db.clone()).await?;
 
     if pending_doido_job_count(db, "default", "import_nfse_anexo_a").await? == 0 {
         use crate::jobs::import_nfse_anexo_a::{

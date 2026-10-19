@@ -80,12 +80,18 @@ impl SefinSettings {
 #[serde(default)]
 pub struct AdnSettings {
     pub base_url: String,
+    /// Caminho do PFX A1 para mTLS nas chamadas ADN (produção/homolog). Vazio = sem mTLS.
+    pub mtls_pfx_path: Option<String>,
+    /// Senha do PFX (`ADN_MTLS_PFX_PASSWORD`); ignorada se `mtls_pfx_path` vazio.
+    pub mtls_pfx_password: Option<String>,
 }
 
 impl Default for AdnSettings {
     fn default() -> Self {
         Self {
             base_url: "https://adn.producaorestrita.nfse.gov.br".into(),
+            mtls_pfx_path: None,
+            mtls_pfx_password: None,
         }
     }
 }
@@ -93,6 +99,19 @@ impl Default for AdnSettings {
 impl AdnSettings {
     pub fn base_url_normalized(&self) -> String {
         normalize_base_url(&self.base_url)
+    }
+
+    /// Preferir [`crate::connectors::adn::pfx::load_adn_pfx_bytes`] (env base64 ou path).
+    pub fn mtls_credentials(&self) -> Option<crate::connectors::mtls::CredenciaisMtls> {
+        let path = self.mtls_pfx_path.as_deref()?.trim();
+        if path.is_empty() {
+            return None;
+        }
+        let senha = self.mtls_pfx_password.as_deref().unwrap_or("").to_string();
+        Some(crate::connectors::mtls::CredenciaisMtls {
+            caminho_pfx: path.to_string(),
+            senha_pfx: senha,
+        })
     }
 }
 
@@ -114,6 +133,10 @@ pub struct NfseCatalogSettings {
     pub incidencia_xlsx_url: Option<String>,
     /// URL Anexo B (lista nacional); opcional — incidência cobre códigos se falhar.
     pub anexo_b_url: Option<String>,
+    /// Quando `…000` não retorna alíquota (ex. RJ), varre desdobros `001`… até este limite.
+    pub desdobro_scan_max: u32,
+    /// Interrompe a varredura após N desdobros consecutivos sem parametrização ADN.
+    pub desdobro_scan_stop_after_misses: u32,
 }
 
 impl Default for NfseCatalogSettings {
@@ -126,6 +149,8 @@ impl Default for NfseCatalogSettings {
             anexo_a_url: None,
             incidencia_xlsx_url: None,
             anexo_b_url: None,
+            desdobro_scan_max: 100,
+            desdobro_scan_stop_after_misses: 12,
         }
     }
 }
@@ -171,6 +196,8 @@ fn blank_to_none(value: Option<String>) -> Option<String> {
 }
 
 fn normalize_settings(mut settings: Settings) -> Settings {
+    settings.adn.mtls_pfx_path = blank_to_none(settings.adn.mtls_pfx_path);
+    settings.adn.mtls_pfx_password = blank_to_none(settings.adn.mtls_pfx_password);
     settings.nfse_catalog.anexo_a_url = blank_to_none(settings.nfse_catalog.anexo_a_url);
     settings.nfse_catalog.incidencia_xlsx_url =
         blank_to_none(settings.nfse_catalog.incidencia_xlsx_url);
