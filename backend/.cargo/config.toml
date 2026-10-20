@@ -6,3 +6,7 @@
 #   cargo doido generate model User
 [alias]
 doido = "run --bin quicknfe --"
+
+[profile.dev]
+debug = "line-tables-only"
+
