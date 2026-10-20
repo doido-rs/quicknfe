@@ -48,10 +48,34 @@ mod routes;
 
 mod startup;
 
+fn should_bootstrap_nfse_catalog_on_boot() -> bool {
+    matches!(
+        std::env::args().nth(1).as_deref(),
+        Some("server") | Some("worker")
+    )
+}
+
+async fn bootstrap_nfse_catalog_jobs_on_boot() {
+    if !should_bootstrap_nfse_catalog_on_boot() {
+        return;
+    }
+    let Some(db) = doido_model::pool::try_pool().cloned() else {
+        doido_core::tracing::warn!(
+            "nfse catalog bootstrap: pool indisponível; rode migrate/seed ou verifique DATABASE_URL"
+        );
+        return;
+    };
+    if let Err(e) = services::nfse_catalog_bootstrap::bootstrap_nfse_catalog_jobs(&db).await {
+        doido_core::tracing::warn!("nfse catalog bootstrap: {e}");
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    let _ = doido_model::pool::init().await;
     startup::prepare();
     settings::init();
+    bootstrap_nfse_catalog_jobs_on_boot().await;
     // Delegates to the Doido CLI (server, console, db, worker, generate, …),
     // handing it this app's routes so `doido server` can boot the HTTP server.
     // The `jobs`/`mailers` modules above are compiled as part of this crate, so

@@ -7,4 +7,5 @@ pub fn prepare() {
     if env == "development" {
         let _ = dotenvy::dotenv();
     }
+
 }

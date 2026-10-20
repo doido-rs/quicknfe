@@ -15,6 +15,7 @@ pub mod item_documento;
 pub mod documento_jobs;
 pub mod documento_presentacao;
 pub mod job_queue;
+pub mod nfse_catalog_bootstrap;
 pub mod pagination;
 pub mod municipio;
 pub mod nfse;
