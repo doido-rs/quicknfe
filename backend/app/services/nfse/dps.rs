@@ -1,7 +1,8 @@
 //! Montagem do XML da DPS (NFS-e Nacional) alinhada ao `layout_dps_leaiute.csv`.
 
 use super::dps_context::{
-    cpf_cnpj_tag, decimal_xml, gerar_id_inf_dps, only_digits, serie_dps_para_xml, ParteExterior,
+    cpf_cnpj_tag, decimal_xml, gerar_id_inf_dps, only_digits, serie_dps_para_xml,
+    telefone_para_dps, ParteExterior,
     DpsContext,
 };
 
@@ -251,8 +252,8 @@ fn append_parte_brasil(
         push_elem(xml, 8, "xBairro", &xml_escape(&end.bairro));
         xml.push_str("      </end>\n");
     }
-    if let Some(f) = fone.filter(|s| !s.trim().is_empty()) {
-        push_elem(xml, 6, "fone", &only_digits(f));
+    if let Some(f) = telefone_para_dps(fone) {
+        push_elem(xml, 6, "fone", &f);
     }
     if let Some(e) = email.filter(|s| !s.trim().is_empty()) {
         push_elem(xml, 6, "email", &xml_escape(e));
@@ -280,8 +281,8 @@ fn append_parte_exterior(xml: &mut String, grupo: &str, ext: &ParteExterior) {
     }
     push_elem(xml, 8, "xBairro", &xml_escape(&ext.bairro));
     xml.push_str("      </end>\n");
-    if let Some(f) = ext.telefone.as_ref().filter(|s| !s.trim().is_empty()) {
-        push_elem(xml, 6, "fone", &only_digits(f));
+    if let Some(f) = telefone_para_dps(ext.telefone.as_deref()) {
+        push_elem(xml, 6, "fone", &f);
     }
     if let Some(e) = ext.email.as_ref().filter(|s| !s.trim().is_empty()) {
         push_elem(xml, 6, "email", &xml_escape(e));

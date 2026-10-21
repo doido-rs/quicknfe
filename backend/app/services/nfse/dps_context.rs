@@ -144,6 +144,20 @@ pub fn only_digits(s: &str) -> String {
     s.chars().filter(|c| c.is_ascii_digit()).collect()
 }
 
+/// `TSTelefone` (6–20 dígitos). Retorna `None` se inválido — tag `fone` é 0-1 e não pode ir vazia.
+pub fn telefone_para_dps(raw: Option<&str>) -> Option<String> {
+    let raw = raw?.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    let digits = only_digits(raw);
+    if (6..=20).contains(&digits.len()) {
+        Some(digits)
+    } else {
+        None
+    }
+}
+
 pub fn cpf_cnpj_tag(cpf_cnpj: &str) -> (&'static str, String) {
     let digits = only_digits(cpf_cnpj);
     if digits.len() <= 11 {
@@ -222,3 +236,28 @@ pub fn gerar_id_inf_dps(ctx: &DpsContext) -> Result<String, ApiError> {
     ))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::telefone_para_dps;
+
+    #[test]
+    fn telefone_para_dps_aceita_ddd_mais_numero() {
+        assert_eq!(
+            telefone_para_dps(Some("(21) 98765-4321")).as_deref(),
+            Some("21987654321")
+        );
+    }
+
+    #[test]
+    fn telefone_para_dps_omite_vazio_ou_so_mascara() {
+        assert_eq!(telefone_para_dps(Some("")), None);
+        assert_eq!(telefone_para_dps(Some("   ")), None);
+        assert_eq!(telefone_para_dps(Some("( ) ----")), None);
+        assert_eq!(telefone_para_dps(None), None);
+    }
+
+    #[test]
+    fn telefone_para_dps_rejeita_poucos_digitos() {
+        assert_eq!(telefone_para_dps(Some("12345")), None);
+    }
+}
