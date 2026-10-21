@@ -16,6 +16,8 @@ use crate::services::entity_enums::{
 
 const VER_APLIC: &str = "QuickNFe/0.1";
 const DPS_VERSAO: &str = "1.01";
+/// Finalidade da NFS-e (TSRTCFinNFSe) — filho direto de `infDPS` no XSD v1.01+ (antes de `cLocEmi`).
+const FIN_NFSE_REGULAR: &str = "0";
 /// Namespace oficial do leiaute DPS/NFS-e Nacional (validação SEFIN E1235).
 pub const DPS_XML_NS: &str = "http://www.sped.fazenda.gov.br/nfse";
 
@@ -39,6 +41,7 @@ pub fn montar_dps_xml(doc: &Documento) -> String {
     <nDPS>{numero}</nDPS>
     <dCompet>{competencia}</dCompet>
     <tpEmit>1</tpEmit>
+    <finNFSe>{FIN_NFSE_REGULAR}</finNFSe>
     <cLocEmi>0000000</cLocEmi>
     <vServ>{valor}</vServ>
   </infDPS>
@@ -87,6 +90,8 @@ fn append_identificacao(xml: &mut String, ctx: &DpsContext, competencia: &str) {
     push_elem(xml, 4, "nDPS", &doc.numero_documento.to_string());
     push_elem(xml, 4, "dCompet", competencia);
     push_elem(xml, 4, "tpEmit", "1");
+    // tpEmit=1 (prestador): cMotivoEmisTI/chNFSeRej omitidos (RN E0029).
+    push_elem(xml, 4, "finNFSe", FIN_NFSE_REGULAR);
     push_elem(
         xml,
         4,
@@ -520,7 +525,8 @@ pub mod coverage {
     /// Tags de elemento (`campo`) que o builder emite hoje (fases 3A–3H).
     pub fn emitted_tags() -> HashSet<&'static str> {
         [
-            "id", "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "cLocEmi",
+            "id", "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "finNFSe",
+            "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac", "cTribMun",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
@@ -829,8 +835,13 @@ mod tests {
             }],
         };
         let xml = montar_dps_xml_context(&ctx).expect("xml");
+        let fin_pos = xml.find("<finNFSe>").expect("finNFSe");
+        let loc_pos = xml.find("<cLocEmi>").expect("cLocEmi");
+        assert!(fin_pos < loc_pos, "finNFSe must precede cLocEmi in infDPS");
+
         for tag in [
             "<tpEmit>",
+            "<finNFSe>",
             "<cLocEmi>",
             "<cTribNac>",
             "<cTribMun>",
