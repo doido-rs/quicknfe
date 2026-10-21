@@ -1,5 +1,6 @@
 //! Montagem do XML da DPS (NFS-e Nacional) alinhada ao `layout_dps_leaiute.csv`.
 
+use super::codigo_servico::normalize_c_nbs;
 use super::dps_context::{
     cpf_cnpj_tag, decimal_xml, gerar_id_inf_dps, only_digits, serie_dps_para_xml,
     telefone_para_dps, ParteExterior,
@@ -307,6 +308,13 @@ fn append_servico(xml: &mut String, ctx: &DpsContext) {
         push_elem(xml, 8, "cTribMun", mun);
     }
     push_elem(xml, 8, "xDescServ", &xml_escape(&x_desc));
+    let c_nbs = normalize_c_nbs(
+        ctx.itens
+            .first()
+            .and_then(|i| i.codigo_ncm.as_deref()),
+        &c_trib,
+    );
+    push_elem(xml, 8, "cNBS", &c_nbs);
     if let Some(item) = ctx.itens.first() {
         push_elem(xml, 8, "cIntContrib", &item.numero_item.to_string());
     }
@@ -530,7 +538,8 @@ pub mod coverage {
             "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac", "cTribMun",
-            "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN", "tpRetISSQN",
+            "xDescServ", "cNBS", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN",
+            "tpRetISSQN",
             "pAliq", "vBC", "vISSQN", "tpRetISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins",
             "vRetCP",
             "vRetIRRF", "vRetCSLL",
@@ -839,6 +848,9 @@ mod tests {
         let fin_pos = xml.find("<finNFSe>").expect("finNFSe");
         let loc_pos = xml.find("<cLocEmi>").expect("cLocEmi");
         assert!(fin_pos < loc_pos, "finNFSe must precede cLocEmi in infDPS");
+        let nbs_pos = xml.find("<cNBS>").expect("cNBS");
+        let int_pos = xml.find("<cIntContrib>").expect("cIntContrib");
+        assert!(nbs_pos < int_pos, "cNBS must precede cIntContrib in cServ");
 
         for tag in [
             "<tpEmit>",
@@ -847,6 +859,7 @@ mod tests {
             "<cTribNac>",
             "<cTribMun>",
             "<xDescServ>",
+            "<cNBS>",
             "<tribISSQN>",
             "<totTrib>",
             "<vTotTribFed>",

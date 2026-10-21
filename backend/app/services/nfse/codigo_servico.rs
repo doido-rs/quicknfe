@@ -16,6 +16,22 @@ pub fn normalize_c_trib_nac(raw: &str) -> Option<String> {
     Some(s)
 }
 
+/// Código NBS (`cNBS`) — 9 dígitos (`TSCodNBS`). Usa `codigo_ncm` do item quando informado;
+/// senão deriva de `cTribNac` (6 dígitos + `000`).
+pub fn normalize_c_nbs(codigo_item: Option<&str>, c_trib_nac: &str) -> String {
+    if let Some(raw) = codigo_item {
+        let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+        if !digits.is_empty() {
+            if digits.len() >= 9 {
+                return digits[digits.len() - 9..].to_string();
+            }
+            return format!("{:0>9}", digits);
+        }
+    }
+    let nac = normalize_c_trib_nac(c_trib_nac).unwrap_or_else(|| "010101".into());
+    format!("{nac}000")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -54,6 +70,12 @@ mod tests {
     #[test]
     fn normalize_nac_from_spreadsheet_number() {
         assert_eq!(normalize_c_trib_nac("10101").as_deref(), Some("010101"));
+    }
+
+    #[test]
+    fn normalize_c_nbs_from_item_ou_trib_nac() {
+        assert_eq!(normalize_c_nbs(Some("123456789"), "010101").as_str(), "123456789");
+        assert_eq!(normalize_c_nbs(None, "010101").as_str(), "010101000");
     }
 
     #[test]

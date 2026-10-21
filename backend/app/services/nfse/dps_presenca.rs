@@ -31,6 +31,7 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "cTribNac",
         "cTribMun",
         "xDescServ",
+        "cNBS",
         "vServ",
         "tribISSQN",
         "opSimpNac",
@@ -192,6 +193,7 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
                 .or(Some(&i.descricao))
                 .is_some_and(|s| !s.trim().is_empty())
         }),
+        "cNBS" => true,
         "vServ" => doc.valor_total_servicos_produtos > Decimal::ZERO,
         "tribISSQN" => doc.trib_issqn > 0,
         "opSimpNac" => ctx.prestador.regime_tributario > 0,
