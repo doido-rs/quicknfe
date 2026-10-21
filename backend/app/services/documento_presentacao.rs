@@ -93,10 +93,13 @@ async fn carregar_nomes_partes(
 }
 
 fn tomador_nome(doc: &Documento, partes: &PartesNomes) -> Option<String> {
-    if doc.tomador_localidade == "exterior" {
+    use crate::models::localidade_parte::LocalidadeParte;
+    use crate::services::entity_enums::localidade_from_db;
+    let loc = localidade_from_db(doc.tomador_localidade).ok()?;
+    if loc == LocalidadeParte::Exterior {
         return decode_parte_exterior(&doc.tomador_exterior).map(|p| p.razao_social);
     }
-    if doc.tomador_localidade == "nao_informado" {
+    if loc == LocalidadeParte::NaoInformado {
         return None;
     }
     doc.cliente_id
@@ -104,10 +107,13 @@ fn tomador_nome(doc: &Documento, partes: &PartesNomes) -> Option<String> {
 }
 
 fn intermediario_nome(doc: &Documento, partes: &PartesNomes) -> Option<String> {
-    if doc.intermediario_localidade == "exterior" {
+    use crate::models::localidade_parte::LocalidadeParte;
+    use crate::services::entity_enums::localidade_from_db;
+    let loc = localidade_from_db(doc.intermediario_localidade).ok()?;
+    if loc == LocalidadeParte::Exterior {
         return decode_parte_exterior(&doc.intermediario_exterior).map(|p| p.razao_social);
     }
-    if doc.intermediario_localidade == "nao_informado" {
+    if loc == LocalidadeParte::NaoInformado {
         return None;
     }
     doc.intermediario_id

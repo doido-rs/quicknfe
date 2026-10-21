@@ -11,7 +11,9 @@ use doido_auth::AuthUser;
 use crate::models::company::Model as Company;
 use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEntity};
 use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity, Model as Empresa};
+use crate::models::papel_usuario::PapelUsuario;
 use crate::models::user::Model as User;
+use crate::services::entity_enums::papel_from_db;
 
 /// Tenant organizacional (company).
 pub const COMPANY_ID_KEY: &str = "company_id";
@@ -23,7 +25,7 @@ pub struct TenantAccess {
     pub user: User,
     pub company: Company,
     pub prestador: Empresa,
-    pub papel: String,
+    pub papel: PapelUsuario,
 }
 
 #[derive(Debug)]
@@ -64,13 +66,18 @@ pub async fn membership(
     db: &DatabaseConnection,
     user_id: i64,
     company_id: i64,
-) -> doido::Result<Option<String>> {
-    Ok(MembroEntity::find()
+) -> doido::Result<Option<PapelUsuario>> {
+    let row = MembroEntity::find()
         .filter(MembroColumn::UserId.eq(user_id))
         .filter(MembroColumn::CompanyId.eq(company_id))
         .one(db)
-        .await?
-        .map(|m| m.papel))
+        .await?;
+    Ok(match row {
+        Some(m) => Some(papel_from_db(m.papel).map_err(|e| {
+            doido_core::anyhow::anyhow!("{e}")
+        })?),
+        None => None,
+    })
 }
 
 pub async fn user_company_ids(db: &DatabaseConnection, user_id: i64) -> doido::Result<Vec<i64>> {

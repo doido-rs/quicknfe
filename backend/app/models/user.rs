@@ -60,7 +60,7 @@ impl RegisterableAuthUser for Model {
         let now = chrono::Utc::now();
         let record = ActiveModel {
             email: Set(email),
-            date_format: Set("DMY".into()),
+            date_format: Set(crate::models::date_format_preference::DateFormatPreference::default().as_db_code()),
             password_digest: Set(password_digest),
             created_at: Set(now),
             updated_at: Set(now),

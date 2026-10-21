@@ -12,7 +12,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
     pub item_id: i64,
-    pub tipo_imposto: String,
+    pub tipo_imposto: i32,
     pub cst_csosn: Option<String>,
     #[sea_orm(column_type = "Decimal(Some((10, 0)))", nullable)]
     pub base_calculo: Option<Decimal>,

@@ -3,11 +3,16 @@ import { relationApiPath, relationOptionLabel, relationResourceKey } from './rel
 
 describe('relations', () => {
   it('relationResourceKey from field def or fk map', () => {
-    expect(relationResourceKey({ key: 'cliente_id', type: 'relation', relationResource: 'clientes' })).toBe(
-      'clientes',
-    )
-    expect(relationResourceKey({ key: 'cliente_id', type: 'text' })).toBe('clientes')
-    expect(relationResourceKey({ key: 'unknown', type: 'text' })).toBeNull()
+    expect(
+      relationResourceKey({
+        key: 'cliente_id',
+        label: 'Tomador',
+        type: 'relation',
+        relationResource: 'clientes',
+      }),
+    ).toBe('clientes')
+    expect(relationResourceKey({ key: 'cliente_id', label: 'Tomador', type: 'text' })).toBe('clientes')
+    expect(relationResourceKey({ key: 'unknown', label: 'X', type: 'text' })).toBeNull()
   })
 
   it('relationApiPath resolves resource path', () => {

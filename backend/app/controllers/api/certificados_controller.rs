@@ -13,6 +13,7 @@ use crate::services::certificado_arquivo::{
     decode_certificado_base64, gravar_certificado_pfx_bytes, tentar_remover_arquivo_certificado,
 };
 use crate::services::certificado_pfx::verificar_pfx;
+use crate::models::certificado_tipo::CertificadoTipo;
 use crate::services::certificado_tipo::validar_certificado_tipo;
 use crate::services::dto::{encode_certificado_senha, CertificadoDto};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
@@ -20,7 +21,7 @@ use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
 pub struct CertificadoForm {
-    pub tipo: String,
+    pub tipo: CertificadoTipo,
     pub caminho_arquivo: Option<String>,
     #[serde(default)]
     pub arquivo_base64: Option<String>,
@@ -176,7 +177,7 @@ impl ApiCertificadosController {
             tenant_scope::prestador_for_company(ctx.db(), access.company.id, prestador_id).await,
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
-        crate::api!(to_response(validar_certificado_tipo(&form.tipo)));
+        crate::api!(to_response(validar_certificado_tipo(form.tipo)));
         let senha = crate::api!(to_response(
             form.senha
                 .as_ref()
@@ -188,7 +189,7 @@ impl ApiCertificadosController {
         let created = crate::api!(db(
             CertActive {
                 empresa_id: Set(prestador_id),
-                tipo: Set(form.tipo),
+                tipo: Set(form.tipo.as_db_code()),
                 caminho_arquivo: Set(Some(caminho)),
                 senha_encriptada: Set(encode_certificado_senha(senha)),
                 data_validade: Set(data_validade),
@@ -212,14 +213,14 @@ impl ApiCertificadosController {
             tenant_scope::certificado_for_tenant(ctx.db(), prestador_id, id).await,
         ));
         let form: CertificadoForm = crate::api!(json_body(ctx).await);
-        crate::api!(to_response(validar_certificado_tipo(&form.tipo)));
+        crate::api!(to_response(validar_certificado_tipo(form.tipo)));
         let (caminho, data_validade) = crate::api!(to_response(resolve_data_validade_update(
             &form,
             &existing,
             prestador_id,
         )));
         let mut record: CertActive = existing.into();
-        record.tipo = Set(form.tipo);
+        record.tipo = Set(form.tipo.as_db_code());
         if let Some(c) = caminho {
             record.caminho_arquivo = Set(Some(c));
         } else if form.caminho_arquivo.is_some() {
@@ -254,12 +255,13 @@ impl ApiCertificadosController {
 #[cfg(test)]
 mod tests {
     use super::CertificadoForm;
+    use crate::models::certificado_tipo::CertificadoTipo;
 
     #[test]
     fn form_json_sem_data_validade() {
         let json = r#"{"tipo":"A1","senha":"secret","arquivo_nome":"a.pfx","arquivo_base64":"YQ=="}"#;
         let form: CertificadoForm = serde_json::from_str(json).expect("parse");
-        assert_eq!(form.tipo, "A1");
+        assert_eq!(form.tipo, CertificadoTipo::A1);
         assert!(form.data_validade.is_none());
     }
 

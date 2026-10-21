@@ -25,7 +25,7 @@ function compareLogRows(a: Record<string, unknown>, b: Record<string, unknown>):
 
 export function DocumentoLogsRetornoPanel({ documentoId }: { documentoId: number }) {
   const path = `/api/documentos/${documentoId}/logs-retorno`
-  const dateFormat = useDateFormat()
+  const { preference: dateFormat } = useDateFormat()
   const api = resourceApi<Record<string, unknown>>(path)
 
   const { data: page, isLoading } = useQuery({

@@ -10,6 +10,7 @@ use crate::services::api_error::{
     db, id_param, json_body, json_with_status, require_tenant, scoped, to_response,
 };
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
+use crate::models::status_lote::StatusLote;
 use crate::services::dto::LoteDto;
 use crate::services::tenant_scope;
 
@@ -18,7 +19,7 @@ pub struct LoteForm {
     pub numero_lote: i64,
     pub protocolo_recebimento: Option<String>,
     pub ambiente: i32,
-    pub status_lote: String,
+    pub status_lote: StatusLote,
     pub data_recebimento: Option<DateTime<Utc>>,
 }
 
@@ -77,7 +78,7 @@ impl ApiLotesController {
                 numero_lote: Set(form.numero_lote),
                 protocolo_recebimento: Set(form.protocolo_recebimento),
                 ambiente: Set(form.ambiente),
-                status_lote: Set(form.status_lote),
+                status_lote: Set(form.status_lote.as_db_code()),
                 data_recebimento: Set(form.data_recebimento),
                 ..Default::default()
             }
@@ -96,7 +97,7 @@ impl ApiLotesController {
         record.numero_lote = Set(form.numero_lote);
         record.protocolo_recebimento = Set(form.protocolo_recebimento);
         record.ambiente = Set(form.ambiente);
-        record.status_lote = Set(form.status_lote);
+        record.status_lote = Set(form.status_lote.as_db_code());
         record.data_recebimento = Set(form.data_recebimento);
         let updated = crate::api!(db(record.update(ctx.db()).await));
         ctx.json(LoteDto::from(updated))

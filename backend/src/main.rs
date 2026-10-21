@@ -1,3 +1,6 @@
+//! QuickNFe application binary (Doido server, worker, jobs CLI).
+#![allow(dead_code)]
+
 #[path = "../app/auth/mod.rs"]
 mod auth;
 

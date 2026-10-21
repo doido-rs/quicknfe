@@ -10,6 +10,7 @@ pub mod conta_fiscal;
 pub mod cnc;
 pub mod dashboard;
 pub mod dto;
+pub mod entity_enums;
 pub mod documento_enqueue;
 pub mod item_documento;
 pub mod documento_jobs;

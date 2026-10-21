@@ -12,7 +12,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
     pub empresa_id: i64,
-    pub tipo: String,
+    pub tipo: i32,
     pub caminho_arquivo: Option<String>,
     pub senha_encriptada: String,
     pub data_validade: DateTimeUtc,

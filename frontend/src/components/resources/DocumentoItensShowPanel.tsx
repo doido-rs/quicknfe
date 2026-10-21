@@ -28,7 +28,7 @@ export function DocumentoItensShowPanel({
 }) {
   const path = nested.path(documentoId)
   const api = resourceApi<Record<string, unknown>>(path)
-  const dateFormat = useDateFormat()
+  const { preference: dateFormat } = useDateFormat()
   const showFields = documentoItemShowFields(nested)
 
   const { data: page, isLoading } = useQuery({

@@ -106,6 +106,37 @@ impl RegimeTributario {
             _ => Self::RegimeNormal,
         }
     }
+
+    pub fn as_db_code(self) -> i32 {
+        match self {
+            Self::MicroempreendedorIndividual => 1,
+            Self::SimplesNacional => 2,
+            Self::SimplesNacionalExcessoSublimite => 3,
+            Self::LucroPresumido => 4,
+            Self::LucroReal => 5,
+            Self::LucroArbitrado => 6,
+            Self::RegimeNormal => 7,
+            Self::Imunidade => 8,
+            Self::Isencao => 9,
+        }
+    }
+
+    pub fn from_db_code(code: i32) -> Result<Self, ApiError> {
+        match code {
+            1 => Ok(Self::MicroempreendedorIndividual),
+            2 => Ok(Self::SimplesNacional),
+            3 => Ok(Self::SimplesNacionalExcessoSublimite),
+            4 => Ok(Self::LucroPresumido),
+            5 => Ok(Self::LucroReal),
+            6 => Ok(Self::LucroArbitrado),
+            7 => Ok(Self::RegimeNormal),
+            8 => Ok(Self::Imunidade),
+            9 => Ok(Self::Isencao),
+            other => Err(ApiError::Validation(format!(
+                "regime_tributario inválido no banco: {other}"
+            ))),
+        }
+    }
 }
 
 impl Serialize for RegimeTributario {
@@ -139,5 +170,15 @@ mod tests {
             RegimeTributario::from_legacy_crt(2),
             RegimeTributario::SimplesNacionalExcessoSublimite
         );
+    }
+
+    #[test]
+    fn db_code_round_trip() {
+        for r in RegimeTributario::ALL {
+            assert_eq!(
+                RegimeTributario::from_db_code(r.as_db_code()).unwrap(),
+                r
+            );
+        }
     }
 }

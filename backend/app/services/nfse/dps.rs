@@ -6,7 +6,13 @@ use super::dps_context::{
 };
 
 use crate::models::documento_fiscal::Model as Documento;
+use crate::models::localidade_parte::LocalidadeParte;
+use crate::models::regime_tributario::RegimeTributario;
 use crate::services::api_error::ApiError;
+use crate::services::entity_enums::{
+    cst_pis_cofins_from_db, issqn_tp_suspensao_from_db, localidade_from_db, reg_esp_trib_from_db,
+    regime_from_db, tp_ret_from_db, trib_issqn_from_db,
+};
 
 const VER_APLIC: &str = "QuickNFe/0.1";
 const DPS_VERSAO: &str = "1.01";
@@ -119,26 +125,33 @@ fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> 
     push_elem(xml, 8, "xBairro", &xml_escape(&end.bairro));
     xml.push_str("      </end>\n");
     xml.push_str("      <regTrib>\n");
-    push_elem(xml, 8, "opSimpNac", &map_op_simp_nac(&p.regime_tributario));
-    push_elem(xml, 8, "regEspTrib", &ctx.doc.reg_esp_trib_issqn);
+    push_elem(xml, 8, "opSimpNac", &map_op_simp_nac(p.regime_tributario));
+    let reg_esp = reg_esp_trib_from_db(ctx.doc.reg_esp_trib_issqn)
+        .map(|r| r.as_layout_code().to_string())
+        .unwrap_or_else(|_| "0".into());
+    push_elem(xml, 8, "regEspTrib", &reg_esp);
     xml.push_str("      </regTrib>\n");
     xml.push_str("    </prest>\n");
     Ok(())
 }
 
-fn map_op_simp_nac(regime: &str) -> String {
+fn map_op_simp_nac(regime_code: i32) -> String {
+    let regime = regime_from_db(regime_code).unwrap_or(RegimeTributario::RegimeNormal);
     match regime {
-        "MICROEMPREENDEDOR_INDIVIDUAL" => "2".into(),
-        "SIMPLES_NACIONAL" | "SIMPLES_NACIONAL_EXCESSO_SUBLIMITE" => "1".into(),
+        RegimeTributario::MicroempreendedorIndividual => "2".into(),
+        RegimeTributario::SimplesNacional | RegimeTributario::SimplesNacionalExcessoSublimite => {
+            "1".into()
+        }
         _ => "3".into(),
     }
 }
 
 fn append_tomador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
-    if ctx.doc.tomador_localidade == "nao_informado" {
+    let loc = localidade_from_db(ctx.doc.tomador_localidade)?;
+    if loc == LocalidadeParte::NaoInformado {
         return Ok(());
     }
-    if ctx.doc.tomador_localidade == "exterior" {
+    if loc == LocalidadeParte::Exterior {
         if let Some(ext) = &ctx.tomador_exterior {
             append_parte_exterior(xml, "toma", ext);
         }
@@ -164,10 +177,11 @@ fn append_tomador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
 }
 
 fn append_intermediario(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
-    if ctx.doc.intermediario_localidade == "nao_informado" {
+    let loc = localidade_from_db(ctx.doc.intermediario_localidade)?;
+    if loc == LocalidadeParte::NaoInformado {
         return Ok(());
     }
-    if ctx.doc.intermediario_localidade == "exterior" {
+    if loc == LocalidadeParte::Exterior {
         if let Some(ext) = &ctx.intermediario_exterior {
             append_parte_exterior(xml, "interm", ext);
         }
@@ -406,7 +420,10 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
     }
     xml.push_str("      <trib>\n");
     xml.push_str("        <tribMun>\n");
-    push_elem(xml, 10, "tribISSQN", &doc.trib_issqn);
+    let trib = trib_issqn_from_db(doc.trib_issqn)
+        .map(|t| t.as_layout_code().to_string())
+        .unwrap_or_else(|_| "1".into());
+    push_elem(xml, 10, "tribISSQN", &trib);
     push_elem(
         xml,
         10,
@@ -415,13 +432,10 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
     );
     if doc.issqn_exigibilidade_suspensa == 1 {
         xml.push_str("          <exigSusp>\n");
-        let tp = doc.issqn_tp_suspensao.trim();
-        push_elem(
-            xml,
-            12,
-            "tpSusp",
-            if tp.is_empty() { "1" } else { tp },
-        );
+        let tp = issqn_tp_suspensao_from_db(doc.issqn_tp_suspensao)
+            .map(|t| t.as_layout_code().to_string())
+            .unwrap_or_else(|_| "1".into());
+        push_elem(xml, 12, "tpSusp", &tp);
         let proc = doc
             .issqn_n_processo_suspensao
             .as_deref()
@@ -445,8 +459,14 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
     xml.push_str("        </tribMun>\n");
     xml.push_str("        <tribFed>\n");
     xml.push_str("          <piscofins>\n");
-    push_elem(xml, 12, "CST", &doc.cst_pis_cofins);
-    push_elem(xml, 12, "tpRetPisCofins", &doc.tp_ret_pis_cofins_csll);
+    let cst = cst_pis_cofins_from_db(doc.cst_pis_cofins)
+        .map(|c| c.as_layout_code())
+        .unwrap_or_else(|_| "00".into());
+    push_elem(xml, 12, "CST", &cst);
+    let tp_ret = tp_ret_from_db(doc.tp_ret_pis_cofins_csll)
+        .map(|t| t.as_layout_code().to_string())
+        .unwrap_or_else(|_| "0".into());
+    push_elem(xml, 12, "tpRetPisCofins", &tp_ret);
     xml.push_str("          </piscofins>\n");
     if let Some(v) = doc.valor_contrib_previdenciaria_retida {
         push_elem(xml, 10, "vRetCP", &decimal_xml(&v));
@@ -547,6 +567,11 @@ pub mod coverage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::cst_pis_cofins::CstPisCofins;
+    use crate::models::issqn_tp_suspensao::IssqnTpSuspensao;
+    use crate::models::reg_esp_trib_issqn::RegEspTribIssqn;
+    use crate::models::trib_issqn::TribIssqn;
+    use crate::models::tp_ret_pis_cofins_csll::TpRetPisCofinsCsll;
     use chrono::Utc;
     use doido::model::sea_orm::prelude::Decimal;
     use std::path::PathBuf;
@@ -559,7 +584,7 @@ mod tests {
             razao_social: "Prestador LTDA".into(),
             inscricao_municipal: Some("123".into()),
             inscricao_estadual: None,
-            regime_tributario: "SIMPLES_NACIONAL".into(),
+            regime_tributario: RegimeTributario::SimplesNacional.as_db_code(),
             municipio_id: 1,
             cep: Some("20040020".into()),
             logradouro: Some("Rua Teste".into()),
@@ -575,19 +600,19 @@ mod tests {
             empresa_id: 1,
             cliente_id: None,
             intermediario_id: None,
-            tomador_localidade: "nao_informado".into(),
-            intermediario_localidade: "nao_informado".into(),
+            tomador_localidade: LocalidadeParte::NaoInformado.as_db_code(),
+            intermediario_localidade: LocalidadeParte::NaoInformado.as_db_code(),
             tomador_exterior: None,
             intermediario_exterior: None,
             lote_id: None,
-            modelo: "NFSe".into(),
+            modelo: crate::models::documento_modelo::DocumentoModelo::Nfse.as_db_code(),
             serie: "AUTO".into(),
             numero_documento: 1,
             chave_acesso: None,
             codigo_verificacao: None,
             ambiente: 2,
             tipo_emissao: 1,
-            status: "novo".into(),
+            status: crate::models::documento_status::DocumentoStatus::Novo.as_db_code(),
             processamento_mensagem: None,
             data_emissao: Utc::now(),
             data_competencia: None,
@@ -600,10 +625,10 @@ mod tests {
             valor_recebido_intermediario: None,
             desconto_incondicionado: Decimal::ZERO,
             desconto_condicionado: Decimal::ZERO,
-            trib_issqn: "1".into(),
-            reg_esp_trib_issqn: "0".into(),
+            trib_issqn: TribIssqn::OperacaoTributavel.as_db_code(),
+            reg_esp_trib_issqn: RegEspTribIssqn::Nenhum.as_db_code(),
             issqn_exigibilidade_suspensa: 0,
-            issqn_tp_suspensao: "1".into(),
+            issqn_tp_suspensao: IssqnTpSuspensao::default().as_db_code(),
             issqn_n_processo_suspensao: None,
             issqn_retencao: 0,
             issqn_beneficio_municipal: 0,
@@ -611,8 +636,8 @@ mod tests {
             issqn_aliquota: None,
             issqn_base_calculo: None,
             issqn_valor: None,
-            cst_pis_cofins: "00".into(),
-            tp_ret_pis_cofins_csll: "0".into(),
+            cst_pis_cofins: CstPisCofins::Nenhum.as_db_code(),
+            tp_ret_pis_cofins_csll: TpRetPisCofinsCsll::NaoRetidos.as_db_code(),
             valor_irrf: None,
             valor_contrib_sociais_retidas: None,
             valor_contrib_previdenciaria_retida: None,
@@ -715,7 +740,6 @@ mod tests {
     #[test]
     fn montar_dps_contexto_inclui_grupos_principais() {
         use super::super::dps_context::DpsContext;
-        use crate::models::empresa::Model as Empresa;
         use crate::models::item_documento_fiscal::Model as ItemDoc;
         use crate::models::municipio::Model as Municipio;
         use doido::model::sea_orm::prelude::Decimal;
@@ -765,7 +789,6 @@ mod tests {
     #[test]
     fn montar_dps_golden_fixture_principais_tags() {
         use super::super::dps_context::DpsContext;
-        use crate::models::empresa::Model as Empresa;
         use crate::models::item_documento_fiscal::Model as ItemDoc;
         use crate::models::municipio::Model as Municipio;
         use doido::model::sea_orm::prelude::Decimal;

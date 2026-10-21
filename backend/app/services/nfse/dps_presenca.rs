@@ -7,7 +7,9 @@ use doido::model::sea_orm::prelude::Decimal;
 use super::dps_context::{cpf_cnpj_tag, DpsContext};
 use super::endereco_brasil;
 use super::dps_layout::{load_infdps_leiaute, mandatory_infdps_fields_owned, LayoutFieldRow};
+use crate::models::localidade_parte::LocalidadeParte;
 use crate::services::api_error::ApiError;
+use crate::services::entity_enums::localidade_from_db;
 
 /// Campos obrigatórios do leiaute que o app valida por presença antes de assinar/transmitir.
 pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
@@ -93,7 +95,7 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
     let doc = &ctx.doc;
 
     if path.contains("/toma/") {
-        if doc.tomador_localidade != "brasil" {
+        if localidade_from_db(doc.tomador_localidade)? != LocalidadeParte::Brasil {
             return Ok(true);
         }
         return Ok(match campo {
@@ -119,7 +121,7 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
     }
 
     if path.contains("/interm/") {
-        if doc.intermediario_localidade != "brasil" {
+        if localidade_from_db(doc.intermediario_localidade)? != LocalidadeParte::Brasil {
             return Ok(true);
         }
         return Ok(match campo {
@@ -149,7 +151,7 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
             return Ok(true);
         }
         return Ok(match campo {
-            "tpSusp" => !doc.issqn_tp_suspensao.trim().is_empty(),
+            "tpSusp" => doc.issqn_tp_suspensao > 0,
             "nProcesso" => doc
                 .issqn_n_processo_suspensao
                 .as_ref()
@@ -189,15 +191,15 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
                 .is_some_and(|s| !s.trim().is_empty())
         }),
         "vServ" => doc.valor_total_servicos_produtos > Decimal::ZERO,
-        "tribISSQN" => !doc.trib_issqn.trim().is_empty(),
-        "opSimpNac" => !ctx.prestador.regime_tributario.trim().is_empty(),
-        "regEspTrib" => !doc.reg_esp_trib_issqn.trim().is_empty(),
+        "tribISSQN" => doc.trib_issqn > 0,
+        "opSimpNac" => ctx.prestador.regime_tributario > 0,
+        "regEspTrib" => doc.reg_esp_trib_issqn >= 0,
         "CEP" | "xLgr" | "nro" | "xBairro" => endereco_prestador_ok(ctx),
         "cIntContrib" => !ctx.itens.is_empty(),
         "id" => true,
         "tpRetISSQN" => true,
-        "CST" => !doc.cst_pis_cofins.trim().is_empty(),
-        "tpRetPisCofins" => !doc.tp_ret_pis_cofins_csll.trim().is_empty(),
+        "CST" => doc.cst_pis_cofins >= 0,
+        "tpRetPisCofins" => doc.tp_ret_pis_cofins_csll >= 0,
         "vTotTribFed" | "vTotTribEst" | "vTotTribMun" => true,
         _ => return Ok(false),
     };

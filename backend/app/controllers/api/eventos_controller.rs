@@ -8,12 +8,13 @@ use crate::models::evento_documento_fiscal::{
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
+use crate::models::tipo_evento::TipoEvento;
 use crate::services::dto::EventoDto;
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
 pub struct EventoForm {
-    pub tipo_evento: String,
+    pub tipo_evento: TipoEvento,
     pub sequencial_evento: i32,
     pub protocolo_evento: Option<String>,
     pub descricao_motivo: Option<String>,
@@ -74,7 +75,7 @@ impl ApiEventosController {
         let created = crate::api!(db(
             EventoActive {
                 documento_fiscal_id: Set(doc_id),
-                tipo_evento: Set(form.tipo_evento),
+                tipo_evento: Set(form.tipo_evento.as_db_code()),
                 sequencial_evento: Set(form.sequencial_evento),
                 protocolo_evento: Set(form.protocolo_evento),
                 descricao_motivo: Set(form.descricao_motivo),
@@ -101,7 +102,7 @@ impl ApiEventosController {
         ));
         let form: EventoForm = crate::api!(json_body(ctx).await);
         let mut record: EventoActive = existing.into();
-        record.tipo_evento = Set(form.tipo_evento);
+        record.tipo_evento = Set(form.tipo_evento.as_db_code());
         record.sequencial_evento = Set(form.sequencial_evento);
         record.protocolo_evento = Set(form.protocolo_evento);
         record.descricao_motivo = Set(form.descricao_motivo);

@@ -3,6 +3,8 @@
 use doido::model::sea_orm::{EntityTrait, QuerySelect};
 use serde_json::json;
 
+use crate::models::catalog_sync_kind::CatalogSyncKind;
+use crate::models::catalog_sync_status::CatalogSyncStatus;
 use crate::models::municipio::{Column as MunicipioColumn, Entity as MunicipioEntity};
 use crate::services::nfse::catalog_sync_runs;
 use crate::services::nfse_anexo_a_import;
@@ -61,8 +63,8 @@ pub async fn record_nacional_run(
     db: &doido::model::sea_orm::DatabaseConnection,
     stats: serde_json::Value,
 ) -> doido_core::Result<()> {
-    let id = catalog_sync_runs::start_run(db, "nacional").await?;
-    catalog_sync_runs::finish_run(db, id, "ok", Some(stats.to_string())).await
+    let id = catalog_sync_runs::start_run(db, CatalogSyncKind::Nacional).await?;
+    catalog_sync_runs::finish_run(db, id, CatalogSyncStatus::Ok, Some(stats.to_string())).await
 }
 
 #[cfg(test)]
@@ -81,8 +83,8 @@ mod tests {
 pub async fn record_municipios_run(
     db: &doido::model::sea_orm::DatabaseConnection,
     stats: serde_json::Value,
-    status: &str,
+    status: CatalogSyncStatus,
 ) -> doido_core::Result<()> {
-    let id = catalog_sync_runs::start_run(db, "municipios").await?;
+    let id = catalog_sync_runs::start_run(db, CatalogSyncKind::Municipios).await?;
     catalog_sync_runs::finish_run(db, id, status, Some(stats.to_string())).await
 }

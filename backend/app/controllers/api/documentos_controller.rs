@@ -4,9 +4,17 @@ use doido::model::sea_orm::prelude::Decimal;
 use doido::model::sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::Deserialize;
 
+use crate::models::cst_pis_cofins::CstPisCofins;
 use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity, Model as Documento,
 };
+use crate::models::documento_modelo::DocumentoModelo;
+use crate::models::documento_status::DocumentoStatus;
+use crate::models::issqn_tp_suspensao::IssqnTpSuspensao;
+use crate::models::localidade_parte::LocalidadeParte;
+use crate::models::reg_esp_trib_issqn::RegEspTribIssqn;
+use crate::models::tp_ret_pis_cofins_csll::TpRetPisCofinsCsll;
+use crate::models::trib_issqn::TribIssqn;
 use crate::services::api_error::{
     db, id_param, json_body, json_with_status, require_tenant, scoped, to_response, ApiError,
 };
@@ -39,20 +47,22 @@ pub struct DocumentoForm {
     pub cliente_id: Option<i64>,
     pub intermediario_id: Option<i64>,
     #[serde(default = "default_tomador_localidade")]
-    pub tomador_localidade: String,
+    pub tomador_localidade: LocalidadeParte,
     #[serde(default = "default_intermediario_localidade")]
-    pub intermediario_localidade: String,
+    pub intermediario_localidade: LocalidadeParte,
     pub tomador_exterior: Option<ParteExteriorDto>,
     pub intermediario_exterior: Option<ParteExteriorDto>,
     pub lote_id: Option<i64>,
-    pub modelo: String,
+    #[serde(default = "default_modelo")]
+    pub modelo: DocumentoModelo,
     pub serie: String,
     pub numero_documento: i64,
     pub chave_acesso: Option<String>,
     pub codigo_verificacao: Option<String>,
     pub ambiente: i32,
     pub tipo_emissao: i32,
-    pub status: String,
+    #[serde(default = "default_status")]
+    pub status: DocumentoStatus,
     pub data_emissao: DateTime<Utc>,
     pub data_competencia: Option<NaiveDate>,
     #[serde(default)]
@@ -68,13 +78,13 @@ pub struct DocumentoForm {
     #[serde(default = "default_zero_decimal")]
     pub desconto_condicionado: Decimal,
     #[serde(default = "default_trib_issqn")]
-    pub trib_issqn: String,
+    pub trib_issqn: TribIssqn,
     #[serde(default = "default_reg_esp_trib_issqn")]
-    pub reg_esp_trib_issqn: String,
+    pub reg_esp_trib_issqn: RegEspTribIssqn,
     #[serde(default)]
     pub issqn_exigibilidade_suspensa: bool,
     #[serde(default = "default_issqn_tp_suspensao")]
-    pub issqn_tp_suspensao: String,
+    pub issqn_tp_suspensao: IssqnTpSuspensao,
     pub issqn_n_processo_suspensao: Option<String>,
     #[serde(default)]
     pub issqn_retencao: bool,
@@ -86,9 +96,9 @@ pub struct DocumentoForm {
     pub issqn_base_calculo: Option<Decimal>,
     pub issqn_valor: Option<Decimal>,
     #[serde(default = "default_cst_pis_cofins")]
-    pub cst_pis_cofins: String,
+    pub cst_pis_cofins: CstPisCofins,
     #[serde(default = "default_tp_ret_pis_cofins_csll")]
-    pub tp_ret_pis_cofins_csll: String,
+    pub tp_ret_pis_cofins_csll: TpRetPisCofinsCsll,
     pub valor_irrf: Option<Decimal>,
     pub valor_contrib_sociais_retidas: Option<Decimal>,
     pub valor_contrib_previdenciaria_retida: Option<Decimal>,
@@ -100,36 +110,44 @@ pub struct DocumentoForm {
     pub numero_pedido_ordem_b2b: Option<String>,
 }
 
-fn default_tomador_localidade() -> String {
-    "brasil".into()
+fn default_tomador_localidade() -> LocalidadeParte {
+    LocalidadeParte::Brasil
 }
 
-fn default_intermediario_localidade() -> String {
-    "nao_informado".into()
+fn default_intermediario_localidade() -> LocalidadeParte {
+    LocalidadeParte::NaoInformado
+}
+
+fn default_modelo() -> DocumentoModelo {
+    DocumentoModelo::Nfse
+}
+
+fn default_status() -> DocumentoStatus {
+    DocumentoStatus::Novo
 }
 
 fn default_zero_decimal() -> Decimal {
     Decimal::ZERO
 }
 
-fn default_trib_issqn() -> String {
-    "1".into()
+fn default_trib_issqn() -> TribIssqn {
+    TribIssqn::OperacaoTributavel
 }
 
-fn default_reg_esp_trib_issqn() -> String {
-    "0".into()
+fn default_reg_esp_trib_issqn() -> RegEspTribIssqn {
+    RegEspTribIssqn::Nenhum
 }
 
-fn default_cst_pis_cofins() -> String {
-    "00".into()
+fn default_cst_pis_cofins() -> CstPisCofins {
+    CstPisCofins::Nenhum
 }
 
-fn default_issqn_tp_suspensao() -> String {
-    "1".into()
+fn default_issqn_tp_suspensao() -> IssqnTpSuspensao {
+    IssqnTpSuspensao::default()
 }
 
-fn default_tp_ret_pis_cofins_csll() -> String {
-    "0".into()
+fn default_tp_ret_pis_cofins_csll() -> TpRetPisCofinsCsll {
+    TpRetPisCofinsCsll::NaoRetidos
 }
 
 fn normalizar_valores_documento(form: &mut DocumentoForm) -> Result<(), ApiError> {
@@ -169,30 +187,25 @@ fn validar_parte_exterior(ext: &ParteExteriorDto, parte: &str) -> Result<(), Api
 }
 
 fn normalizar_parte_localidade(
-    localidade: &str,
+    localidade: LocalidadeParte,
     relation_id: &mut Option<i64>,
     exterior: &mut Option<ParteExteriorDto>,
     parte: &str,
 ) -> Result<(), ApiError> {
     match localidade {
-        "brasil" => {
+        LocalidadeParte::Brasil => {
             *exterior = None;
         }
-        "nao_informado" => {
+        LocalidadeParte::NaoInformado => {
             *relation_id = None;
             *exterior = None;
         }
-        "exterior" => {
+        LocalidadeParte::Exterior => {
             *relation_id = None;
             let ext = exterior
                 .as_ref()
                 .ok_or_else(|| ApiError::Validation(format!("{parte}_exterior is required")))?;
             validar_parte_exterior(ext, parte)?;
-        }
-        other => {
-            return Err(ApiError::Validation(format!(
-                "invalid {parte}_localidade: {other}"
-            )));
         }
     }
     Ok(())
@@ -209,13 +222,13 @@ fn encode_parte_exterior(ext: &Option<ParteExteriorDto>) -> Result<Option<String
 
 fn normalizar_partes(form: &mut DocumentoForm) -> Result<(), ApiError> {
     normalizar_parte_localidade(
-        &form.tomador_localidade,
+        form.tomador_localidade,
         &mut form.cliente_id,
         &mut form.tomador_exterior,
         "tomador",
     )?;
     normalizar_parte_localidade(
-        &form.intermediario_localidade,
+        form.intermediario_localidade,
         &mut form.intermediario_id,
         &mut form.intermediario_exterior,
         "intermediario",
@@ -271,7 +284,11 @@ fn xml_download_filename(doc: &Documento) -> String {
     }
     format!(
         "nf-{}-{}-{}.xml",
-        doc.modelo, doc.serie, doc.numero_documento
+        DocumentoModelo::from_db_code(doc.modelo)
+            .map(|m| m.as_str())
+            .unwrap_or("NFSE"),
+        doc.serie,
+        doc.numero_documento
     )
 }
 
@@ -280,11 +297,11 @@ const SERIE_AUTOMATICA: &str = "AUTO";
 async fn proximo_numero_automatico(
     db: &doido::model::sea_orm::DatabaseConnection,
     empresa_id: i64,
-    modelo: &str,
+    modelo: DocumentoModelo,
 ) -> Result<i64, ApiError> {
     let ultimo = DocEntity::find()
         .filter(DocColumn::EmpresaId.eq(empresa_id))
-        .filter(DocColumn::Modelo.eq(modelo))
+        .filter(DocColumn::Modelo.eq(modelo.as_db_code()))
         .filter(DocColumn::Serie.eq(SERIE_AUTOMATICA))
         .order_by_desc(DocColumn::NumeroDocumento)
         .one(db)
@@ -315,7 +332,7 @@ async fn preparar_identificacao(
         form.serie = SERIE_AUTOMATICA.into();
         if form.numero_documento <= 0 {
             form.numero_documento =
-                proximo_numero_automatico(db, form.empresa_id, &form.modelo).await?;
+                proximo_numero_automatico(db, form.empresa_id, form.modelo).await?;
         }
     }
     Ok(())
@@ -325,19 +342,19 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.empresa_id = Set(form.empresa_id);
     record.cliente_id = Set(form.cliente_id);
     record.intermediario_id = Set(form.intermediario_id);
-    record.tomador_localidade = Set(form.tomador_localidade.clone());
-    record.intermediario_localidade = Set(form.intermediario_localidade.clone());
+    record.tomador_localidade = Set(form.tomador_localidade.as_db_code());
+    record.intermediario_localidade = Set(form.intermediario_localidade.as_db_code());
     record.tomador_exterior = Set(encode_parte_exterior(&form.tomador_exterior)?);
     record.intermediario_exterior = Set(encode_parte_exterior(&form.intermediario_exterior)?);
     record.lote_id = Set(form.lote_id);
-    record.modelo = Set(form.modelo.clone());
+    record.modelo = Set(form.modelo.as_db_code());
     record.serie = Set(form.serie.clone());
     record.numero_documento = Set(form.numero_documento);
     record.chave_acesso = Set(form.chave_acesso.clone());
     record.codigo_verificacao = Set(form.codigo_verificacao.clone());
     record.ambiente = Set(form.ambiente);
     record.tipo_emissao = Set(form.tipo_emissao);
-    record.status = Set(form.status.clone());
+    record.status = Set(form.status.as_db_code());
     record.data_emissao = Set(form.data_emissao);
     record.data_competencia = Set(form.data_competencia);
     record.serie_numero_automatico = Set(i8::from(form.serie_numero_automatico));
@@ -349,10 +366,10 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.valor_recebido_intermediario = Set(form.valor_recebido_intermediario);
     record.desconto_incondicionado = Set(form.desconto_incondicionado);
     record.desconto_condicionado = Set(form.desconto_condicionado);
-    record.trib_issqn = Set(form.trib_issqn.clone());
-    record.reg_esp_trib_issqn = Set(form.reg_esp_trib_issqn.clone());
+    record.trib_issqn = Set(form.trib_issqn.as_db_code());
+    record.reg_esp_trib_issqn = Set(form.reg_esp_trib_issqn.as_db_code());
     record.issqn_exigibilidade_suspensa = Set(i8::from(form.issqn_exigibilidade_suspensa));
-    record.issqn_tp_suspensao = Set(form.issqn_tp_suspensao.clone());
+    record.issqn_tp_suspensao = Set(form.issqn_tp_suspensao.as_db_code());
     record.issqn_n_processo_suspensao = Set(form.issqn_n_processo_suspensao.clone());
     record.issqn_retencao = Set(i8::from(form.issqn_retencao));
     record.issqn_beneficio_municipal = Set(i8::from(form.issqn_beneficio_municipal));
@@ -360,8 +377,8 @@ fn apply_form(record: &mut DocActive, form: &DocumentoForm) -> Result<(), ApiErr
     record.issqn_aliquota = Set(form.issqn_aliquota);
     record.issqn_base_calculo = Set(form.issqn_base_calculo);
     record.issqn_valor = Set(form.issqn_valor);
-    record.cst_pis_cofins = Set(form.cst_pis_cofins.clone());
-    record.tp_ret_pis_cofins_csll = Set(form.tp_ret_pis_cofins_csll.clone());
+    record.cst_pis_cofins = Set(form.cst_pis_cofins.as_db_code());
+    record.tp_ret_pis_cofins_csll = Set(form.tp_ret_pis_cofins_csll.as_db_code());
     record.valor_irrf = Set(form.valor_irrf);
     record.valor_contrib_sociais_retidas = Set(form.valor_contrib_sociais_retidas);
     record.valor_contrib_previdenciaria_retida = Set(form.valor_contrib_previdenciaria_retida);

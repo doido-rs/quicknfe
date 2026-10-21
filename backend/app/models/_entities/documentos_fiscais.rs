@@ -15,15 +15,14 @@ pub struct Model {
     pub empresa_id: i64,
     pub cliente_id: Option<i64>,
     pub intermediario_id: Option<i64>,
-    pub tomador_localidade: String,
-    pub intermediario_localidade: String,
+    pub tomador_localidade: i32,
+    pub intermediario_localidade: i32,
     #[sea_orm(column_type = "Text", nullable)]
     pub tomador_exterior: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub intermediario_exterior: Option<String>,
     pub lote_id: Option<i64>,
-    #[sea_orm(unique_key = "unq_empresa_doc")]
-    pub modelo: String,
+    pub modelo: i32,
     #[sea_orm(unique_key = "unq_empresa_doc")]
     pub serie: String,
     #[sea_orm(unique_key = "unq_empresa_doc")]
@@ -33,7 +32,7 @@ pub struct Model {
     pub codigo_verificacao: Option<String>,
     pub ambiente: i32,
     pub tipo_emissao: i32,
-    pub status: String,
+    pub status: i32,
     #[sea_orm(column_type = "Text", nullable)]
     pub processamento_mensagem: Option<String>,
     pub data_emissao: DateTimeUtc,
@@ -52,10 +51,10 @@ pub struct Model {
     pub desconto_incondicionado: Decimal,
     #[sea_orm(column_type = "Decimal(Some((15, 2)))")]
     pub desconto_condicionado: Decimal,
-    pub trib_issqn: String,
-    pub reg_esp_trib_issqn: String,
+    pub trib_issqn: i32,
+    pub reg_esp_trib_issqn: i32,
     pub issqn_exigibilidade_suspensa: i8,
-    pub issqn_tp_suspensao: String,
+    pub issqn_tp_suspensao: i32,
     pub issqn_n_processo_suspensao: Option<String>,
     pub issqn_retencao: i8,
     pub issqn_beneficio_municipal: i8,
@@ -66,8 +65,8 @@ pub struct Model {
     pub issqn_base_calculo: Option<Decimal>,
     #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
     pub issqn_valor: Option<Decimal>,
-    pub cst_pis_cofins: String,
-    pub tp_ret_pis_cofins_csll: String,
+    pub cst_pis_cofins: i32,
+    pub tp_ret_pis_cofins_csll: i32,
     #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]
     pub valor_irrf: Option<Decimal>,
     #[sea_orm(column_type = "Decimal(Some((15, 2)))", nullable)]

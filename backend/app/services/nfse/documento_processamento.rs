@@ -10,8 +10,10 @@ use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEnt
 use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Entity as DocEntity, Model as Documento,
 };
+use crate::models::documento_status::DocumentoStatus;
 use crate::services::api_error::ApiError;
 use crate::services::dto::decode_certificado_senha;
+use crate::services::entity_enums::documento_status_from_db;
 use crate::services::tenant_scope;
 
 use super::{
@@ -19,19 +21,14 @@ use super::{
     validar_dps_contexto_com_catalogo,
 };
 
-pub mod documento_status {
-    pub const ASSINANDO: &str = "assinando";
-    pub const ASSINADO: &str = "assinado";
-    pub const TRANSMITINDO: &str = "transmitindo";
-    pub const AUTORIZADA: &str = "autorizada";
-    pub const ERRO_ASSINATURA: &str = "erro_assinatura";
-    pub const ERRO_TRANSMISSAO: &str = "erro_transmissao";
+pub fn reject_in_flight(status_code: i32) -> Result<(), ApiError> {
+    reject_in_flight_code(status_code)
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DocumentoEnqueueResponse {
     pub documento_id: i64,
-    pub status: String,
+    pub status: DocumentoStatus,
     pub job_id: Option<String>,
     pub processamento_mensagem: Option<String>,
 }
@@ -79,7 +76,6 @@ pub async fn assinar_documento_nfse(
 ) -> Result<Documento, ApiError> {
     let dps_ctx = load_dps_context(db, doc.clone()).await?;
     validar_dps_contexto_com_catalogo(db, &dps_ctx).await?;
-    // Sempre remonta a DPS a partir dos dados atuais (leiaute/namespace); não reutiliza xml_assinado.
     let base_xml = montar_dps_xml_context(&dps_ctx)?;
     let cert = certificado_para_assinatura(db, doc.empresa_id, certificado_id).await?;
     let caminho = cert
@@ -101,7 +97,7 @@ pub async fn assinar_documento_nfse(
     )?;
     let mut record: DocActive = doc.into();
     record.xml_assinado = Set(Some(signed));
-    record.status = Set(documento_status::ASSINADO.into());
+    record.status = Set(DocumentoStatus::Assinado.as_db_code());
     record.processamento_mensagem = Set(None);
     let updated = record
         .update(db)
@@ -110,18 +106,18 @@ pub async fn assinar_documento_nfse(
     Ok(updated)
 }
 
-fn reject_if_in_flight(status: &str) -> Result<(), ApiError> {
-    match status {
-        s if s == documento_status::ASSINANDO || s == documento_status::TRANSMITINDO => {
-            Err(ApiError::Validation(
-                "Nota em processamento. Aguarde a conclusão ou consulte o status.".into(),
-            ))
-        }
-        _ => Ok(()),
+fn reject_if_in_flight(status: DocumentoStatus) -> Result<(), ApiError> {
+    if status.is_in_flight() {
+        Err(ApiError::Validation(
+            "Nota em processamento. Aguarde a conclusão ou consulte o status.".into(),
+        ))
+    } else {
+        Ok(())
     }
 }
 
-pub fn reject_in_flight(status: &str) -> Result<(), ApiError> {
+pub fn reject_in_flight_code(status_code: i32) -> Result<(), ApiError> {
+    let status = documento_status_from_db(status_code)?;
     reject_if_in_flight(status)
 }
 
@@ -136,7 +132,7 @@ pub async fn marcar_erro_assinatura(
         .map_err(|e| ApiError::Internal(e.to_string()))?
         .ok_or_else(|| ApiError::Validation("documento não encontrado".into()))?;
     let mut record: DocActive = doc.into();
-    record.status = Set(documento_status::ERRO_ASSINATURA.into());
+    record.status = Set(DocumentoStatus::ErroAssinatura.as_db_code());
     record.processamento_mensagem = Set(Some(msg.to_string()));
     record
         .update(db)
@@ -156,7 +152,7 @@ pub async fn marcar_erro_transmissao(
         .map_err(|e| ApiError::Internal(e.to_string()))?
         .ok_or_else(|| ApiError::Validation("documento não encontrado".into()))?;
     let mut record: DocActive = doc.into();
-    record.status = Set(documento_status::ERRO_TRANSMISSAO.into());
+    record.status = Set(DocumentoStatus::ErroTransmissao.as_db_code());
     record.processamento_mensagem = Set(Some(msg.to_string()));
     record
         .update(db)

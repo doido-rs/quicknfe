@@ -15,7 +15,7 @@ pub struct Model {
     pub user_id: i64,
     #[sea_orm(unique_key = "unq_companies_usuarios_user_company")]
     pub company_id: i64,
-    pub papel: String,
+    pub papel: i32,
     pub criado_em: DateTimeUtc,
 }
 

@@ -724,12 +724,6 @@ export const resources: ResourceDef[] = [
     title: 'Contas fiscais',
     menuSection: 'Cadastros',
     path: '/api/contas-fiscais',
-    listColumns: [
-      { key: 'codigo', label: 'Código' },
-      { key: 'codigo_tributacao_nacional', label: 'Cód. CNA (nacional)' },
-      { key: 'codigo_tributacao_municipal', label: 'Cód. municipal' },
-      { key: 'descricao', label: 'Descrição' },
-    ],
     fields: [
       { key: 'codigo', label: 'Código da conta', required: true },
       { key: 'descricao', label: 'Descrição' },

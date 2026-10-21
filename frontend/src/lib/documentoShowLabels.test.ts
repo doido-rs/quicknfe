@@ -15,7 +15,7 @@ describe('documentoShowLabels', () => {
 
   it('readOnlyFieldDisplay prefers relation label', () => {
     const text = readOnlyFieldDisplay(
-      { key: 'cliente_id', type: 'relation' },
+      { key: 'cliente_id', label: 'Tomador', type: 'relation' },
       '',
       {},
       { cliente_id: 'Tomador X' },

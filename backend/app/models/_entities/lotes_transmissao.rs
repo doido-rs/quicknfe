@@ -15,7 +15,7 @@ pub struct Model {
     pub numero_lote: i64,
     pub protocolo_recebimento: Option<String>,
     pub ambiente: i32,
-    pub status_lote: String,
+    pub status_lote: i32,
     pub data_recebimento: Option<DateTimeUtc>,
 }
 

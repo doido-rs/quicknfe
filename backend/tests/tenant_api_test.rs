@@ -185,7 +185,7 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
         company_id: Set(company_a.id),
         cpf_cnpj: Set(unique_cnpj(&suffix, 1)),
         razao_social: Set(format!("Prestador A {suffix}")),
-        regime_tributario: Set("SIMPLES_NACIONAL".into()),
+        regime_tributario: Set(crate::models::regime_tributario::RegimeTributario::SimplesNacional.as_db_code()),
         municipio_id: Set(municipio_sp.id),
         criado_em: Set(Utc::now()),
         ..Default::default()
@@ -198,7 +198,7 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
         company_id: Set(company_b.id),
         cpf_cnpj: Set(unique_cnpj(&suffix, 2)),
         razao_social: Set(format!("Prestador B {suffix}")),
-        regime_tributario: Set("SIMPLES_NACIONAL".into()),
+        regime_tributario: Set(crate::models::regime_tributario::RegimeTributario::SimplesNacional.as_db_code()),
         municipio_id: Set(municipio_sp.id),
         criado_em: Set(Utc::now()),
         ..Default::default()
@@ -210,7 +210,7 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     CompanyMembroActive {
         user_id: Set(user_a.id),
         company_id: Set(company_a.id),
-        papel: Set("proprietario".into()),
+        papel: Set(crate::models::papel_usuario::PapelUsuario::Proprietario.as_db_code()),
         ..Default::default()
     }
     .insert(db)
@@ -220,7 +220,7 @@ async fn seed_two_tenant_fixture() -> TenantFixture {
     CompanyMembroActive {
         user_id: Set(user_b.id),
         company_id: Set(company_b.id),
-        papel: Set("proprietario".into()),
+        papel: Set(crate::models::papel_usuario::PapelUsuario::Proprietario.as_db_code()),
         ..Default::default()
     }
     .insert(db)

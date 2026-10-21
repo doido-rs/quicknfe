@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use doido_jobs::config::{build_configured_queue, load as load_jobs_config};
-use doido_jobs::{JobContext, JobPayload, JobQueue, JobRegistry};
+use doido_jobs::{JobContext, JobPayload, JobRegistry};
 
 #[derive(Debug, Default)]
 struct RunArgs {
@@ -68,7 +68,7 @@ where
         ..Default::default()
     };
 
-    let mut tail: Vec<String> = iter.collect();
+    let tail: Vec<String> = iter.collect();
     let mut i = 0;
     while i < tail.len() {
         match tail[i].as_str() {

@@ -83,7 +83,8 @@ pub async fn transmitir_documento(
         )
     })?;
 
-    if documento.status.eq_ignore_ascii_case("autorizada") {
+    if documento.status == crate::models::documento_status::DocumentoStatus::Autorizada.as_db_code()
+    {
         return Err(ApiError::Validation(
             "documento já está autorizado; transmissão não permitida".into(),
         ));
@@ -119,7 +120,7 @@ async fn persistir_resultado(
     let mut active: DocActive = documento.clone().into();
 
     if resultado.sucesso {
-        active.status = Set("autorizada".into());
+        active.status = Set(crate::models::documento_status::DocumentoStatus::Autorizada.as_db_code());
         if let Some(chave) = &resultado.chave_acesso {
             active.chave_acesso = Set(Some(chave.clone()));
         }
@@ -127,7 +128,7 @@ async fn persistir_resultado(
             active.xml_processado = Set(Some(xml.clone()));
         }
     } else {
-        active.status = Set("rejeitada".into());
+        active.status = Set(crate::models::documento_status::DocumentoStatus::Rejeitada.as_db_code());
     }
 
     let updated = active

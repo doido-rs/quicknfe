@@ -6,7 +6,9 @@ use super::dps_context::DpsContext;
 use super::dps_presenca;
 use super::dps_rn;
 use super::dps_rn_engine;
+use crate::models::localidade_parte::LocalidadeParte;
 use crate::services::api_error::ApiError;
+use crate::services::entity_enums::localidade_from_db;
 
 /// Valida documento + contexto (RN + presença + E0312 com catálogo municipal).
 pub async fn validar_dps_contexto_com_catalogo(
@@ -43,22 +45,24 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
             "RN: município de prestação (cLocPrestacao) inválido".into(),
         ));
     }
-    if doc.tomador_localidade == "brasil" && doc.cliente_id.is_none() {
+    let tomador_loc = localidade_from_db(doc.tomador_localidade)?;
+    if tomador_loc == LocalidadeParte::Brasil && doc.cliente_id.is_none() {
         return Err(ApiError::Validation(
             "RN: tomador Brasil exige cliente_id".into(),
         ));
     }
-    if doc.tomador_localidade == "exterior" && ctx.tomador_exterior.is_none() {
+    if tomador_loc == LocalidadeParte::Exterior && ctx.tomador_exterior.is_none() {
         return Err(ApiError::Validation(
             "RN: tomador exterior exige tomador_exterior".into(),
         ));
     }
-    if doc.intermediario_localidade == "brasil" && doc.intermediario_id.is_none() {
+    let inter_loc = localidade_from_db(doc.intermediario_localidade)?;
+    if inter_loc == LocalidadeParte::Brasil && doc.intermediario_id.is_none() {
         return Err(ApiError::Validation(
             "RN: intermediário Brasil exige intermediario_id".into(),
         ));
     }
-    if doc.intermediario_localidade == "exterior" && ctx.intermediario_exterior.is_none() {
+    if inter_loc == LocalidadeParte::Exterior && ctx.intermediario_exterior.is_none() {
         return Err(ApiError::Validation(
             "RN: intermediário exterior exige intermediario_exterior".into(),
         ));
@@ -121,19 +125,19 @@ pub fn minimal_dps_context() -> DpsContext {
                 empresa_id: 1,
                 cliente_id: None,
                 intermediario_id: None,
-                tomador_localidade: "nao_informado".into(),
-                intermediario_localidade: "nao_informado".into(),
+                tomador_localidade: LocalidadeParte::NaoInformado.as_db_code(),
+                intermediario_localidade: LocalidadeParte::NaoInformado.as_db_code(),
                 tomador_exterior: None,
                 intermediario_exterior: None,
                 lote_id: None,
-                modelo: "NFSe".into(),
+                modelo: crate::models::documento_modelo::DocumentoModelo::Nfse.as_db_code(),
                 serie: "AUTO".into(),
                 numero_documento: 1,
                 chave_acesso: None,
                 codigo_verificacao: None,
                 ambiente: 2,
                 tipo_emissao: 1,
-                status: "novo".into(),
+                status: crate::models::documento_status::DocumentoStatus::Novo.as_db_code(),
                 processamento_mensagem: None,
                 data_emissao: Utc::now(),
                 data_competencia: Some(chrono::Utc::now().date_naive()),
@@ -146,10 +150,12 @@ pub fn minimal_dps_context() -> DpsContext {
                 valor_recebido_intermediario: None,
                 desconto_incondicionado: Decimal::ZERO,
                 desconto_condicionado: Decimal::ZERO,
-                trib_issqn: "1".into(),
-                reg_esp_trib_issqn: "0".into(),
+                trib_issqn: crate::models::trib_issqn::TribIssqn::OperacaoTributavel.as_db_code(),
+                reg_esp_trib_issqn: crate::models::reg_esp_trib_issqn::RegEspTribIssqn::Nenhum
+                    .as_db_code(),
                 issqn_exigibilidade_suspensa: 0,
-                issqn_tp_suspensao: "1".into(),
+                issqn_tp_suspensao: crate::models::issqn_tp_suspensao::IssqnTpSuspensao::default()
+                    .as_db_code(),
                 issqn_n_processo_suspensao: None,
                 issqn_retencao: 0,
                 issqn_beneficio_municipal: 0,
@@ -157,8 +163,9 @@ pub fn minimal_dps_context() -> DpsContext {
                 issqn_aliquota: None,
                 issqn_base_calculo: None,
                 issqn_valor: None,
-                cst_pis_cofins: "00".into(),
-                tp_ret_pis_cofins_csll: "0".into(),
+                cst_pis_cofins: crate::models::cst_pis_cofins::CstPisCofins::Nenhum.as_db_code(),
+                tp_ret_pis_cofins_csll: crate::models::tp_ret_pis_cofins_csll::TpRetPisCofinsCsll::NaoRetidos
+                    .as_db_code(),
                 valor_irrf: None,
                 valor_contrib_sociais_retidas: None,
                 valor_contrib_previdenciaria_retida: None,
@@ -176,7 +183,8 @@ pub fn minimal_dps_context() -> DpsContext {
                 razao_social: "Prestador Teste".into(),
                 inscricao_municipal: None,
                 inscricao_estadual: None,
-                regime_tributario: "REGIME_NORMAL".into(),
+                regime_tributario: crate::models::regime_tributario::RegimeTributario::RegimeNormal
+                    .as_db_code(),
                 municipio_id: 1,
                 cep: Some("20040020".into()),
                 logradouro: Some("Rua Teste".into()),

@@ -8,12 +8,13 @@ use crate::models::tributo_item::{
 };
 use crate::services::api_error::{db, id_param, json_body, require_tenant, scoped, to_response};
 use crate::services::pagination::{page_params_from_ctx, paginate_select};
+use crate::models::tipo_imposto::TipoImposto;
 use crate::services::dto::TributoDto;
 use crate::services::tenant_scope;
 
 #[derive(Debug, Deserialize)]
 pub struct TributoForm {
-    pub tipo_imposto: String,
+    pub tipo_imposto: TipoImposto,
     pub cst_csosn: Option<String>,
     pub base_calculo: Option<Decimal>,
     pub aliquota: Option<Decimal>,
@@ -71,7 +72,7 @@ impl ApiTributosController {
         let created = crate::api!(db(
             TributoActive {
                 item_id: Set(item_id),
-                tipo_imposto: Set(form.tipo_imposto),
+                tipo_imposto: Set(form.tipo_imposto.as_db_code()),
                 cst_csosn: Set(form.cst_csosn),
                 base_calculo: Set(form.base_calculo),
                 aliquota: Set(form.aliquota),
@@ -99,7 +100,7 @@ impl ApiTributosController {
         ));
         let form: TributoForm = crate::api!(json_body(ctx).await);
         let mut record: TributoActive = existing.into();
-        record.tipo_imposto = Set(form.tipo_imposto);
+        record.tipo_imposto = Set(form.tipo_imposto.as_db_code());
         record.cst_csosn = Set(form.cst_csosn);
         record.base_calculo = Set(form.base_calculo);
         record.aliquota = Set(form.aliquota);

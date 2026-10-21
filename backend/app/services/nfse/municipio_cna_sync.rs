@@ -141,7 +141,6 @@ pub async fn municipio_tem_parametrizacao(
 
 #[cfg(test)]
 mod catalog_sync_adn_tests {
-    use super::*;
     use crate::connectors::adn;
 
     /// Mesmo JSON que `./execute.sh adn` / OpenAPI → linhas para `municipio_cna_parametrizacao`.

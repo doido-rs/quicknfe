@@ -13,8 +13,7 @@ pub struct Model {
     pub id: i64,
     #[sea_orm(unique_key = "unq_evento_doc")]
     pub documento_fiscal_id: i64,
-    #[sea_orm(unique_key = "unq_evento_doc")]
-    pub tipo_evento: String,
+    pub tipo_evento: i32,
     #[sea_orm(unique_key = "unq_evento_doc")]
     pub sequencial_evento: i32,
     pub protocolo_evento: Option<String>,

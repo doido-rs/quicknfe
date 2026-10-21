@@ -3,13 +3,15 @@
 use chrono::Utc;
 use doido::model::sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, Set};
 
+use crate::models::catalog_sync_kind::CatalogSyncKind;
+use crate::models::catalog_sync_status::CatalogSyncStatus;
 use crate::models::nfse_catalog_sync_run::ActiveModel as RunActive;
 
-pub async fn start_run(db: &impl ConnectionTrait, kind: &str) -> doido_core::Result<i64> {
+pub async fn start_run(db: &impl ConnectionTrait, kind: CatalogSyncKind) -> doido_core::Result<i64> {
     let row = RunActive {
-        kind: Set(kind.to_string()),
+        kind: Set(kind.as_db_code()),
         started_at: Set(Utc::now()),
-        status: Set("running".into()),
+        status: Set(CatalogSyncStatus::Running.as_db_code()),
         ..Default::default()
     }
     .insert(db)
@@ -21,7 +23,7 @@ pub async fn start_run(db: &impl ConnectionTrait, kind: &str) -> doido_core::Res
 pub async fn finish_run(
     db: &impl ConnectionTrait,
     id: i64,
-    status: &str,
+    status: CatalogSyncStatus,
     stats_json: Option<String>,
 ) -> doido_core::Result<()> {
     let row = crate::models::nfse_catalog_sync_run::Entity::find_by_id(id)
@@ -31,7 +33,7 @@ pub async fn finish_run(
         .ok_or_else(|| doido_core::anyhow::anyhow!("sync run {id} não encontrado"))?;
     let mut active: RunActive = row.into();
     active.finished_at = Set(Some(Utc::now()));
-    active.status = Set(status.to_string());
+    active.status = Set(status.as_db_code());
     active.stats_json = Set(stats_json);
     active
         .update(db)

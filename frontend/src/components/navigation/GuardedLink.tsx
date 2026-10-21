@@ -5,6 +5,7 @@ import { useGuardedNavigate } from '@/hooks/useUnsavedFormGuard'
 type GuardedLinkProps = LinkProps & {
   children: React.ReactNode
   className?: string
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>
 }
 
 export function GuardedLink({ children, onClick, ...props }: GuardedLinkProps) {

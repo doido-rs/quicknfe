@@ -7,11 +7,11 @@ use crate::jobs::{assinar_documento, transmitir_documento};
 use crate::models::documento_fiscal::{
     ActiveModel as DocActive, Column as DocColumn, Entity as DocEntity,
 };
+use crate::models::documento_status::DocumentoStatus;
 use crate::services::api_error::ApiError;
+use crate::services::entity_enums::documento_status_from_db;
 use crate::services::job_queue;
-use crate::services::nfse::{
-    documento_status, reject_in_flight, DocumentoAssinarParams, DocumentoEnqueueResponse,
-};
+use crate::services::nfse::{reject_in_flight, DocumentoAssinarParams, DocumentoEnqueueResponse};
 use crate::services::tenant_scope;
 
 pub async fn enqueue_assinar(
@@ -20,15 +20,15 @@ pub async fn enqueue_assinar(
 ) -> Result<DocumentoEnqueueResponse, ApiError> {
     let doc =
         tenant_scope::documento_for_company(db, params.company_id, params.documento_id).await?;
-    reject_in_flight(&doc.status)?;
-    if doc.status == documento_status::AUTORIZADA {
+    reject_in_flight(doc.status)?;
+    if doc.status == DocumentoStatus::Autorizada.as_db_code() {
         return Err(ApiError::Validation(
             "Nota já autorizada pela SEFIN.".into(),
         ));
     }
 
     let mut record: DocActive = doc.into();
-    record.status = Set(documento_status::ASSINANDO.into());
+    record.status = Set(DocumentoStatus::Assinando.as_db_code());
     record.processamento_mensagem = Set(Some("Na fila para assinatura".into()));
     let updated = record
         .update(db)
@@ -50,7 +50,7 @@ pub async fn enqueue_assinar(
 
     Ok(DocumentoEnqueueResponse {
         documento_id: updated.id,
-        status: updated.status,
+        status: documento_status_from_db(updated.status)?,
         job_id: Some(job_id),
         processamento_mensagem: updated.processamento_mensagem,
     })
@@ -64,8 +64,8 @@ pub async fn enqueue_transmitir(
     run_at: Option<DateTime<Utc>>,
 ) -> Result<DocumentoEnqueueResponse, ApiError> {
     let doc = tenant_scope::documento_for_company(db, company_id, documento_id).await?;
-    reject_in_flight(&doc.status)?;
-    if doc.status == documento_status::AUTORIZADA {
+    reject_in_flight(doc.status)?;
+    if doc.status == DocumentoStatus::Autorizada.as_db_code() {
         return Err(ApiError::Validation(
             "Nota já autorizada pela SEFIN.".into(),
         ));
@@ -81,7 +81,7 @@ pub async fn enqueue_transmitir(
     }
 
     let mut record: DocActive = doc.into();
-    record.status = Set(documento_status::TRANSMITINDO.into());
+    record.status = Set(DocumentoStatus::Transmitindo.as_db_code());
     record.processamento_mensagem = Set(Some("Na fila para transmissão SEFIN".into()));
     let updated = record
         .update(db)
@@ -110,7 +110,7 @@ pub async fn enqueue_transmitir(
 
     Ok(DocumentoEnqueueResponse {
         documento_id: updated.id,
-        status: updated.status,
+        status: documento_status_from_db(updated.status)?,
         job_id: Some(job_id),
         processamento_mensagem: updated.processamento_mensagem,
     })
@@ -140,7 +140,7 @@ pub async fn enqueue_transmitir_lote(
             Ok(r) => out.push(r),
             Err(e) => out.push(DocumentoEnqueueResponse {
                 documento_id: doc.id,
-                status: doc.status,
+                status: documento_status_from_db(doc.status).unwrap_or(DocumentoStatus::Novo),
                 job_id: None,
                 processamento_mensagem: Some(e.to_string()),
             }),

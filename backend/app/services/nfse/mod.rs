@@ -44,7 +44,7 @@ pub use rn_validacao::validar_dps_contexto_com_catalogo;
 pub use crate::connectors::mtls::CredenciaisMtls;
 pub use resposta::MensagemProcessamento;
 pub use documento_processamento::{
-    assinar_documento_nfse, documento_status, marcar_erro_assinatura, marcar_erro_transmissao,
-    reject_in_flight, DocumentoAssinarParams, DocumentoEnqueueResponse,
+    assinar_documento_nfse, marcar_erro_assinatura, marcar_erro_transmissao, reject_in_flight,
+    DocumentoAssinarParams, DocumentoEnqueueResponse,
 };
 pub use transmissao::{transmitir_documento, TransmitirParams};

@@ -28,6 +28,7 @@ mod m20261015000000_documento_issqn_exig_susp;
 mod m20261016140000_nfse_catalog_sync;
 mod m20261017180000_create_contas_fiscais;
 mod m20261017180100_item_conta_fiscal_municipal;
+mod m20261020180000_integer_categorical_columns;
 // @generated-migrations-mod — `doido generate model` inserts `mod` declarations above this line. Do not remove.
 
 pub struct Migrator;
@@ -66,6 +67,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261016140000_nfse_catalog_sync::Migration),
             Box::new(m20261017180000_create_contas_fiscais::Migration),
             Box::new(m20261017180100_item_conta_fiscal_municipal::Migration),
+            Box::new(m20261020180000_integer_categorical_columns::Migration),
             // @generated-migrations-list
         ]
     }

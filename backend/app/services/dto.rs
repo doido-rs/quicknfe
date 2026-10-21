@@ -8,7 +8,26 @@ use crate::models::cliente::Model as Cliente;
 use crate::models::documento_fiscal::Model as Documento;
 use crate::models::company::Model as Company;
 use crate::models::empresa::Model as Empresa;
+use crate::models::certificado_tipo::CertificadoTipo;
+use crate::models::cst_pis_cofins::CstPisCofins;
+use crate::models::date_format_preference::DateFormatPreference;
+use crate::models::documento_modelo::DocumentoModelo;
+use crate::models::documento_status::DocumentoStatus;
+use crate::models::localidade_parte::LocalidadeParte;
+use crate::models::papel_usuario::PapelUsuario;
+use crate::models::reg_esp_trib_issqn::RegEspTribIssqn;
 use crate::models::regime_tributario::RegimeTributario;
+use crate::models::status_lote::StatusLote;
+use crate::models::tipo_evento::TipoEvento;
+use crate::models::tipo_imposto::TipoImposto;
+use crate::models::tp_ret_pis_cofins_csll::TpRetPisCofinsCsll;
+use crate::models::trib_issqn::TribIssqn;
+use crate::services::entity_enums::{
+    certificado_tipo_from_db, cst_pis_cofins_from_db, date_format_from_db, documento_modelo_from_db,
+    documento_status_from_db, localidade_from_db, reg_esp_trib_from_db,
+    regime_from_db, status_lote_from_db, tipo_evento_from_db, tipo_imposto_from_db,
+    tp_ret_from_db, trib_issqn_from_db,
+};
 use crate::models::evento_documento_fiscal::Model as Evento;
 use crate::models::conta_fiscal::Model as ContaFiscal;
 use crate::models::intermediario::Model as Intermediario;
@@ -21,27 +40,33 @@ use crate::models::user::Model as User;
 
 #[derive(Serialize, Deserialize)]
 pub struct UpdateMeForm {
-    pub date_format: Option<String>,
+    pub date_format: Option<DateFormatPreference>,
 }
 
 #[derive(Serialize)]
 pub struct UserPublic {
     pub id: i64,
     pub email: String,
-    pub date_format: String,
+    pub date_format: DateFormatPreference,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-impl From<User> for UserPublic {
-    fn from(u: User) -> Self {
-        Self {
+impl UserPublic {
+    pub fn try_from_user(u: User) -> Result<Self, crate::services::api_error::ApiError> {
+        Ok(Self {
             id: u.id,
             email: u.email,
-            date_format: u.date_format,
+            date_format: date_format_from_db(u.date_format)?,
             created_at: u.created_at,
             updated_at: u.updated_at,
-        }
+        })
+    }
+}
+
+impl From<User> for UserPublic {
+    fn from(u: User) -> Self {
+        Self::try_from_user(u).expect("date_format inválido no banco")
     }
 }
 
@@ -143,12 +168,7 @@ impl EmpresaPublic {
             razao_social: e.razao_social,
             inscricao_municipal: e.inscricao_municipal,
             inscricao_estadual: e.inscricao_estadual,
-            regime_tributario: RegimeTributario::parse(&e.regime_tributario).map_err(|_| {
-                crate::services::api_error::ApiError::Internal(format!(
-                    "regime_tributario inválido no banco para empresa {}",
-                    e.id
-                ))
-            })?,
+            regime_tributario: regime_from_db(e.regime_tributario)?,
             municipio_id: e.municipio_id,
             municipio: MunicipioDto::from(m),
             cep: e.cep,
@@ -180,7 +200,7 @@ impl From<Company> for CompanyPublic {
 #[derive(Serialize)]
 pub struct CompanyMembership {
     pub company: CompanyPublic,
-    pub papel: String,
+    pub papel: PapelUsuario,
 }
 
 #[derive(Serialize)]
@@ -190,7 +210,7 @@ pub struct MeResponse {
     pub company_ativa: Option<CompanyPublic>,
     pub prestadores: Vec<EmpresaPublic>,
     pub prestador_ativo: Option<EmpresaPublic>,
-    pub papel: Option<String>,
+    pub papel: Option<PapelUsuario>,
 }
 
 #[derive(Serialize)]
@@ -296,7 +316,7 @@ impl From<Intermediario> for IntermediarioDto {
 pub struct CertificadoDto {
     pub id: i64,
     pub empresa_id: i64,
-    pub tipo: String,
+    pub tipo: CertificadoTipo,
     pub caminho_arquivo: Option<String>,
     pub data_validade: DateTime<Utc>,
     pub criado_em: DateTime<Utc>,
@@ -307,7 +327,7 @@ impl From<Certificado> for CertificadoDto {
         Self {
             id: c.id,
             empresa_id: c.empresa_id,
-            tipo: c.tipo,
+            tipo: certificado_tipo_from_db(c.tipo).expect("tipo certificado inválido"),
             caminho_arquivo: c.caminho_arquivo,
             data_validade: c.data_validade,
             criado_em: c.criado_em,
@@ -322,7 +342,7 @@ pub struct LoteDto {
     pub numero_lote: i64,
     pub protocolo_recebimento: Option<String>,
     pub ambiente: i32,
-    pub status_lote: String,
+    pub status_lote: StatusLote,
     pub data_recebimento: Option<DateTime<Utc>>,
 }
 
@@ -334,7 +354,7 @@ impl From<Lote> for LoteDto {
             numero_lote: l.numero_lote,
             protocolo_recebimento: l.protocolo_recebimento,
             ambiente: l.ambiente,
-            status_lote: l.status_lote,
+            status_lote: status_lote_from_db(l.status_lote).expect("status_lote inválido"),
             data_recebimento: l.data_recebimento,
         }
     }
@@ -365,19 +385,19 @@ pub struct DocumentoListDto {
     pub empresa_id: i64,
     pub cliente_id: Option<i64>,
     pub intermediario_id: Option<i64>,
-    pub tomador_localidade: String,
-    pub intermediario_localidade: String,
+    pub tomador_localidade: LocalidadeParte,
+    pub intermediario_localidade: LocalidadeParte,
     pub tomador_exterior: Option<ParteExteriorDto>,
     pub intermediario_exterior: Option<ParteExteriorDto>,
     pub lote_id: Option<i64>,
-    pub modelo: String,
+    pub modelo: DocumentoModelo,
     pub serie: String,
     pub numero_documento: i64,
     pub chave_acesso: Option<String>,
     pub codigo_verificacao: Option<String>,
     pub ambiente: i32,
     pub tipo_emissao: i32,
-    pub status: String,
+    pub status: DocumentoStatus,
     pub processamento_mensagem: Option<String>,
     pub data_emissao: DateTime<Utc>,
     pub data_competencia: Option<NaiveDate>,
@@ -390,8 +410,8 @@ pub struct DocumentoListDto {
     pub valor_recebido_intermediario: Option<Decimal>,
     pub desconto_incondicionado: Decimal,
     pub desconto_condicionado: Decimal,
-    pub trib_issqn: String,
-    pub reg_esp_trib_issqn: String,
+    pub trib_issqn: TribIssqn,
+    pub reg_esp_trib_issqn: RegEspTribIssqn,
     pub issqn_exigibilidade_suspensa: bool,
     pub issqn_retencao: bool,
     pub issqn_beneficio_municipal: bool,
@@ -399,8 +419,8 @@ pub struct DocumentoListDto {
     pub issqn_aliquota: Option<Decimal>,
     pub issqn_base_calculo: Option<Decimal>,
     pub issqn_valor: Option<Decimal>,
-    pub cst_pis_cofins: String,
-    pub tp_ret_pis_cofins_csll: String,
+    pub cst_pis_cofins: CstPisCofins,
+    pub tp_ret_pis_cofins_csll: TpRetPisCofinsCsll,
     pub valor_irrf: Option<Decimal>,
     pub valor_contrib_sociais_retidas: Option<Decimal>,
     pub valor_contrib_previdenciaria_retida: Option<Decimal>,
@@ -425,19 +445,21 @@ impl From<Documento> for DocumentoListDto {
             empresa_id: d.empresa_id,
             cliente_id: d.cliente_id,
             intermediario_id: d.intermediario_id,
-            tomador_localidade: d.tomador_localidade,
-            intermediario_localidade: d.intermediario_localidade,
+            tomador_localidade: localidade_from_db(d.tomador_localidade)
+                .expect("tomador_localidade inválida"),
+            intermediario_localidade: localidade_from_db(d.intermediario_localidade)
+                .expect("intermediario_localidade inválida"),
             tomador_exterior: decode_parte_exterior(&d.tomador_exterior),
             intermediario_exterior: decode_parte_exterior(&d.intermediario_exterior),
             lote_id: d.lote_id,
-            modelo: d.modelo,
+            modelo: documento_modelo_from_db(d.modelo).expect("modelo inválido"),
             serie: d.serie,
             numero_documento: d.numero_documento,
             chave_acesso: d.chave_acesso,
             codigo_verificacao: d.codigo_verificacao,
             ambiente: d.ambiente,
             tipo_emissao: d.tipo_emissao,
-            status: d.status,
+            status: documento_status_from_db(d.status).expect("status inválido"),
             processamento_mensagem: d.processamento_mensagem,
             data_emissao: d.data_emissao,
             data_competencia: d.data_competencia,
@@ -450,8 +472,9 @@ impl From<Documento> for DocumentoListDto {
             valor_recebido_intermediario: d.valor_recebido_intermediario,
             desconto_incondicionado: d.desconto_incondicionado,
             desconto_condicionado: d.desconto_condicionado,
-            trib_issqn: d.trib_issqn,
-            reg_esp_trib_issqn: d.reg_esp_trib_issqn,
+            trib_issqn: trib_issqn_from_db(d.trib_issqn).expect("trib_issqn inválido"),
+            reg_esp_trib_issqn: reg_esp_trib_from_db(d.reg_esp_trib_issqn)
+                .expect("reg_esp_trib_issqn inválido"),
             issqn_exigibilidade_suspensa: d.issqn_exigibilidade_suspensa != 0,
             issqn_retencao: d.issqn_retencao != 0,
             issqn_beneficio_municipal: d.issqn_beneficio_municipal != 0,
@@ -459,8 +482,10 @@ impl From<Documento> for DocumentoListDto {
             issqn_aliquota: d.issqn_aliquota,
             issqn_base_calculo: d.issqn_base_calculo,
             issqn_valor: d.issqn_valor,
-            cst_pis_cofins: d.cst_pis_cofins,
-            tp_ret_pis_cofins_csll: d.tp_ret_pis_cofins_csll,
+            cst_pis_cofins: cst_pis_cofins_from_db(d.cst_pis_cofins)
+                .expect("cst_pis_cofins inválido"),
+            tp_ret_pis_cofins_csll: tp_ret_from_db(d.tp_ret_pis_cofins_csll)
+                .expect("tp_ret_pis_cofins_csll inválido"),
             valor_irrf: d.valor_irrf,
             valor_contrib_sociais_retidas: d.valor_contrib_sociais_retidas,
             valor_contrib_previdenciaria_retida: d.valor_contrib_previdenciaria_retida,
@@ -525,7 +550,7 @@ impl From<Item> for ItemDto {
 pub struct TributoDto {
     pub id: i64,
     pub item_id: i64,
-    pub tipo_imposto: String,
+    pub tipo_imposto: TipoImposto,
     pub cst_csosn: Option<String>,
     pub base_calculo: Option<Decimal>,
     pub aliquota: Option<Decimal>,
@@ -543,7 +568,7 @@ impl From<Tributo> for TributoDto {
         Self {
             id: t.id,
             item_id: t.item_id,
-            tipo_imposto: t.tipo_imposto,
+            tipo_imposto: tipo_imposto_from_db(t.tipo_imposto).expect("tipo_imposto inválido"),
             cst_csosn: t.cst_csosn,
             base_calculo: t.base_calculo,
             aliquota: t.aliquota,
@@ -562,7 +587,7 @@ impl From<Tributo> for TributoDto {
 pub struct EventoDto {
     pub id: i64,
     pub documento_fiscal_id: i64,
-    pub tipo_evento: String,
+    pub tipo_evento: TipoEvento,
     pub sequencial_evento: i32,
     pub protocolo_evento: Option<String>,
     pub descricao_motivo: Option<String>,
@@ -576,7 +601,7 @@ impl From<Evento> for EventoDto {
         Self {
             id: e.id,
             documento_fiscal_id: e.documento_fiscal_id,
-            tipo_evento: e.tipo_evento,
+            tipo_evento: tipo_evento_from_db(e.tipo_evento).expect("tipo_evento inválido"),
             sequencial_evento: e.sequencial_evento,
             protocolo_evento: e.protocolo_evento,
             descricao_motivo: e.descricao_motivo,

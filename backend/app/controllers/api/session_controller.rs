@@ -7,16 +7,13 @@ use crate::models::company::Entity as CompanyEntity;
 use crate::models::company_usuario::{Column as MembroColumn, Entity as MembroEntity};
 use crate::models::empresa::{Column as EmpresaColumn, Entity as EmpresaEntity};
 use crate::models::user::ActiveModel as UserActive;
-use crate::services::api_error::{db, json_body, require_user, ApiError};
+use crate::services::api_error::{db, json_body, require_user};
+use crate::services::entity_enums::papel_from_db;
 use crate::services::dto::{
     empresas_public, empresa_public, CompanyMembership, CompanyPublic, MeResponse, UpdateMeForm,
     UserPublic,
 };
 use crate::services::api_error::to_response;
-
-fn valid_date_format(s: &str) -> bool {
-    matches!(s, "DMY" | "MDY" | "YMD")
-}
 
 pub struct ApiSessionController;
 
@@ -39,7 +36,7 @@ impl ApiSessionController {
             {
                 companies.push(CompanyMembership {
                     company: CompanyPublic::from(company),
-                    papel: m.papel,
+                    papel: papel_from_db(m.papel).expect("papel inválido no banco"),
                 });
             }
         }
@@ -102,13 +99,8 @@ impl ApiSessionController {
         let user = crate::api!(require_user(ctx).await);
         let form: UpdateMeForm = crate::api!(json_body(ctx).await);
         if let Some(df) = form.date_format {
-            if !valid_date_format(&df) {
-                crate::api!(to_response(Err::<(), ApiError>(ApiError::Validation(
-                    "date_format must be DMY, MDY, or YMD".into(),
-                ))));
-            }
             let mut record: UserActive = user.into();
-            record.date_format = Set(df);
+            record.date_format = Set(df.as_db_code());
             record.updated_at = Set(Utc::now());
             let updated = crate::api!(db(record.update(ctx.db()).await));
             return ctx.json(UserPublic::from(updated));

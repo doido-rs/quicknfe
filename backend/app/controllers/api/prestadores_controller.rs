@@ -95,7 +95,7 @@ impl ApiPrestadoresController {
                 razao_social: Set(form.razao_social),
                 inscricao_municipal: Set(form.inscricao_municipal),
                 inscricao_estadual: Set(form.inscricao_estadual),
-                regime_tributario: Set(form.regime_tributario.as_str().into()),
+                regime_tributario: Set(form.regime_tributario.as_db_code()),
                 municipio_id: Set(form.municipio_id),
                 cep: Set(form.cep),
                 logradouro: Set(form.logradouro),
@@ -137,7 +137,7 @@ impl ApiPrestadoresController {
             record.inscricao_estadual = Set(Some(v));
         }
         if let Some(v) = form.regime_tributario {
-            record.regime_tributario = Set(v.as_str().into());
+            record.regime_tributario = Set(v.as_db_code());
         }
         if let Some(v) = form.municipio_id {
             record.municipio_id = Set(v);

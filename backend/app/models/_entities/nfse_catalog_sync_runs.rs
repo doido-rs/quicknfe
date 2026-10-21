@@ -11,10 +11,10 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
-    pub kind: String,
+    pub kind: i32,
     pub started_at: DateTimeUtc,
     pub finished_at: Option<DateTimeUtc>,
-    pub status: String,
+    pub status: i32,
     #[sea_orm(column_type = "Text", nullable)]
     pub stats_json: Option<String>,
 }

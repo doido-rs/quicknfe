@@ -17,7 +17,7 @@ pub struct Model {
     pub razao_social: String,
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
-    pub regime_tributario: String,
+    pub regime_tributario: i32,
     pub municipio_id: i64,
     pub cep: Option<String>,
     pub logradouro: Option<String>,

@@ -13,7 +13,7 @@ pub struct Model {
     pub id: i64,
     #[sea_orm(unique)]
     pub email: String,
-    pub date_format: String,
+    pub date_format: i32,
     pub password_digest: String,
     pub reset_password_token: Option<String>,
     pub reset_password_sent_at: Option<DateTimeUtc>,

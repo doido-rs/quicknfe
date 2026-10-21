@@ -33,7 +33,7 @@ export function NestedResourcePanel({
   const allowDelete = nested.allowDelete === true
   const api = resourceApi<Record<string, unknown>>(path)
   const queryClient = useQueryClient()
-  const dateFormat = useDateFormat()
+  const { preference: dateFormat } = useDateFormat()
   const form = useResourceFieldForm(nested.fields)
   const {
     handleSubmit,
@@ -190,10 +190,11 @@ export function NestedResourcePanel({
           onOpenChange={(open) => {
             if (!open) setDeleteTarget(null)
           }}
+          title="Excluir registro?"
           description={
             deleteTarget
               ? `Esta ação não pode ser desfeita. Registro: ${rowLabel(deleteTarget, nested.fields)} (ID ${deleteTarget.id}).`
-              : undefined
+              : ''
           }
           pending={deleteMutation.isPending}
           onConfirm={() => {

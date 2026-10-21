@@ -70,7 +70,7 @@ pub async fn sync_municipio_cna_coordinator(
     catalog_daily::record_municipios_run(
         db,
         serde_json::json!({ "lotes_enfileirados": enqueued, "municipios": codes.len() }),
-        "enqueued",
+        crate::models::catalog_sync_status::CatalogSyncStatus::Ok,
     )
     .await?;
     Ok(())

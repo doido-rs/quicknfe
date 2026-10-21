@@ -7,6 +7,13 @@ use doido::model::sea_orm::{
 use doido::model::sea_orm::prelude::{DateTimeUtc, Decimal};
 
 use crate::models::certificado_digital::ActiveModel as CertificadoActive;
+use crate::models::certificado_tipo::CertificadoTipo;
+use crate::models::documento_modelo::DocumentoModelo;
+use crate::models::documento_status::DocumentoStatus;
+use crate::models::papel_usuario::PapelUsuario;
+use crate::models::regime_tributario::RegimeTributario;
+use crate::models::status_lote::StatusLote;
+use crate::models::tipo_imposto::TipoImposto;
 use crate::models::cna::{Column as CnaColumn, Entity as CnaEntity};
 use crate::models::cliente::{ActiveModel as ClienteActive, Column as ClienteColumn, Entity as ClienteEntity};
 use crate::models::company::{
@@ -125,7 +132,7 @@ pub async fn run(db: &DatabaseConnection) -> doido::Result<()> {
     CompanyMembroActive {
         user_id: Set(user.id),
         company_id: Set(company_id),
-        papel: Set("proprietario".into()),
+        papel: Set(PapelUsuario::Proprietario.as_db_code()),
         ..Default::default()
     }
     .insert(db)
@@ -201,7 +208,7 @@ async fn seed_prestador_bayan_cnc(db: &DatabaseConnection) -> doido::Result<()> 
         razao_social: Set("BAYAN CODE DESENVOLVIMENTO DE SOFTWARE LTDA".into()),
         inscricao_municipal: Set(None),
         inscricao_estadual: Set(None),
-        regime_tributario: Set("REGIME_NORMAL".into()),
+        regime_tributario: Set(RegimeTributario::RegimeNormal.as_db_code()),
         municipio_id: Set(municipio_rj.id),
         cep: Set(Some("23075350".into())),
         logradouro: Set(Some("Rua Ivan Serpa".into())),
@@ -324,7 +331,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         razao_social: Set("QuickNFe Tecnologia LTDA".into()),
         inscricao_municipal: Set(Some("12345678".into())),
         inscricao_estadual: Set(Some("123456789012".into())),
-        regime_tributario: Set("SIMPLES_NACIONAL".into()),
+        regime_tributario: Set(RegimeTributario::SimplesNacional.as_db_code()),
         municipio_id: Set(municipio_sp.id),
         cep: Set(Some("01310100".into())),
         logradouro: Set(Some("Avenida Paulista".into())),
@@ -338,7 +345,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
 
     CertificadoActive {
         empresa_id: Set(empresa.id),
-        tipo: Set("A1".into()),
+        tipo: Set(CertificadoTipo::A1.as_db_code()),
         caminho_arquivo: Set(Some(
             "/var/secrets/quicknfe/emissor-homolog.pfx".into(),
         )),
@@ -372,7 +379,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         numero_lote: Set(1),
         protocolo_recebimento: Set(Some("PROT-SEED-001".into())),
         ambiente: Set(2),
-        status_lote: Set("processado".into()),
+        status_lote: Set(StatusLote::Processado.as_db_code()),
         data_recebimento: Set(Some(data_recebimento)),
         ..Default::default()
     }
@@ -383,14 +390,14 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
         empresa_id: Set(empresa.id),
         cliente_id: Set(Some(cliente.id)),
         lote_id: Set(Some(lote.id)),
-        modelo: Set("NFSe".into()),
+        modelo: Set(DocumentoModelo::Nfse.as_db_code()),
         serie: Set("1".into()),
         numero_documento: Set(1001),
         chave_acesso: Set(None),
         codigo_verificacao: Set(None),
         ambiente: Set(2),
         tipo_emissao: Set(1),
-        status: Set("autorizada".into()),
+        status: Set(DocumentoStatus::Autorizada.as_db_code()),
         data_emissao: Set(data_emissao),
         data_competencia: Set(Some(
             chrono::NaiveDate::from_ymd_opt(2026, 9, 1).expect("data competência seed"),
@@ -428,7 +435,7 @@ async fn seed_fiscal_demo(db: &DatabaseConnection) -> doido::Result<crate::model
 
     TributoActive {
         item_id: Set(item.id),
-        tipo_imposto: Set("ISS".into()),
+        tipo_imposto: Set(TipoImposto::Iss.as_db_code()),
         cst_csosn: Set(None),
         base_calculo: Set(Some(dec(1500))),
         aliquota: Set(Some(dec_frac(5, 2))),
