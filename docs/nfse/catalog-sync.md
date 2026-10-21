@@ -139,6 +139,31 @@ cargo doido worker     # filas default + catalog
 
 Defina `ADN_MTLS_PFX_*` no ambiente do worker se a ADN exigir certificado.
 
+### Executar um job direto (uma linha)
+
+Roda o handler **no processo do CLI** (sem linha em `doido_jobs`), com o mesmo `JobRegistry` do worker:
+
+```bash
+cd backend && cargo doido jobs run sync_municipio_cna_lote --payload '{"ibge_codes":["3304557"]}'
+```
+
+Outros exemplos:
+
+```bash
+cargo doido jobs list
+cargo doido jobs run sync_nfse_catalog_daily --payload '{"skip_reschedule":true}'
+cargo doido jobs run import_nfse_anexo_a
+cargo doido jobs run sync_municipio_cna_coordinator --later && cargo doido worker --once
+```
+
+Atalho Make (Rio de Janeiro):
+
+```bash
+make catalog-sync-rj
+```
+
+Spec upstream (doido-jobs): `RUN_JOB.md`.
+
 ## Tempo estimado
 
 ~5,5 mil municípios × ~337 CNAs × 1 chamada `historicoaliquotas` (com `sleep_ms` entre serviços); com `batch_size=50`, planeje **dias** de worker na fila `catalog` na primeira carga.

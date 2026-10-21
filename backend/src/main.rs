@@ -46,6 +46,7 @@ mod api_docs;
 #[path = "../config/routes.rs"]
 mod routes;
 
+mod run_job;
 mod startup;
 
 fn should_bootstrap_nfse_catalog_on_boot() -> bool {
@@ -76,6 +77,11 @@ async fn main() {
     startup::prepare();
     settings::init();
     bootstrap_nfse_catalog_jobs_on_boot().await;
+
+    if run_job::is_jobs_run_cli() {
+        std::process::exit(run_job::execute_from_env().await);
+    }
+
     // Delegates to the Doido CLI (server, console, db, worker, generate, …),
     // handing it this app's routes so `doido server` can boot the HTTP server.
     // The `jobs`/`mailers` modules above are compiled as part of this crate, so

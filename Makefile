@@ -12,6 +12,7 @@ BUN           ?= bun
 COMPOSE       := docker compose
 
 .PHONY: help setup install up down db-create db-migrate db-seed db-setup db-console \
+	run-job catalog-sync-rj \
 	dev dev-backend dev-frontend dev-sefin-mock build docs \
 	lint lint-frontend lint-backend fix fix-frontend fix-backend lint-fix \
 	test test-frontend test-backend test-integration test-all \
@@ -53,6 +54,13 @@ db-setup: db-create db-migrate ## create + migrate (dev)
 
 db-console: ## Console MySQL interativo (development; requer `make up`)
 	$(COMPOSE) exec mysql mysql -uroot -ppassword quicknfe_development
+
+run-job: ## Executa job in-process: make run-job JOB=sync_municipio_cna_lote PAYLOAD='{"ibge_codes":["3304557"]}'
+	@test -n "$(JOB)" || (echo "defina JOB= (ex.: sync_municipio_cna_lote)" >&2; exit 1)
+	cd $(BACKEND_DIR) && cargo doido jobs run $(JOB) $(if $(PAYLOAD),--payload '$(PAYLOAD)',)
+
+catalog-sync-rj: ## Parametrização ADN só Rio de Janeiro (IBGE 3304557)
+	$(MAKE) run-job JOB=sync_municipio_cna_lote PAYLOAD='{"ibge_codes":["3304557"]}'
 
 dev: up db-setup ## Backend :3000 + frontend :3001 (hot reload em ambos)
 	$(MAKE) -j2 dev-backend dev-frontend
