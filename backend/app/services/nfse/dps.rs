@@ -1,8 +1,8 @@
 //! Montagem do XML da DPS (NFS-e Nacional) alinhada ao `layout_dps_leaiute.csv`.
 
-use super::codigo_servico::normalize_c_nbs;
+use super::codigo_servico::normalize_c_trib_mun;
 use super::dps_context::{
-    cpf_cnpj_tag, decimal_xml, gerar_id_inf_dps, only_digits, serie_dps_para_xml,
+    cpf_cnpj_tag, decimal_xml, format_dh_emi_dps, gerar_id_inf_dps, only_digits, serie_dps_para_xml,
     telefone_para_dps, ParteExterior,
     DpsContext,
 };
@@ -20,6 +20,8 @@ const VER_APLIC: &str = "QuickNFe/0.1";
 const DPS_VERSAO: &str = "1.01";
 /// Finalidade da NFS-e (TSRTCFinNFSe) — filho direto de `infDPS` no XSD v1.01+ (antes de `cLocEmi`).
 const FIN_NFSE_REGULAR: &str = "0";
+/// Emitente da DPS: 1 prestador, 2 tomador, 3 intermediário (layout nacional).
+pub(crate) const TP_EMIT_PRESTADOR: u8 = 1;
 /// Namespace oficial do leiaute DPS/NFS-e Nacional (validação SEFIN E1235).
 pub const DPS_XML_NS: &str = "http://www.sped.fazenda.gov.br/nfse";
 
@@ -49,7 +51,7 @@ pub fn montar_dps_xml(doc: &Documento) -> String {
   </infDPS>
 </DPS>"#,
         ambiente = doc.ambiente,
-        emissao = doc.data_emissao.to_rfc3339(),
+        emissao = format_dh_emi_dps(doc.data_emissao),
         serie = xml_escape(&serie_dps_para_xml(&doc.serie)),
         numero = doc.numero_documento,
         valor = decimal_xml(&doc.valor_total_servicos_produtos),
@@ -86,12 +88,12 @@ pub fn montar_dps_xml_context(ctx: &DpsContext) -> Result<String, ApiError> {
 fn append_identificacao(xml: &mut String, ctx: &DpsContext, competencia: &str) {
     let doc = &ctx.doc;
     push_elem(xml, 4, "tpAmb", &doc.ambiente.to_string());
-    push_elem(xml, 4, "dhEmi", &doc.data_emissao.to_rfc3339());
+    push_elem(xml, 4, "dhEmi", &format_dh_emi_dps(doc.data_emissao));
     push_elem(xml, 4, "verAplic", VER_APLIC);
     push_elem(xml, 4, "serie", &serie_dps_para_xml(&doc.serie));
     push_elem(xml, 4, "nDPS", &doc.numero_documento.to_string());
     push_elem(xml, 4, "dCompet", competencia);
-    push_elem(xml, 4, "tpEmit", "1");
+    push_elem(xml, 4, "tpEmit", &tp_emit_dps(doc).to_string());
     // tpEmit=1 (prestador): cMotivoEmisTI/chNFSeRej omitidos (RN E0029).
     push_elem(xml, 4, "finNFSe", FIN_NFSE_REGULAR);
     push_elem(
@@ -100,6 +102,11 @@ fn append_identificacao(xml: &mut String, ctx: &DpsContext, competencia: &str) {
         "cLocEmi",
         &pad_ibge7(&ctx.municipio_emissao.codigo_ibge),
     );
+}
+
+pub(crate) fn tp_emit_dps(_doc: &Documento) -> u8 {
+    // QuickNFe emite como prestador; tomador/intermediário emitente exigiria tpEmit 2/3 no futuro.
+    TP_EMIT_PRESTADOR
 }
 
 fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
@@ -116,7 +123,10 @@ fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> 
     if let Some(im) = p.inscricao_municipal.as_ref().filter(|s| !s.trim().is_empty()) {
         push_elem(xml, 6, "IM", im);
     }
-    push_elem(xml, 6, "xNome", &xml_escape(&p.razao_social));
+    // RN E0121: tpEmit=1 → não informar xNome no grupo prest.
+    if tp_emit_dps(&ctx.doc) != TP_EMIT_PRESTADOR {
+        push_elem(xml, 6, "xNome", &xml_escape(&p.razao_social));
+    }
     xml.push_str("      <end>\n");
     xml.push_str("        <endNac>\n");
     push_elem(
@@ -304,55 +314,51 @@ fn append_servico(xml: &mut String, ctx: &DpsContext) {
     xml.push_str("      <cServ>\n");
     let (c_trib, c_trib_mun, x_desc) = servico_from_itens(&ctx.itens, &ctx.doc);
     push_elem(xml, 8, "cTribNac", &c_trib);
-    if let Some(mun) = c_trib_mun.as_ref().filter(|s| !s.is_empty()) {
-        push_elem(xml, 8, "cTribMun", mun);
-    }
+    let c_trib_mun_wire = normalize_c_trib_mun(c_trib_mun.as_deref().unwrap_or("000"));
+    push_elem(xml, 8, "cTribMun", &c_trib_mun_wire);
     push_elem(xml, 8, "xDescServ", &xml_escape(&x_desc));
-    let c_nbs = normalize_c_nbs(
-        ctx.itens
-            .first()
-            .and_then(|i| i.codigo_ncm.as_deref()),
-        &c_trib,
-    );
-    push_elem(xml, 8, "cNBS", &c_nbs);
-    if let Some(item) = ctx.itens.first() {
-        push_elem(xml, 8, "cIntContrib", &item.numero_item.to_string());
-    }
+    // SEFIN v1.01 (produção restrita): `cServ` encerra em `xDescServ` — NBS/cIntContrib ficam fora deste grupo.
     xml.push_str("      </cServ>\n");
-    if let Some(info) = info_complementar_text(ctx) {
-        push_elem(xml, 6, "infoCompl", &xml_escape(&info));
-    }
+    append_info_compl(xml, ctx);
     xml.push_str("    </serv>\n");
 }
 
-fn info_complementar_text(ctx: &DpsContext) -> Option<String> {
+fn append_info_compl(xml: &mut String, ctx: &DpsContext) {
     let doc = &ctx.doc;
-    let mut parts = Vec::new();
-    if let Some(s) = doc.informacoes_complementares.as_ref().filter(|s| !s.trim().is_empty()) {
-        parts.push(s.trim());
-    }
-    if let Some(s) = doc
+    let id_doc_tec = doc
         .numero_doc_responsabilidade_tecnica
-        .as_ref()
-        .filter(|s| !s.trim().is_empty())
-    {
-        parts.push(s.trim());
+        .as_deref()
+        .filter(|s| !s.trim().is_empty());
+    let doc_ref = doc
+        .documento_referencia
+        .as_deref()
+        .filter(|s| !s.trim().is_empty());
+    let x_ped = doc
+        .numero_pedido_ordem_b2b
+        .as_deref()
+        .filter(|s| !s.trim().is_empty());
+    let x_inf = doc
+        .informacoes_complementares
+        .as_deref()
+        .filter(|s| !s.trim().is_empty());
+    if id_doc_tec.is_none() && doc_ref.is_none() && x_ped.is_none() && x_inf.is_none() {
+        return;
     }
-    if let Some(s) = doc.documento_referencia.as_ref().filter(|s| !s.trim().is_empty()) {
-        parts.push(s.trim());
+    xml.push_str("      <infoCompl>\n");
+    if let Some(v) = id_doc_tec {
+        push_elem(xml, 8, "idDocTec", &xml_escape(v));
     }
-    if let Some(s) = doc.numero_pedido_ordem_b2b.as_ref().filter(|s| !s.trim().is_empty()) {
-        parts.push(s.trim());
+    if let Some(v) = doc_ref {
+        push_elem(xml, 8, "docRef", &xml_escape(v));
     }
-    if parts.is_empty() {
-        return None;
+    if let Some(v) = x_ped {
+        push_elem(xml, 8, "xPed", &xml_escape(v));
     }
-    let joined = parts.join(" — ");
-    Some(if joined.len() > 2000 {
-        joined[..2000].to_string()
-    } else {
-        joined
-    })
+    if let Some(v) = x_inf {
+        let text = if v.len() > 2000 { &v[..2000] } else { v };
+        push_elem(xml, 8, "xInfComp", &xml_escape(text));
+    }
+    xml.push_str("      </infoCompl>\n");
 }
 
 fn servico_from_itens(
@@ -538,12 +544,12 @@ pub mod coverage {
             "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
             "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac", "cTribMun",
-            "xDescServ", "cNBS", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN",
+            "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN",
             "tpRetISSQN",
             "pAliq", "vBC", "vISSQN", "tpRetISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins",
             "vRetCP",
             "vRetIRRF", "vRetCSLL",
-            "infoCompl", "cIntContrib", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
+            "infoCompl", "xInfComp", "cPais", "cEndPost", "xCidade", "xEstProvReg", "xCpl",
             "vTotTribFed", "vTotTribEst", "vTotTribMun", "tpSusp", "nProcesso",
         ]
         .into_iter()
@@ -848,9 +854,16 @@ mod tests {
         let fin_pos = xml.find("<finNFSe>").expect("finNFSe");
         let loc_pos = xml.find("<cLocEmi>").expect("cLocEmi");
         assert!(fin_pos < loc_pos, "finNFSe must precede cLocEmi in infDPS");
-        let nbs_pos = xml.find("<cNBS>").expect("cNBS");
-        let int_pos = xml.find("<cIntContrib>").expect("cIntContrib");
-        assert!(nbs_pos < int_pos, "cNBS must precede cIntContrib in cServ");
+        assert!(
+            !xml.contains("<cNBS>") && !xml.contains("<cIntContrib>"),
+            "cServ must not emit cNBS/cIntContrib for SEFIN schema"
+        );
+        let prest_start = xml.find("<prest>").expect("prest");
+        let prest_end = xml.find("</prest>").expect("/prest");
+        assert!(
+            !xml[prest_start..prest_end].contains("<xNome>"),
+            "RN E0121: prest sem xNome quando tpEmit=1"
+        );
 
         for tag in [
             "<tpEmit>",
@@ -859,7 +872,6 @@ mod tests {
             "<cTribNac>",
             "<cTribMun>",
             "<xDescServ>",
-            "<cNBS>",
             "<tribISSQN>",
             "<totTrib>",
             "<vTotTribFed>",

@@ -16,6 +16,22 @@ pub fn normalize_c_trib_nac(raw: &str) -> Option<String> {
     Some(s)
 }
 
+/// Código municipal (`cTribMun`) — 3 dígitos.
+pub fn normalize_c_trib_mun(raw: &str) -> String {
+    let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+    let mut s = if digits.is_empty() {
+        "0".to_string()
+    } else if digits.len() > 3 {
+        digits[digits.len() - 3..].to_string()
+    } else {
+        digits
+    };
+    while s.len() < 3 {
+        s.insert(0, '0');
+    }
+    s
+}
+
 /// Código NBS (`cNBS`) — 9 dígitos (`TSCodNBS`). Usa `codigo_ncm` do item quando informado;
 /// senão deriva de `cTribNac` (6 dígitos + `000`).
 pub fn normalize_c_nbs(codigo_item: Option<&str>, c_trib_nac: &str) -> String {
@@ -36,21 +52,6 @@ pub fn normalize_c_nbs(codigo_item: Option<&str>, c_trib_nac: &str) -> String {
 mod tests {
     use super::*;
     use crate::connectors::adn;
-
-    fn normalize_c_trib_mun(raw: &str) -> String {
-        let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-        let mut s = if digits.is_empty() {
-            "0".to_string()
-        } else if digits.len() > 3 {
-            digits[digits.len() - 3..].to_string()
-        } else {
-            digits
-        };
-        while s.len() < 3 {
-            s.insert(0, '0');
-        }
-        s
-    }
 
     fn c_trib_nac_to_parametrizacao(c_trib_nac: &str, c_trib_mun: &str) -> Option<String> {
         let nac = normalize_c_trib_nac(c_trib_nac)?;

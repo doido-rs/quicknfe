@@ -31,7 +31,6 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "cTribNac",
         "cTribMun",
         "xDescServ",
-        "cNBS",
         "vServ",
         "tribISSQN",
         "opSimpNac",
@@ -40,7 +39,6 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "xLgr",
         "nro",
         "xBairro",
-        "cIntContrib",
         "id",
         "tpRetISSQN",
         "CST",
@@ -174,7 +172,14 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
         "cLocEmi" => !ctx.municipio_emissao.codigo_ibge.trim().is_empty(),
         "CNPJ" => cpf_cnpj_tag(&ctx.prestador.cpf_cnpj).0 == "CNPJ",
         "CPF" => cpf_cnpj_tag(&ctx.prestador.cpf_cnpj).0 == "CPF",
-        "xNome" => !ctx.prestador.razao_social.trim().is_empty(),
+        "xNome" => {
+            if path.contains("/prest/") {
+                super::dps::tp_emit_dps(doc) == super::dps::TP_EMIT_PRESTADOR
+                    || !ctx.prestador.razao_social.trim().is_empty()
+            } else {
+                !ctx.prestador.razao_social.trim().is_empty()
+            }
+        }
         "cMun" => !ctx.municipio_prestador.codigo_ibge.trim().is_empty(),
         "cLocPrestacao" => !ctx.municipio_prestacao.codigo_ibge.trim().is_empty(),
         "cTribNac" => ctx.itens.iter().any(|i| {
@@ -193,13 +198,11 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
                 .or(Some(&i.descricao))
                 .is_some_and(|s| !s.trim().is_empty())
         }),
-        "cNBS" => true,
         "vServ" => doc.valor_total_servicos_produtos > Decimal::ZERO,
         "tribISSQN" => doc.trib_issqn > 0,
         "opSimpNac" => ctx.prestador.regime_tributario > 0,
         "regEspTrib" => doc.reg_esp_trib_issqn >= 0,
         "CEP" | "xLgr" | "nro" | "xBairro" => endereco_prestador_ok(ctx),
-        "cIntContrib" => !ctx.itens.is_empty(),
         "id" => true,
         "tpRetISSQN" => true,
         "CST" => doc.cst_pis_cofins >= 0,

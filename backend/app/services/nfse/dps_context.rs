@@ -1,3 +1,4 @@
+use chrono::{DateTime, FixedOffset, Utc};
 use doido::model::sea_orm::prelude::Decimal;
 use doido::model::sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use serde::Deserialize;
@@ -140,6 +141,14 @@ pub fn decimal_xml(d: &Decimal) -> String {
     d.normalize().to_string()
 }
 
+/// `TSDateTimeUTC`: sem fração de segundos; offset `-03:00` (horário de Brasília).
+pub fn format_dh_emi_dps(dt: DateTime<Utc>) -> String {
+    let brt = FixedOffset::west_opt(3 * 3600).expect("BRT offset");
+    dt.with_timezone(&brt)
+        .format("%Y-%m-%dT%H:%M:%S-03:00")
+        .to_string()
+}
+
 pub fn only_digits(s: &str) -> String {
     s.chars().filter(|c| c.is_ascii_digit()).collect()
 }
@@ -239,6 +248,17 @@ pub fn gerar_id_inf_dps(ctx: &DpsContext) -> Result<String, ApiError> {
 #[cfg(test)]
 mod tests {
     use super::telefone_para_dps;
+
+    #[test]
+    fn format_dh_emi_dps_sem_fracoes() {
+        let dt = chrono::DateTime::parse_from_rfc3339("2026-10-21T15:30:45Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        assert_eq!(
+            super::format_dh_emi_dps(dt),
+            "2026-10-21T12:30:45-03:00"
+        );
+    }
 
     #[test]
     fn telefone_para_dps_aceita_ddd_mais_numero() {
