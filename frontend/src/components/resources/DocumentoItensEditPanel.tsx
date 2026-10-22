@@ -16,6 +16,7 @@ import {
 import {
   buildNestedCreateBody,
   emptyForm,
+  rowToForm,
   useResourceFieldForm,
 } from '@/lib/resourceForm'
 import { toastFromError, toastSuccess } from '@/lib/toast'
@@ -52,6 +53,44 @@ function truncate(text: string, max: number): string {
   return `${t.slice(0, max - 1)}…`
 }
 
+function ItemFieldsGrid({
+  fieldsByKey,
+  form,
+  idPrefix,
+  relationScopeValues,
+}: {
+  fieldsByKey: Map<string, FieldDef>
+  form: ReturnType<typeof useResourceFieldForm>
+  idPrefix: string
+  relationScopeValues?: Record<string, string>
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {COMPACT_ITEM_LAYOUT.flatMap((group) =>
+        group.keys.map((key) => {
+          const field = fieldsByKey.get(key)
+          if (!field) return null
+          const isTextarea = field.key === 'descricao_servico'
+          return (
+            <div
+              key={field.key}
+              className={cn(isTextarea ? 'sm:col-span-2 lg:col-span-4' : '', group.className)}
+            >
+              <ResourceFieldInput
+                field={field}
+                form={form}
+                idPrefix={`${idPrefix}-${field.key}`}
+                relationScopeValues={relationScopeValues}
+                dense
+              />
+            </div>
+          )
+        }),
+      )}
+    </div>
+  )
+}
+
 export function DocumentoItensEditPanel({
   parentId,
   nested,
@@ -75,6 +114,7 @@ export function DocumentoItensEditPanel({
   useUnsavedFormGuard(isDirty)
 
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<number | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Record<string, unknown> | null>(null)
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null)
@@ -91,12 +131,13 @@ export function DocumentoItensEditPanel({
   const rows = page?.items ?? []
 
   useEffect(() => {
+    if (editingItemId != null) return
     const next = rows.length + 1
     const current = form.getValues('numero_item')
     if (current === '' || current === String(Math.max(0, next - 1))) {
       form.setValue('numero_item', String(next))
     }
-  }, [rows.length, form])
+  }, [rows.length, form, editingItemId])
 
   const quantidade = watch('quantidade')
   const valorUnitario = watch('valor_unitario')
@@ -134,19 +175,66 @@ export function DocumentoItensEditPanel({
     },
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.remove(id),
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: { id: number; values: Record<string, string> }) => {
+      const body = buildNestedCreateBody(nested, values)
+      return api.update(id, body)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [path] })
+      setEditingItemId(null)
+      reset(emptyForm(nested.fields))
+      setSubmitError(null)
+      toastSuccess('Item atualizado')
+    },
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : 'Falha ao salvar'
+      setSubmitError(msg)
+      toastFromError(err, 'Não foi possível atualizar o item')
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.remove(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: [path] })
       setDeleteTarget(null)
+      if (editingItemId === id) {
+        setEditingItemId(null)
+        reset(emptyForm(nested.fields))
+      }
       toastSuccess('Item excluído')
     },
     onError: (err) => toastFromError(err, 'Não foi possível excluir'),
   })
 
+  const cancelEdit = useCallback(() => {
+    setEditingItemId(null)
+    reset(emptyForm(nested.fields))
+    setSubmitError(null)
+  }, [reset, nested.fields])
+
+  const startEdit = useCallback(
+    (row: Record<string, unknown>) => {
+      const id = Number(row.id)
+      if (!Number.isFinite(id)) return
+      setShowAddForm(false)
+      setExpandedItemId(null)
+      setEditingItemId(id)
+      reset(rowToForm(row, nested.fields))
+      setSubmitError(null)
+    },
+    [reset, nested.fields],
+  )
+
   const onAdd = useCallback(() => {
     void handleSubmit((values) => createMutation.mutate(values))()
   }, [handleSubmit, createMutation])
+
+  const onSaveEdit = useCallback(() => {
+    if (editingItemId == null) return
+    void handleSubmit((values) => updateMutation.mutate({ id: editingItemId, values }))()
+  }, [handleSubmit, updateMutation, editingItemId])
 
   return (
     <div className="space-y-4">
@@ -160,43 +248,31 @@ export function DocumentoItensEditPanel({
           type="button"
           variant={showAddForm ? 'secondary' : 'default'}
           size="sm"
-          onClick={() => setShowAddForm((v) => !v)}
+          onClick={() => {
+            if (showAddForm) {
+              setShowAddForm(false)
+              reset(emptyForm(nested.fields))
+            } else {
+              cancelEdit()
+              setShowAddForm(true)
+            }
+          }}
         >
           {showAddForm ? 'Fechar formulário' : 'Adicionar item'}
         </Button>
       </div>
 
-      {showAddForm && (
+      {showAddForm && editingItemId == null && (
         <div className="rounded-lg border border-dashed bg-muted/20 p-3 md:p-4">
           {nested.createHint && (
             <p className="mb-3 text-xs text-muted-foreground">{nested.createHint}</p>
           )}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {COMPACT_ITEM_LAYOUT.flatMap((group) =>
-              group.keys.map((key) => {
-                const field = fieldsByKey.get(key)
-                if (!field) return null
-                const isTextarea = field.key === 'descricao_servico'
-                return (
-                  <div
-                    key={field.key}
-                    className={cn(
-                      isTextarea ? 'sm:col-span-2 lg:col-span-4' : '',
-                      group.className,
-                    )}
-                  >
-                    <ResourceFieldInput
-                      field={field}
-                      form={form}
-                      idPrefix={`item-add-${field.key}`}
-                      relationScopeValues={relationScopeValues}
-                      dense
-                    />
-                  </div>
-                )
-              }),
-            )}
-          </div>
+          <ItemFieldsGrid
+            fieldsByKey={fieldsByKey}
+            form={form}
+            idPrefix="item-add"
+            relationScopeValues={relationScopeValues}
+          />
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {submitError && <p className="text-sm text-destructive">{submitError}</p>}
             <Button type="button" size="sm" disabled={createMutation.isPending} onClick={onAdd}>
@@ -228,7 +304,7 @@ export function DocumentoItensEditPanel({
                 <TableHead>Descrição</TableHead>
                 <TableHead className="w-24 text-right">Qtd.</TableHead>
                 <TableHead className="w-28 text-right">Total</TableHead>
-                <TableHead className="w-36 text-right">Ações</TableHead>
+                <TableHead className="w-44 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -237,9 +313,10 @@ export function DocumentoItensEditPanel({
                 const desc =
                   String(r.descricao_servico ?? r.descricao ?? '').trim() || '—'
                 const expanded = expandedItemId === id
+                const isEditing = editingItemId === id
                 return (
                   <Fragment key={String(r.id)}>
-                    <TableRow>
+                    <TableRow className={isEditing ? 'bg-muted/40' : undefined}>
                       <TableCell className="font-medium">{String(r.numero_item ?? '—')}</TableCell>
                       <TableCell className="max-w-[240px]" title={desc}>
                         {truncate(desc, 80)}
@@ -250,13 +327,29 @@ export function DocumentoItensEditPanel({
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          {Number.isFinite(id) && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-xs"
+                              disabled={isEditing}
+                              onClick={() => startEdit(r)}
+                            >
+                              Editar
+                            </Button>
+                          )}
                           {nested.itemTributos && Number.isFinite(id) && (
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               className="h-8 px-2 text-xs"
-                              onClick={() => setExpandedItemId(expanded ? null : id)}
+                              disabled={isEditing}
+                              onClick={() => {
+                                cancelEdit()
+                                setExpandedItemId(expanded ? null : id)
+                              }}
                             >
                               {expanded ? 'Ocultar trib.' : 'Tributos'}
                             </Button>
@@ -267,6 +360,7 @@ export function DocumentoItensEditPanel({
                               variant="ghost"
                               size="sm"
                               className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                              disabled={isEditing}
                               onClick={() => setDeleteTarget(r)}
                             >
                               Excluir
@@ -275,7 +369,38 @@ export function DocumentoItensEditPanel({
                         </div>
                       </TableCell>
                     </TableRow>
-                    {expanded && nested.itemTributos && Number.isFinite(id) && (
+                    {isEditing && (
+                      <TableRow className="bg-muted/20 hover:bg-muted/20">
+                        <TableCell colSpan={5} className="py-3">
+                          <p className="mb-3 text-sm font-medium">
+                            Editar item {String(r.numero_item ?? id)}
+                          </p>
+                          <ItemFieldsGrid
+                            fieldsByKey={fieldsByKey}
+                            form={form}
+                            idPrefix={`item-edit-${id}`}
+                            relationScopeValues={relationScopeValues}
+                          />
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {submitError && (
+                              <p className="text-sm text-destructive">{submitError}</p>
+                            )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={updateMutation.isPending}
+                              onClick={onSaveEdit}
+                            >
+                              Salvar alterações
+                            </Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={cancelEdit}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {expanded && nested.itemTributos && Number.isFinite(id) && !isEditing && (
                       <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableCell colSpan={5} className="py-2">
                           <ItemTributosPanel

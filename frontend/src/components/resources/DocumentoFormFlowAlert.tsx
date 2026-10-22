@@ -28,7 +28,7 @@ export function DocumentoEditFlowAlert({ itensCount }: { itensCount?: number }) 
       <AlertDescription className="space-y-1">
         {itensLabel && <p>{itensLabel}</p>}
         <p>
-          Cadastre os itens na aba <strong>Itens</strong> (entre Partes e Valores). A aba{' '}
+          Cadastre ou edite os itens na aba <strong>Itens</strong> (entre Partes e Valores). A aba{' '}
           <strong>Valores</strong> usa a soma dos totais brutos dos itens como valor da operação; salve
           o cabeçalho para persistir.
         </p>

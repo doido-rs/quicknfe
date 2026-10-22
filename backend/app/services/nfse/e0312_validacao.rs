@@ -1,15 +1,16 @@
 //! Validação E0312 — CNA administrado pelo município de incidência na competência.
 
 use chrono::NaiveDate;
-use doido::model::sea_orm::{ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter};
+use doido::model::sea_orm::ConnectionTrait;
 
-use crate::models::cna::{Column as CnaColumn, Entity as CnaEntity};
-use crate::models::municipio_cna_parametrizacao::{Column as ParamColumn, Entity as ParamEntity};
+use crate::models::trib_issqn::TribIssqn;
 use crate::services::api_error::ApiError;
+use crate::services::entity_enums::trib_issqn_from_db;
+use crate::services::nfse::catalog_item_incidencia::{
+    codigo_nacional_sem_incidencia_issqn, subitem_incidente_municipio_incidencia,
+};
 use crate::services::nfse::codigo_servico::normalize_c_trib_nac;
 use crate::services::nfse::dps_context::DpsContext;
-use crate::services::nfse::incidencia_issqn;
-use crate::services::nfse::municipio_cna_sync;
 
 pub async fn validar_e0312_catalogo(
     db: &impl ConnectionTrait,
@@ -20,65 +21,40 @@ pub async fn validar_e0312_catalogo(
         .data_competencia
         .ok_or_else(|| ApiError::Validation("RN: data de competência é obrigatória".into()))?;
 
+    let trib = trib_issqn_from_db(ctx.doc.trib_issqn)?;
+
     for item in &ctx.itens {
-        let raw = item
-            .codigo_tributacao_nacional
-            .as_deref()
-            .filter(|s| !s.trim().is_empty())
-            .ok_or_else(|| {
-                ApiError::Validation("RN: item deve informar código de tributação nacional".into())
+        let incidente =
+            subitem_incidente_municipio_incidencia(db, ctx, item, competencia).await?;
+
+        if trib == TribIssqn::NaoIncidencia {
+            let raw = item
+                .codigo_tributacao_nacional
+                .as_deref()
+                .filter(|s| !s.trim().is_empty())
+                .ok_or_else(|| {
+                    ApiError::Validation(
+                        "RN: item deve informar código de tributação nacional".into(),
+                    )
+                })?;
+            let codigo = normalize_c_trib_nac(raw).ok_or_else(|| {
+                ApiError::Validation(format!("Código de tributação nacional inválido: {raw}"))
             })?;
-        let codigo = normalize_c_trib_nac(raw).ok_or_else(|| {
-            ApiError::Validation(format!("Código de tributação nacional inválido: {raw}"))
-        })?;
-
-        let cna = CnaEntity::find()
-            .filter(CnaColumn::Codigo.eq(&codigo))
-            .one(db)
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string()))?
-            .ok_or_else(|| {
-                ApiError::Validation(format!(
-                    "Código de tributação nacional {codigo} não consta no catálogo sincronizado"
-                ))
-            })?;
-
-        let ibge = incidencia_issqn::codigo_ibge_incidencia(ctx, &cna)?;
-        let municipio = incidencia_issqn::resolve_municipio_by_ibge(&ibge, ctx).ok_or_else(|| {
-            ApiError::Validation(format!(
-                "Município de incidência IBGE {ibge} não encontrado no contexto da DPS"
-            ))
-        })?;
-
-        if !municipio_cna_sync::municipio_tem_parametrizacao(db, municipio.id)
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string()))?
-        {
-            return Err(ApiError::Validation(format!(
-                "Parametrização municipal desatualizada para {} (IBGE {}). \
-                 Aguarde a carga diária do catálogo NFS-e ou contate o administrador.",
-                municipio.nome, ibge
-            )));
+            if codigo_nacional_sem_incidencia_issqn(&codigo) || !incidente {
+                continue;
+            }
         }
 
-        let rows = ParamEntity::find()
-            .filter(ParamColumn::MunicipioId.eq(municipio.id))
-            .filter(ParamColumn::CodigoTribNac.eq(&codigo))
-            .all(db)
-            .await
-            .map_err(|e| ApiError::Internal(e.to_string()))?;
-
-        let vigente: Vec<_> = rows
-            .iter()
-            .filter(|r| vigente_em(competencia, r.vigencia_inicio, r.vigencia_fim))
-            .collect();
-
-        if vigente.is_empty() {
+        if !incidente {
+            let raw = item
+                .codigo_tributacao_nacional
+                .as_deref()
+                .unwrap_or("");
+            let codigo = normalize_c_trib_nac(raw).unwrap_or_default();
             return Err(ApiError::Validation(format!(
                 "E0312: o código {codigo} não está administrado pelo município de incidência \
-                 {} (IBGE {}) na competência {competencia}. \
-                 Ajuste o CNA do item ou a localidade da nota.",
-                municipio.nome, ibge
+                 na competência {competencia}. \
+                 Ajuste o CNA do item ou a localidade da nota."
             )));
         }
     }

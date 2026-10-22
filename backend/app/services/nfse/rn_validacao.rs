@@ -16,7 +16,8 @@ pub async fn validar_dps_contexto_com_catalogo(
     ctx: &DpsContext,
 ) -> Result<(), ApiError> {
     validar_dps_contexto(ctx)?;
-    super::e0312_validacao::validar_e0312_catalogo(db, ctx).await
+    super::e0312_validacao::validar_e0312_catalogo(db, ctx).await?;
+    super::e0539_validacao::validar_trib_issqn_incidencia_catalogo(db, ctx).await
 }
 
 /// Valida documento + contexto carregado (espelha RN críticas do leiaute / formulário).

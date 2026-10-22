@@ -1,3 +1,5 @@
+import { tribIssqnToFormValue } from '@/lib/documentoTributacaoIssqn'
+
 export type DocumentoReadinessIssue = {
   id: string
   message: string
@@ -36,6 +38,14 @@ export function documentoReadinessIssues(
     issues.push({
       id: 'itens',
       message: 'Inclua ao menos um item de serviço na edição da nota.',
+    })
+  }
+
+  if (tribIssqnToFormValue(row.trib_issqn) === '4' && (itensCount ?? 0) > 0) {
+    issues.push({
+      id: 'e0539-trib-issqn',
+      message:
+        'Tributação ISSQN "Não incidência" só é válida se os CNA dos itens não forem incidentes no município de incidência (rejeição E0539 na transmissão).',
     })
   }
 

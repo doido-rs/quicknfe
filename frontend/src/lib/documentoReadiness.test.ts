@@ -17,4 +17,12 @@ describe('documentoReadinessIssues', () => {
     )
     expect(issues.some((i) => i.id === 'itens')).toBe(true)
   })
+
+  it('warns trib issqn nao incidencia with itens', () => {
+    const issues = documentoReadinessIssues(
+      { status: 'novo', tomador_localidade: 'nao_informado', trib_issqn: 'NAO_INCIDENCIA' },
+      2,
+    )
+    expect(issues.some((i) => i.id === 'e0539-trib-issqn')).toBe(true)
+  })
 })
