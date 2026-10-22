@@ -8,8 +8,9 @@ use super::dps_context::{cpf_cnpj_tag, DpsContext};
 use super::endereco_brasil;
 use super::dps_layout::{load_infdps_leiaute, mandatory_infdps_fields_owned, LayoutFieldRow};
 use crate::models::localidade_parte::LocalidadeParte;
+use crate::models::regime_tributario::RegimeTributario;
 use crate::services::api_error::ApiError;
-use crate::services::entity_enums::localidade_from_db;
+use crate::services::entity_enums::{localidade_from_db, regime_from_db};
 
 /// Campos obrigatórios do leiaute que o app valida por presença antes de assinar/transmitir.
 pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
@@ -34,6 +35,7 @@ pub fn campos_presenca_mapeados() -> HashSet<&'static str> {
         "vServ",
         "tribISSQN",
         "opSimpNac",
+        "regApTribSN",
         "regEspTrib",
         "CEP",
         "xLgr",
@@ -93,6 +95,17 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
     let path = row.xml_path.as_str();
     let campo = row.campo.as_str();
     let doc = &ctx.doc;
+
+    if path.contains("/prest/") && path.contains("/end") {
+        if super::dps::tp_emit_dps(doc) == super::dps::TP_EMIT_PRESTADOR {
+            return Ok(true);
+        }
+        return Ok(match campo {
+            "cMun" => !ctx.municipio_prestador.codigo_ibge.trim().is_empty(),
+            "CEP" | "xLgr" | "nro" | "xBairro" => endereco_prestador_ok(ctx),
+            _ => true,
+        });
+    }
 
     if path.contains("/toma/") {
         if localidade_from_db(doc.tomador_localidade)? != LocalidadeParte::Brasil {
@@ -201,6 +214,15 @@ fn valor_presente_row(ctx: &DpsContext, row: &LayoutFieldRow) -> Result<bool, Ap
         "vServ" => doc.valor_total_servicos_produtos > Decimal::ZERO,
         "tribISSQN" => doc.trib_issqn > 0,
         "opSimpNac" => ctx.prestador.regime_tributario > 0,
+        "regApTribSN" => {
+            let regime = regime_from_db(ctx.prestador.regime_tributario)
+                .unwrap_or(RegimeTributario::RegimeNormal);
+            matches!(
+                regime,
+                RegimeTributario::SimplesNacional
+                    | RegimeTributario::SimplesNacionalExcessoSublimite
+            )
+        }
         "regEspTrib" => doc.reg_esp_trib_issqn >= 0,
         "CEP" | "xLgr" | "nro" | "xBairro" => endereco_prestador_ok(ctx),
         "id" => true,

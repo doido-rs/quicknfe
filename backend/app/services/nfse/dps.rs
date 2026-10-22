@@ -111,12 +111,6 @@ pub(crate) fn tp_emit_dps(_doc: &Documento) -> u8 {
 
 fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
     let p = &ctx.prestador;
-    let end = super::endereco_brasil::endereco_prestador(
-        p.cep.as_deref(),
-        p.logradouro.as_deref(),
-        p.numero.as_deref(),
-        p.bairro.as_deref(),
-    )?;
     xml.push_str("    <prest>\n");
     let (tag, insc) = cpf_cnpj_tag(&p.cpf_cnpj);
     push_elem(xml, 6, tag, &insc);
@@ -127,25 +121,43 @@ fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> 
     if tp_emit_dps(&ctx.doc) != TP_EMIT_PRESTADOR {
         push_elem(xml, 6, "xNome", &xml_escape(&p.razao_social));
     }
-    xml.push_str("      <end>\n");
-    xml.push_str("        <endNac>\n");
-    push_elem(
-        xml,
-        10,
-        "cMun",
-        &pad_ibge7(&ctx.municipio_prestador.codigo_ibge),
-    );
-    push_elem(xml, 10, "CEP", &end.cep);
-    xml.push_str("        </endNac>\n");
-    push_elem(xml, 8, "xLgr", &xml_escape(&end.logradouro));
-    push_elem(xml, 8, "nro", &xml_escape(&end.numero));
-    push_elem(xml, 8, "xBairro", &xml_escape(&end.bairro));
-    xml.push_str("      </end>\n");
+    // RN E0128: tpEmit=1 → não informar end/endNac do prestador (CNC já identifica o emitente).
+    if tp_emit_dps(&ctx.doc) != TP_EMIT_PRESTADOR {
+        let end = super::endereco_brasil::endereco_prestador(
+            p.cep.as_deref(),
+            p.logradouro.as_deref(),
+            p.numero.as_deref(),
+            p.bairro.as_deref(),
+        )?;
+        xml.push_str("      <end>\n");
+        xml.push_str("        <endNac>\n");
+        push_elem(
+            xml,
+            10,
+            "cMun",
+            &pad_ibge7(&ctx.municipio_prestador.codigo_ibge),
+        );
+        push_elem(xml, 10, "CEP", &end.cep);
+        xml.push_str("        </endNac>\n");
+        push_elem(xml, 8, "xLgr", &xml_escape(&end.logradouro));
+        push_elem(xml, 8, "nro", &xml_escape(&end.numero));
+        push_elem(xml, 8, "xBairro", &xml_escape(&end.bairro));
+        xml.push_str("      </end>\n");
+    }
     xml.push_str("      <regTrib>\n");
-    push_elem(xml, 8, "opSimpNac", &map_op_simp_nac(p.regime_tributario));
-    let reg_esp = reg_esp_trib_from_db(ctx.doc.reg_esp_trib_issqn)
+    let op_simp = map_op_simp_nac(p.regime_tributario);
+    push_elem(xml, 8, "opSimpNac", &op_simp);
+    let reg_ap_sn = (op_simp == "3").then(|| map_reg_ap_trib_sn(p.regime_tributario));
+    if let Some(ref reg_ap) = reg_ap_sn {
+        push_elem(xml, 8, "regApTribSN", reg_ap);
+    }
+    let mut reg_esp = reg_esp_trib_from_db(ctx.doc.reg_esp_trib_issqn)
         .map(|r| r.as_layout_code().to_string())
         .unwrap_or_else(|_| "0".into());
+    // RN E0175: ME/EPP com apuração pelo SN (regApTribSN=1) → regEspTrib=0.
+    if reg_ap_sn.as_deref() == Some("1") {
+        reg_esp = "0".into();
+    }
     push_elem(xml, 8, "regEspTrib", &reg_esp);
     xml.push_str("      </regTrib>\n");
     xml.push_str("    </prest>\n");
@@ -157,9 +169,19 @@ fn map_op_simp_nac(regime_code: i32) -> String {
     match regime {
         RegimeTributario::MicroempreendedorIndividual => "2".into(),
         RegimeTributario::SimplesNacional | RegimeTributario::SimplesNacionalExcessoSublimite => {
-            "1".into()
+            "3".into()
         }
-        _ => "3".into(),
+        _ => "1".into(),
+    }
+}
+
+/// Regime de apuração SN (obrigatório quando `opSimpNac` = 3 — RN E0166).
+fn map_reg_ap_trib_sn(regime_code: i32) -> String {
+    let regime = regime_from_db(regime_code).unwrap_or(RegimeTributario::RegimeNormal);
+    match regime {
+        RegimeTributario::SimplesNacionalExcessoSublimite => "2".into(),
+        RegimeTributario::SimplesNacional => "1".into(),
+        _ => "1".into(),
     }
 }
 
@@ -543,7 +565,8 @@ pub mod coverage {
             "id", "tpAmb", "dhEmi", "verAplic", "serie", "nDPS", "dCompet", "tpEmit", "finNFSe",
             "cLocEmi",
             "CNPJ", "CPF", "IM", "xNome", "cMun", "CEP", "xLgr", "nro", "xBairro", "opSimpNac",
-            "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao", "cTribNac", "cTribMun",
+            "regApTribSN", "regEspTrib", "NIF", "cNaoNIF", "fone", "email", "cLocPrestacao",
+            "cTribNac", "cTribMun",
             "xDescServ", "vServ", "vReceb", "vDescIncond", "vDescCond", "tribISSQN",
             "tpRetISSQN",
             "pAliq", "vBC", "vISSQN", "tpRetISSQN", "tpImunidade", "nBM", "CST", "tpRetPisCofins",
@@ -863,6 +886,24 @@ mod tests {
         assert!(
             !xml[prest_start..prest_end].contains("<xNome>"),
             "RN E0121: prest sem xNome quando tpEmit=1"
+        );
+        assert!(
+            !xml[prest_start..prest_end].contains("<end>"),
+            "RN E0128: prest sem end quando tpEmit=1"
+        );
+        let reg_trib = xml
+            .find("<regTrib>")
+            .zip(xml.find("</regTrib>"))
+            .map(|(s, e)| &xml[s..e])
+            .expect("regTrib");
+        assert!(
+            reg_trib.contains("<opSimpNac>3</opSimpNac>")
+                && reg_trib.contains("<regApTribSN>1</regApTribSN>"),
+            "RN E0166: ME/EPP (Simples) exige regApTribSN após opSimpNac=3"
+        );
+        assert!(
+            reg_trib.contains("<regEspTrib>0</regEspTrib>"),
+            "RN E0175: regApTribSN=1 exige regEspTrib=0"
         );
 
         for tag in [
