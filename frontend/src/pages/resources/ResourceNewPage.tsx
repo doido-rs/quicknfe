@@ -6,11 +6,14 @@ import { useEffect } from 'react'
 import { useAuth } from '@/auth/AuthContext'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
+import { DocumentoCreateFlowAlert } from '@/components/resources/DocumentoFormFlowAlert'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useResourceDef } from '@/hooks/useResourceDef'
 import { buildDocumentoBody } from '@/lib/documentoParteLocalidade'
+import { prepareDocumentoSubmitBody } from '@/lib/documentoSubmit'
+import { runDocumentoFormValidation } from '@/lib/submitDocumentoForm'
 import { todayApiDate } from '@/lib/dateFormat'
 import { buildBody, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
@@ -45,8 +48,11 @@ export function ResourceNewPage() {
     const prestadorId = Number(empresaId)
     if (!Number.isFinite(prestadorId)) return
 
+    let cancelled = false
     const prestadorApi = resourceApi<{ municipio_id?: number }>('/api/prestadores')
     void prestadorApi.get(prestadorId).then((prestador) => {
+      if (cancelled) return
+      if (form.getValues('empresa_id') !== String(prestadorId)) return
       const municipioId = prestador.municipio_id
       if (municipioId == null) return
       const asString = String(municipioId)
@@ -57,6 +63,9 @@ export function ResourceNewPage() {
         form.setValue('municipio_prestacao_id', asString)
       }
     })
+    return () => {
+      cancelled = true
+    }
   }, [def.key, empresaId, form])
 
   useUnsavedFormGuard(form.formState.isDirty)
@@ -67,10 +76,7 @@ export function ResourceNewPage() {
         def.key === 'documentos'
           ? buildDocumentoBody(def.fields, values)
           : (buildBody(def.fields, values) as Record<string, unknown>)
-      if (body.serie_numero_automatico === true) {
-        body.numero_documento = 0
-        body.serie = ''
-      }
+      prepareDocumentoSubmitBody(body, 'create')
       return api.create(body)
     },
     onSuccess: (created, _vars, _ctx) => {
@@ -102,13 +108,15 @@ export function ResourceNewPage() {
         <CardHeader>
           <CardTitle className="text-base">Cadastro</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {def.key === 'documentos' ? <DocumentoCreateFlowAlert /> : null}
           <ResourceFormFields
             fields={def.fields}
             formSections={def.formSections}
             cncLookup={def.cncLookup}
             form={form}
             onSubmit={(values) => {
+              if (def.key === 'documentos' && !runDocumentoFormValidation(form)) return
               createMutation.mutate(values)
             }}
             submitLabel="Criar"

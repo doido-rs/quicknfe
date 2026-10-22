@@ -1,5 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo } from 'react'
+import { resourceApi } from '@/api/client'
+import { DocumentoReadinessAlert } from '@/components/resources/DocumentoReadinessAlert'
 import { DocumentoAssinarButton } from '@/components/resources/DocumentoAssinarButton'
 import { DocumentoTransmitirButton } from '@/components/resources/DocumentoTransmitirButton'
 import { DocumentoXmlDownloadButton } from '@/components/resources/DocumentoXmlDownloadButton'
@@ -44,6 +47,13 @@ export function DocumentoShowView({
 
   const itensNested = documentoItensNested(def)
   const eventosNested = documentoEventosNested(def)
+  const itensPath = itensNested?.path(recordId)
+  const { data: itensPage } = useQuery({
+    queryKey: [itensPath, 'list'],
+    queryFn: () => resourceApi<Record<string, unknown>>(itensPath!).listPage({ pageSize: 50 }),
+    enabled: itensPath != null,
+  })
+  const itensCount = itensPage?.items?.length
   const processamentoMsg =
     typeof row.processamento_mensagem === 'string' ? row.processamento_mensagem.trim() : ''
   const showProcessamentoMsg = processamentoMsg.length > 0
@@ -83,6 +93,8 @@ export function DocumentoShowView({
           <AlertDescription>{processamentoMsg}</AlertDescription>
         </Alert>
       ) : null}
+
+      <DocumentoReadinessAlert row={row} itensCount={itensCount} />
 
       <Tabs defaultValue="dados">
         <TabsList aria-label="Seções da nota fiscal">

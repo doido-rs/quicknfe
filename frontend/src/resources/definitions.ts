@@ -301,6 +301,7 @@ export const resources: ResourceDef[] = [
         type: 'number',
         formOnly: true,
         defaultValue: '0',
+        readOnly: true,
       },
       {
         key: 'trib_issqn',
@@ -435,6 +436,7 @@ export const resources: ResourceDef[] = [
           'valor_recebido_intermediario',
           'desconto_incondicionado',
           'desconto_condicionado',
+          'valor_liquido',
         ],
         columns: 2,
       },

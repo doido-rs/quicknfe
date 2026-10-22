@@ -136,31 +136,61 @@ export function ResourceFieldInput({
   const inputId = `${idPrefix}-${field.key}`
 
   if (field.type === 'date') {
-    const ymd = form.watch(field.key) ?? ''
-    const displayValue = formDateToDisplay(ymd, dateFormat)
+    const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
+    const validateIso = (value: string | undefined) => {
+      if (!field.required || field.readOnly) return true
+      const trimmed = (value ?? '').trim()
+      if (!trimmed) return `${field.label} é obrigatório.`
+      if (!isoDatePattern.test(trimmed)) return 'Informe uma data válida.'
+      const [y, m, d] = trimmed.split('-').map(Number)
+      const dt = new Date(y, m - 1, d)
+      if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) {
+        return 'Informe uma data válida.'
+      }
+      return true
+    }
     return (
-      <div className="grid gap-2">
-        <Label htmlFor={inputId}>{field.label}</Label>
-        <Input
-          id={inputId}
-          readOnly={field.readOnly}
-          className={field.readOnly ? 'bg-muted' : undefined}
-          type="text"
-          inputMode="numeric"
-          placeholder={
-            dateFormat === 'DMY' ? 'DD/MM/AAAA' : dateFormat === 'MDY' ? 'MM/DD/AAAA' : 'AAAA-MM-DD'
-          }
-          value={displayValue}
-          onChange={(e) => {
-            const parsed = parseDateFromDisplay(e.target.value, dateFormat)
-            form.setValue(field.key, parsed ?? e.target.value, { shouldDirty: true })
-          }}
-          onBlur={(e) => {
-            const parsed = parseDateFromDisplay(e.target.value, dateFormat)
-            if (parsed) form.setValue(field.key, parsed, { shouldDirty: true })
-          }}
-        />
-      </div>
+      <Controller
+        name={field.key}
+        control={form.control}
+        rules={{
+          required: field.required && !field.readOnly ? `${field.label} é obrigatório.` : false,
+          validate: validateIso,
+        }}
+        render={({ field: controlField, fieldState }) => (
+          <div className="grid gap-2">
+            <Label htmlFor={inputId}>{field.label}</Label>
+            <Input
+              id={inputId}
+              readOnly={field.readOnly}
+              className={field.readOnly ? 'bg-muted' : undefined}
+              type="text"
+              inputMode="numeric"
+              placeholder={
+                dateFormat === 'DMY'
+                  ? 'DD/MM/AAAA'
+                  : dateFormat === 'MDY'
+                    ? 'MM/DD/AAAA'
+                    : 'AAAA-MM-DD'
+              }
+              aria-invalid={!!fieldState.error}
+              value={formDateToDisplay(controlField.value ?? '', dateFormat)}
+              onChange={(e) => {
+                const parsed = parseDateFromDisplay(e.target.value, dateFormat)
+                controlField.onChange(parsed ?? e.target.value)
+              }}
+              onBlur={(e) => {
+                const parsed = parseDateFromDisplay(e.target.value, dateFormat)
+                if (parsed) controlField.onChange(parsed)
+                controlField.onBlur()
+              }}
+            />
+            {fieldState.error?.message && (
+              <p className="text-sm text-destructive">{fieldState.error.message}</p>
+            )}
+          </div>
+        )}
+      />
     )
   }
 

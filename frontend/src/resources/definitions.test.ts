@@ -125,6 +125,7 @@ describe('resources', () => {
         'valor_recebido_intermediario',
         'desconto_incondicionado',
         'desconto_condicionado',
+        'valor_liquido',
       ],
     })
     expect(documentos?.formSections?.[4]).toMatchObject({

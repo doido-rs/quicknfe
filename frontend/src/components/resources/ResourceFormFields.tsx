@@ -1,5 +1,7 @@
 import { GuardedLink } from '@/components/navigation/GuardedLink'
 import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
+import { computeDocumentoValorLiquido } from '@/lib/documentoValorLiquido'
+import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -110,7 +112,9 @@ function IdentificacaoNotaSection({
                 className="size-4 shrink-0 rounded border border-input"
                 checked={informarManual}
                 onChange={(e) =>
-                  form.setValue(section.automaticoFieldKey, e.target.checked ? 'false' : 'true')
+                  form.setValue(section.automaticoFieldKey, e.target.checked ? 'false' : 'true', {
+                    shouldDirty: true,
+                  })
                 }
               />
               <Label htmlFor={manualCheckboxId} className="font-normal leading-snug">
@@ -268,6 +272,24 @@ function FormSectionBlock({
     )
   }
 
+  const issqnSuspensa = form.watch('issqn_exigibilidade_suspensa') === 'true'
+  const sectionFieldKeys =
+    section.type === 'fields' && section.fieldKeys.includes('issqn_exigibilidade_suspensa')
+      ? section.fieldKeys.filter((key) => {
+          if (key === 'issqn_tp_suspensao' || key === 'issqn_n_processo_suspensao') {
+            return issqnSuspensa
+          }
+          return true
+        })
+      : section.fieldKeys
+
+  const sectionFields = fieldsByKeys(allFields, sectionFieldKeys).map((f) => {
+    if (f.key === 'issqn_n_processo_suspensao' && issqnSuspensa) {
+      return { ...f, required: true }
+    }
+    return f
+  })
+
   return (
     <section
       className="rounded-lg border bg-card p-4 md:p-6"
@@ -277,7 +299,7 @@ function FormSectionBlock({
         {section.title}
       </h2>
       <SectionFields
-        fields={fieldsByKeys(allFields, section.fieldKeys)}
+        fields={sectionFields}
         form={form}
         idPrefix={`s${sectionIndex}`}
         columns={section.columns ?? 2}
@@ -321,6 +343,24 @@ export function ResourceFormFields({
     handleSubmit,
     formState: { isSubmitting, isDirty },
   } = form
+
+  const hasValorLiquidoField = fields.some((f) => f.key === 'valor_liquido')
+  const watchOperacao = form.watch('valor_total_servicos_produtos')
+  const watchDescIncond = form.watch('desconto_incondicionado')
+  const watchDescCond = form.watch('desconto_condicionado')
+
+  useEffect(() => {
+    if (!hasValorLiquidoField) return
+    const next = computeDocumentoValorLiquido({
+      valor_total_servicos_produtos: watchOperacao ?? '',
+      desconto_incondicionado: watchDescIncond ?? '',
+      desconto_condicionado: watchDescCond ?? '',
+    })
+    const current = form.getValues('valor_liquido')
+    if (current !== String(next)) {
+      form.setValue('valor_liquido', String(next), { shouldDirty: false, shouldValidate: false })
+    }
+  }, [hasValorLiquidoField, watchOperacao, watchDescIncond, watchDescCond, form])
 
   useUnsavedFormGuard(!readOnly && isDirty)
 

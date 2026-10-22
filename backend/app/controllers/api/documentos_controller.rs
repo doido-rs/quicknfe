@@ -153,7 +153,7 @@ fn default_tp_ret_pis_cofins_csll() -> TpRetPisCofinsCsll {
 fn normalizar_valores_documento(form: &mut DocumentoForm) -> Result<(), ApiError> {
     if form.valor_total_servicos_produtos <= Decimal::ZERO {
         return Err(ApiError::Validation(
-            "valor da operação/serviço prestado must be positive".into(),
+            "O valor da operação/serviço prestado deve ser maior que zero.".into(),
         ));
     }
     let liquido = form.valor_total_servicos_produtos
@@ -169,7 +169,7 @@ fn normalizar_valores_documento(form: &mut DocumentoForm) -> Result<(), ApiError
 
 fn validar_campo_obrigatorio(valor: &str, campo: &str) -> Result<(), ApiError> {
     if valor.trim().is_empty() {
-        return Err(ApiError::Validation(format!("{campo} is required")));
+        return Err(ApiError::Validation(format!("{campo} é obrigatório.")));
     }
     Ok(())
 }
@@ -204,7 +204,11 @@ fn normalizar_parte_localidade(
             *relation_id = None;
             let ext = exterior
                 .as_ref()
-                .ok_or_else(|| ApiError::Validation(format!("{parte}_exterior is required")))?;
+                .ok_or_else(|| {
+                    ApiError::Validation(format!(
+                        "Preencha os dados de {parte} no exterior."
+                    ))
+                })?;
             validar_parte_exterior(ext, parte)?;
         }
     }
@@ -315,12 +319,26 @@ fn validar_identificacao(form: &DocumentoForm) -> Result<(), ApiError> {
         return Ok(());
     }
     if form.serie.trim().is_empty() {
-        return Err(ApiError::Validation("serie is required".into()));
+        return Err(ApiError::Validation("Informe a série da nota.".into()));
     }
     if form.numero_documento <= 0 {
-        return Err(ApiError::Validation("numero_documento must be positive".into()));
+        return Err(ApiError::Validation("Informe um número de documento válido.".into()));
     }
     Ok(())
+}
+
+/// Evita reatribuir número AUTO quando o client envia `numero_documento <= 0` no PATCH.
+fn restaurar_numero_automatico_existente(form: &mut DocumentoForm, existing: &Documento) {
+    if !form.serie_numero_automatico || form.numero_documento > 0 {
+        return;
+    }
+    if existing.serie_numero_automatico != 1 || existing.numero_documento <= 0 {
+        return;
+    }
+    form.numero_documento = existing.numero_documento;
+    if form.serie.trim().is_empty() {
+        form.serie = existing.serie.clone();
+    }
 }
 
 async fn preparar_identificacao(
@@ -476,6 +494,7 @@ impl ApiDocumentosController {
         crate::api!(to_response(normalizar_partes(&mut form)));
         crate::api!(to_response(validate_refs(ctx.db(), form.empresa_id, &form).await));
         crate::api!(to_response(normalizar_valores_documento(&mut form)));
+        restaurar_numero_automatico_existente(&mut form, &existing);
         crate::api!(to_response(preparar_identificacao(ctx.db(), &mut form).await));
         let mut record: DocActive = existing.into();
         crate::api!(to_response(apply_form(&mut record, &form)));
@@ -572,5 +591,128 @@ impl ApiDocumentosController {
         ));
         let rows = crate::services::documento_jobs::list_jobs_for_documento(&doc);
         ctx.json(rows)
+    }
+}
+
+#[cfg(test)]
+mod identificacao_tests {
+    use super::*;
+    use chrono::Utc;
+    use doido::model::sea_orm::prelude::Decimal;
+
+    fn sample_existing_auto(numero: i64) -> Documento {
+        Documento {
+            id: 1,
+            empresa_id: 1,
+            cliente_id: None,
+            intermediario_id: None,
+            tomador_localidade: LocalidadeParte::NaoInformado.as_db_code(),
+            intermediario_localidade: LocalidadeParte::NaoInformado.as_db_code(),
+            tomador_exterior: None,
+            intermediario_exterior: None,
+            lote_id: None,
+            modelo: DocumentoModelo::Nfse.as_db_code(),
+            serie: SERIE_AUTOMATICA.into(),
+            numero_documento: numero,
+            chave_acesso: None,
+            codigo_verificacao: None,
+            ambiente: 2,
+            tipo_emissao: 1,
+            status: DocumentoStatus::Novo.as_db_code(),
+            processamento_mensagem: None,
+            data_emissao: Utc::now(),
+            data_competencia: None,
+            serie_numero_automatico: 1,
+            municipio_emissao_id: 1,
+            municipio_prestacao_id: 1,
+            protocolo_autorizacao: None,
+            valor_total_servicos_produtos: Decimal::from(100),
+            valor_liquido: Decimal::from(100),
+            valor_recebido_intermediario: None,
+            desconto_incondicionado: Decimal::ZERO,
+            desconto_condicionado: Decimal::ZERO,
+            trib_issqn: TribIssqn::OperacaoTributavel.as_db_code(),
+            reg_esp_trib_issqn: RegEspTribIssqn::Nenhum.as_db_code(),
+            issqn_exigibilidade_suspensa: 0,
+            issqn_tp_suspensao: IssqnTpSuspensao::default().as_db_code(),
+            issqn_n_processo_suspensao: None,
+            issqn_retencao: 0,
+            issqn_beneficio_municipal: 0,
+            issqn_deducao_reducao_bc: 0,
+            issqn_aliquota: None,
+            issqn_base_calculo: None,
+            issqn_valor: None,
+            cst_pis_cofins: CstPisCofins::Nenhum.as_db_code(),
+            tp_ret_pis_cofins_csll: TpRetPisCofinsCsll::NaoRetidos.as_db_code(),
+            valor_irrf: None,
+            valor_contrib_sociais_retidas: None,
+            valor_contrib_previdenciaria_retida: None,
+            xml_assinado: None,
+            xml_processado: None,
+            numero_doc_responsabilidade_tecnica: None,
+            documento_referencia: None,
+            informacoes_complementares: None,
+            numero_pedido_ordem_b2b: None,
+        }
+    }
+
+    #[test]
+    fn restaurar_numero_automatico_reutiliza_existente() {
+        let existing = sample_existing_auto(17);
+        let mut form = DocumentoForm {
+            empresa_id: 1,
+            cliente_id: None,
+            intermediario_id: None,
+            tomador_localidade: LocalidadeParte::NaoInformado,
+            intermediario_localidade: LocalidadeParte::NaoInformado,
+            tomador_exterior: None,
+            intermediario_exterior: None,
+            lote_id: None,
+            modelo: DocumentoModelo::Nfse,
+            serie: String::new(),
+            numero_documento: 0,
+            chave_acesso: None,
+            codigo_verificacao: None,
+            ambiente: 2,
+            tipo_emissao: 1,
+            status: DocumentoStatus::Novo,
+            data_emissao: Utc::now(),
+            data_competencia: None,
+            serie_numero_automatico: true,
+            municipio_emissao_id: 1,
+            municipio_prestacao_id: 1,
+            protocolo_autorizacao: None,
+            valor_total_servicos_produtos: Decimal::from(100),
+            valor_liquido: Decimal::from(100),
+            valor_recebido_intermediario: None,
+            desconto_incondicionado: Decimal::ZERO,
+            desconto_condicionado: Decimal::ZERO,
+            trib_issqn: TribIssqn::OperacaoTributavel,
+            reg_esp_trib_issqn: RegEspTribIssqn::Nenhum,
+            issqn_exigibilidade_suspensa: false,
+            issqn_tp_suspensao: IssqnTpSuspensao::default(),
+            issqn_n_processo_suspensao: None,
+            issqn_retencao: false,
+            issqn_beneficio_municipal: false,
+            issqn_deducao_reducao_bc: false,
+            issqn_aliquota: None,
+            issqn_base_calculo: None,
+            issqn_valor: None,
+            cst_pis_cofins: CstPisCofins::Nenhum,
+            tp_ret_pis_cofins_csll: TpRetPisCofinsCsll::NaoRetidos,
+            valor_irrf: None,
+            valor_contrib_sociais_retidas: None,
+            valor_contrib_previdenciaria_retida: None,
+            xml_assinado: None,
+            xml_processado: None,
+            numero_doc_responsabilidade_tecnica: None,
+            documento_referencia: None,
+            informacoes_complementares: None,
+            numero_pedido_ordem_b2b: None,
+        };
+
+        restaurar_numero_automatico_existente(&mut form, &existing);
+        assert_eq!(form.numero_documento, 17);
+        assert_eq!(form.serie, "AUTO");
     }
 }

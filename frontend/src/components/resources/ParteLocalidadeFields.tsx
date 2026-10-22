@@ -54,7 +54,7 @@ function ParteBlock({
       )}
       {localidade === 'brasil' && relationField && (
         <ResourceFieldInput
-          field={relationField}
+          field={{ ...relationField, required: true }}
           form={form}
           idPrefix={`${idPrefix}-br`}
           readOnly={readOnly}
