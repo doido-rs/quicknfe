@@ -4,19 +4,13 @@ import {
   simNaoLabel,
   tributacaoIssqnLabel,
 } from '@/lib/documentoTributacaoIssqn'
+import { formatPercentValueForDisplay } from '@/lib/percentFormat'
 
 function formatMoney(value: unknown): string {
   if (value == null || value === '') return '—'
   const n = Number(value)
   if (!Number.isFinite(n)) return String(value)
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function formatPercent(value: unknown): string {
-  if (value == null || value === '') return '—'
-  const n = Number(value)
-  if (!Number.isFinite(n)) return String(value)
-  return `${n.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}%`
 }
 
 export function DocumentoTributacaoMunicipalShowCard({ row }: { row: Record<string, unknown> }) {
@@ -63,7 +57,9 @@ export function DocumentoTributacaoMunicipalShowCard({ row }: { row: Record<stri
           </div>
           <div>
             <dt className="text-sm font-medium text-muted-foreground">Alíquota</dt>
-            <dd className="text-sm tabular-nums">{formatPercent(row.issqn_aliquota)}</dd>
+            <dd className="text-sm tabular-nums">
+              {formatPercentValueForDisplay(row.issqn_aliquota)}
+            </dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-muted-foreground">BC ISSQN</dt>

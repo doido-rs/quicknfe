@@ -3,8 +3,7 @@ export const DOCUMENTO_EDIT_SECTION_TABS = [
   { value: 'identificacao', label: 'Competência', sectionIndexes: [0, 7] },
   { value: 'partes', label: 'Partes', sectionIndexes: [1, 2] },
   { value: 'valores', label: 'Valores', sectionIndexes: [3] },
-  { value: 'issqn', label: 'ISSQN', sectionIndexes: [4] },
-  { value: 'federal', label: 'Federal', sectionIndexes: [5] },
+  { value: 'tributos', label: 'Tributos', sectionIndexes: [4, 5] },
   { value: 'complementos', label: 'Complementos', sectionIndexes: [6] },
 ] as const
 

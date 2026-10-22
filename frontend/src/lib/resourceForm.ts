@@ -5,6 +5,11 @@ import {
   type DateFormatPreference,
 } from '@/lib/dateFormat'
 import { formatMoneyForDisplay, moneyFormToNumber, normalizeMoneyToForm } from '@/lib/moneyFormat'
+import {
+  formatPercentForDisplay,
+  normalizePercentToForm,
+  percentFormToNumber,
+} from '@/lib/percentFormat'
 import type { FieldDef } from '../resources/definitions'
 
 export function fieldValue(row: Record<string, unknown>, key: string): unknown {
@@ -40,6 +45,9 @@ function formStringValue(raw: unknown, field: FieldDef): string {
   }
   if (field.type === 'money') {
     return normalizeMoneyToForm(raw)
+  }
+  if (field.type === 'percent') {
+    return normalizePercentToForm(raw)
   }
   return String(raw)
 }
@@ -87,6 +95,10 @@ export function formatFieldValue(
   if (field?.type === 'money') {
     const display = formatMoneyForDisplay(String(value))
     return display === '' ? '—' : display
+  }
+  if (field?.type === 'percent') {
+    const display = formatPercentForDisplay(String(value))
+    return display === '' ? '—' : `${display}%`
   }
   if (field?.enumOptions?.length) {
     const match = field.enumOptions.find((o) => o.value === value)
@@ -173,6 +185,10 @@ export function buildBody(fields: FieldDef[], form: Record<string, string>) {
       }
       if (raw !== '' && f.type === 'money') {
         const n = moneyFormToNumber(raw)
+        return [f.key, n]
+      }
+      if (raw !== '' && f.type === 'percent') {
+        const n = percentFormToNumber(raw)
         return [f.key, n]
       }
       if (raw !== '' && (f.type === 'number' || f.key.endsWith('_id'))) {

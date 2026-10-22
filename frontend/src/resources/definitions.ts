@@ -39,6 +39,7 @@ export type FieldType =
   | 'text'
   | 'number'
   | 'money'
+  | 'percent'
   | 'date'
   | 'textarea'
   | 'relation'
@@ -112,7 +113,7 @@ export type FormSectionDef =
       emissaoFieldKey: string
       prestacaoFieldKey: string
     }
-  | { type: 'fields'; title: string; fieldKeys: string[]; columns?: 1 | 2 }
+  | { type: 'fields'; title: string; fieldKeys: string[]; columns?: 1 | 2 | 3 }
 
 export type MenuPlacement = 'sidebar' | 'settings' | 'none'
 
@@ -371,7 +372,7 @@ export const resources: ResourceDef[] = [
         defaultValue: 'false',
         formOnly: true,
       },
-      { key: 'issqn_aliquota', label: 'Alíquota (%)', type: 'number', formOnly: true },
+      { key: 'issqn_aliquota', label: 'Alíquota (%)', type: 'percent', formOnly: true },
       { key: 'issqn_base_calculo', label: 'BC ISSQN (R$)', type: 'money', formOnly: true },
       { key: 'issqn_valor', label: 'Valor ISSQN (R$)', type: 'money', formOnly: true },
       {
@@ -457,7 +458,7 @@ export const resources: ResourceDef[] = [
           'issqn_base_calculo',
           'issqn_valor',
         ],
-        columns: 2,
+        columns: 3,
       },
       {
         type: 'fields',
@@ -549,7 +550,7 @@ export const resources: ResourceDef[] = [
             { key: 'tipo_imposto', label: 'Tipo imposto', required: true },
             { key: 'cst_csosn', label: 'CST/CSOSN' },
             { key: 'base_calculo', label: 'Base cálculo', type: 'money' },
-            { key: 'aliquota', label: 'Alíquota', type: 'number' },
+            { key: 'aliquota', label: 'Alíquota (%)', type: 'percent' },
             { key: 'valor_imposto', label: 'Valor imposto', type: 'money' },
             { key: 'iss_retido', label: 'ISS retido (0/1)', type: 'number' },
           ],

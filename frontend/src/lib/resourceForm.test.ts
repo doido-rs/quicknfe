@@ -52,6 +52,15 @@ describe('resourceForm', () => {
     expect(body.valor).toBe(123.46)
   })
 
+  it('maps and sends percent fields', () => {
+    const form = rowToForm({ aliq: 2.5 }, [{ key: 'aliq', label: 'Alíquota', type: 'percent' }])
+    expect(form.aliq).toBe('2.5000')
+    const body = buildBody([{ key: 'aliq', label: 'Alíquota', type: 'percent' }], {
+      aliq: '5.12345',
+    })
+    expect(body.aliq).toBe(5.1235)
+  })
+
   it('reads nested field paths', () => {
     expect(fieldValue({ municipio: { uf: 'SP' } }, 'municipio.uf')).toBe('SP')
   })

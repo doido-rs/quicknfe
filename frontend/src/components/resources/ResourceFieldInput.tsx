@@ -15,9 +15,89 @@ import {
   parseMoneyFromDisplay,
   roundMoney,
 } from '@/lib/moneyFormat'
+import {
+  formatPercentForDisplay,
+  parsePercentFromDisplay,
+  PERCENT_DECIMALS,
+  roundPercent,
+} from '@/lib/percentFormat'
 import { readOnlyFieldDisplay } from '@/lib/documentoShowLabels'
 import { useDateFormat } from '@/theme/DateFormatContext'
 import type { FieldDef } from '@/resources/definitions'
+
+function PercentFieldInput({
+  field,
+  form,
+  inputId,
+  dense,
+  readOnly,
+}: {
+  field: FieldDef
+  form: UseFormReturn<Record<string, string>>
+  inputId: string
+  dense?: boolean
+  readOnly?: boolean
+}) {
+  const [editing, setEditing] = useState(false)
+  const isReadOnly = readOnly || field.readOnly
+
+  return (
+    <Controller
+      name={field.key}
+      control={form.control}
+      rules={{
+        required: field.required && !isReadOnly ? `${field.label} é obrigatório.` : false,
+      }}
+      render={({ field: controlField, fieldState }) => {
+        const canonical = controlField.value ?? ''
+        const displayValue = isReadOnly
+          ? formatPercentForDisplay(canonical)
+          : editing
+            ? canonical.replace('.', ',')
+            : formatPercentForDisplay(canonical)
+
+        return (
+          <div className={cn('grid gap-2', dense && 'gap-1.5')}>
+            <Label htmlFor={inputId} className={dense ? 'text-xs' : undefined}>
+              {field.label}
+            </Label>
+            <Input
+              id={inputId}
+              readOnly={isReadOnly}
+              className={cn(isReadOnly && 'bg-muted', dense && 'h-8 text-sm')}
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              aria-invalid={!!fieldState.error}
+              value={displayValue}
+              onChange={(e) => {
+                if (isReadOnly) return
+                controlField.onChange(e.target.value.replace(',', '.').replace(/%/g, ''))
+              }}
+              onFocus={() => {
+                if (!isReadOnly) setEditing(true)
+              }}
+              onBlur={(e) => {
+                if (isReadOnly) return
+                setEditing(false)
+                const parsed = parsePercentFromDisplay(e.target.value)
+                if (parsed != null) {
+                  controlField.onChange(roundPercent(parsed).toFixed(PERCENT_DECIMALS))
+                } else if (e.target.value.trim() === '') {
+                  controlField.onChange('')
+                }
+                controlField.onBlur()
+              }}
+            />
+            {fieldState.error?.message && (
+              <p className="text-sm text-destructive">{fieldState.error.message}</p>
+            )}
+          </div>
+        )
+      }}
+    />
+  )
+}
 
 function MoneyFieldInput({
   field,
@@ -294,6 +374,18 @@ export function ResourceFieldInput({
           {...form.register(field.key, { required: field.required && !field.readOnly })}
         />
       </div>
+    )
+  }
+
+  if (field.type === 'percent') {
+    return (
+      <PercentFieldInput
+        field={field}
+        form={form}
+        inputId={inputId}
+        dense={dense}
+        readOnly={readOnly}
+      />
     )
   }
 

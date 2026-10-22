@@ -33,7 +33,7 @@ export function DocumentoEditFlowAlert({ itensCount }: { itensCount?: number }) 
           o cabeçalho para persistir.
         </p>
         <p className="text-muted-foreground">
-          Revise tomador, competência e ISSQN antes de assinar na tela de visualização.
+          Revise tomador, competência e tributos antes de assinar na tela de visualização.
         </p>
       </AlertDescription>
     </Alert>

@@ -27,12 +27,17 @@ function SectionFields({
   fields: FieldDef[]
   form: UseFormReturn<Record<string, string>>
   idPrefix: string
-  columns?: 1 | 2
+  columns?: 1 | 2 | 3
   readOnly?: boolean
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
 }) {
-  const gridClass = columns === 1 ? 'grid gap-4' : 'grid gap-4 md:grid-cols-2'
+  const gridClass =
+    columns === 1
+      ? 'grid gap-4'
+      : columns === 3
+        ? 'grid gap-4 md:grid-cols-2 lg:grid-cols-3'
+        : 'grid gap-4 md:grid-cols-2'
 
   return (
     <div className={gridClass}>

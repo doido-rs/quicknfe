@@ -15,4 +15,13 @@ describe('buildDocumentoEditTabOrder', () => {
     const order = buildDocumentoEditTabOrder(false)
     expect(order.some((e) => e.kind === 'itens')).toBe(false)
   })
+
+  it('merges ISSQN and Federal into Tributos tab', () => {
+    const order = buildDocumentoEditTabOrder(false)
+    const tributos = order.find((e) => e.kind === 'section' && e.value === 'tributos')
+    expect(tributos).toBeDefined()
+    expect(tributos?.kind === 'section' && tributos.sectionIndexes).toEqual([4, 5])
+    expect(order.some((e) => e.kind === 'section' && e.value === 'issqn')).toBe(false)
+    expect(order.some((e) => e.kind === 'section' && e.value === 'federal')).toBe(false)
+  })
 })
