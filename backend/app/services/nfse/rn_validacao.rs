@@ -5,7 +5,7 @@ use doido::model::sea_orm::prelude::Decimal;
 use super::dps_context::DpsContext;
 use super::dps_presenca;
 use super::dps_rn;
-use super::dps_rn_engine;
+use super::rn::validar_rn_com_catalogo as rn_validar_com_catalogo;
 use crate::models::localidade_parte::LocalidadeParte;
 use crate::services::api_error::ApiError;
 use crate::services::entity_enums::localidade_from_db;
@@ -16,9 +16,7 @@ pub async fn validar_dps_contexto_com_catalogo(
     ctx: &DpsContext,
 ) -> Result<(), ApiError> {
     validar_dps_contexto(ctx)?;
-    super::e0312_validacao::validar_e0312_catalogo(db, ctx).await?;
-    super::e0539_validacao::validar_trib_issqn_incidencia_catalogo(db, ctx).await?;
-    super::issqn_simples_nacional::validar_e0621_e0625(ctx)
+    rn_validar_com_catalogo(db, ctx).await
 }
 
 /// Valida documento + contexto carregado (espelha RN críticas do leiaute / formulário).
@@ -96,7 +94,6 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
     dps_rn::load_rn_dps_rows(&root)
         .map_err(|e| ApiError::Internal(format!("RN layout indisponível: {e}")))?;
     dps_presenca::validar_presenca_repo(ctx)?;
-    dps_rn_engine::validar_rn_csv_incremental(ctx)?;
     super::op_simp_nac::validar_e0160_op_simp_nac(ctx)?;
     Ok(())
 }

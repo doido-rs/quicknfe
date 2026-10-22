@@ -1,0 +1,3418 @@
+[
+  {
+    "cod_erro": "E0001",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.versao",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "valor_total_servicos_produtos": "0"
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0004",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.id",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "valor_total_servicos_produtos": "0"
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0006",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.tpamb",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0008",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.dhemi",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0010",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.serie",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0014",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0014",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0015",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.dcompet",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0016",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0016",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0018",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0018",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0020",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0020",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0023",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0023",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0025",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0025",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0029",
+    "group": "Prestador",
+    "validator_id": "prestador.cmotivoemisti",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0031",
+    "group": "Tomador",
+    "validator_id": "tomador.e0031",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0032",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0032",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0034",
+    "group": "Tomador",
+    "validator_id": "tomador.chnfserej",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0035",
+    "group": "Tomador",
+    "validator_id": "tomador.e0035",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0037",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.clocemi",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0038",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0038",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0039",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0041",
+    "group": "Prestador",
+    "validator_id": "prestador.e0041",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0042",
+    "group": "Substituicao",
+    "validator_id": "substituicao.chsubstda",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0044",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0044",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0046",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0046",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0050",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0056",
+    "group": "Tomador",
+    "validator_id": "tomador.e0056",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0058",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0060",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0060",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0061",
+    "group": "Tomador",
+    "validator_id": "tomador.e0061",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0065",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0065",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0068",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0068",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0070",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0070",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0072",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0072",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0074",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0076",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0076",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0078",
+    "group": "Substituicao",
+    "validator_id": "substituicao.xmotivo",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0080",
+    "group": "Prestador",
+    "validator_id": "prestador.cnpj",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0082",
+    "group": "Prestador",
+    "validator_id": "prestador.e0082",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0084",
+    "group": "Prestador",
+    "validator_id": "prestador.e0084",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0096",
+    "group": "Prestador",
+    "validator_id": "prestador.cpf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0098",
+    "group": "Prestador",
+    "validator_id": "prestador.e0098",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0099",
+    "group": "Prestador",
+    "validator_id": "prestador.e0099",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0112",
+    "group": "Prestador",
+    "validator_id": "prestador.nif",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0113",
+    "group": "Prestador",
+    "validator_id": "prestador.e0113",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0114",
+    "group": "Prestador",
+    "validator_id": "prestador.e0114",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0115",
+    "group": "Prestador",
+    "validator_id": "prestador.e0115",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0116",
+    "group": "Prestador",
+    "validator_id": "prestador.im",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0119",
+    "group": "Prestador",
+    "validator_id": "prestador.e0119",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0120",
+    "group": "Prestador",
+    "validator_id": "prestador.e0120",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0121",
+    "group": "Prestador",
+    "validator_id": "prestador.xnome",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0122",
+    "group": "Prestador",
+    "validator_id": "prestador.e0122",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0123",
+    "group": "Prestador",
+    "validator_id": "prestador.e0123",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0124",
+    "group": "Prestador",
+    "validator_id": "prestador.e0124",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0125",
+    "group": "Prestador",
+    "validator_id": "prestador.endnac",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0128",
+    "group": "Prestador",
+    "validator_id": "prestador.e0128",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0129",
+    "group": "Tomador",
+    "validator_id": "tomador.end",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0130",
+    "group": "Prestador",
+    "validator_id": "prestador.cmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0132",
+    "group": "Prestador",
+    "validator_id": "prestador.e0132",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0134",
+    "group": "Prestador",
+    "validator_id": "prestador.e0134",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0138",
+    "group": "Prestador",
+    "validator_id": "prestador.cep",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0142",
+    "group": "Tomador",
+    "validator_id": "tomador.endext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0146",
+    "group": "Prestador",
+    "validator_id": "prestador.cpais",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0148",
+    "group": "Prestador",
+    "validator_id": "prestador.email",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0160",
+    "group": "Prestador",
+    "validator_id": "prestador.opsimpnac",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "prestador_regime_mismatch_cnc": true
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0161",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0161",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0162",
+    "group": "Prestador",
+    "validator_id": "prestador.regaptribsn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0166",
+    "group": "Prestador",
+    "validator_id": "prestador.e0166",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0172",
+    "group": "Prestador",
+    "validator_id": "prestador.regesptrib",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0174",
+    "group": "Prestador",
+    "validator_id": "prestador.e0174",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0175",
+    "group": "Prestador",
+    "validator_id": "prestador.e0175",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0176",
+    "group": "Prestador",
+    "validator_id": "prestador.e0176",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0177",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0178",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0187",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.toma",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0188",
+    "group": "Tomador",
+    "validator_id": "tomador.cnpj",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0190",
+    "group": "Tomador",
+    "validator_id": "tomador.e0190",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0194",
+    "group": "Tomador",
+    "validator_id": "tomador.e0194",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0202",
+    "group": "Tomador",
+    "validator_id": "tomador.prestador_diferente",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "tomador_same_as_prestador": true
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0204",
+    "group": "Tomador",
+    "validator_id": "tomador.e0204",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0206",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0206",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0207",
+    "group": "Tomador",
+    "validator_id": "tomador.e0207",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0212",
+    "group": "Tomador",
+    "validator_id": "tomador.e0212",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0222",
+    "group": "Tomador",
+    "validator_id": "tomador.nif",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0223",
+    "group": "Tomador",
+    "validator_id": "tomador.e0223",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0224",
+    "group": "Tomador",
+    "validator_id": "tomador.e0224",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0226",
+    "group": "Tomador",
+    "validator_id": "tomador.e0226",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0228",
+    "group": "Tomador",
+    "validator_id": "tomador.im",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0229",
+    "group": "Tomador",
+    "validator_id": "tomador.e0229",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0231",
+    "group": "Tomador",
+    "validator_id": "tomador.e0231",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0232",
+    "group": "Tomador",
+    "validator_id": "tomador.e0232",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0233",
+    "group": "Tomador",
+    "validator_id": "tomador.xnome",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0234",
+    "group": "Tomador",
+    "validator_id": "tomador.end",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0235",
+    "group": "Tomador",
+    "validator_id": "tomador.endnac",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0236",
+    "group": "Tomador",
+    "validator_id": "tomador.e0236",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0237",
+    "group": "Tomador",
+    "validator_id": "tomador.e0237",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0238",
+    "group": "Tomador",
+    "validator_id": "tomador.cmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0240",
+    "group": "Tomador",
+    "validator_id": "tomador.cep",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0242",
+    "group": "Tomador",
+    "validator_id": "tomador.endext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0246",
+    "group": "Tomador",
+    "validator_id": "tomador.cpais",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0247",
+    "group": "Tomador",
+    "validator_id": "tomador.email",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0248",
+    "group": "Intermediario",
+    "validator_id": "intermediario.cnpj",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0250",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0250",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0254",
+    "group": "Prestador",
+    "validator_id": "prestador.e0254",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0262",
+    "group": "Prestador",
+    "validator_id": "prestador.e0262",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0264",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0264",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0266",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0266",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0268",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0268",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0272",
+    "group": "Prestador",
+    "validator_id": "prestador.e0272",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0280",
+    "group": "Intermediario",
+    "validator_id": "intermediario.nif",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0281",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0281",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0284",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0284",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0286",
+    "group": "Valores",
+    "validator_id": "valores.e0286",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0287",
+    "group": "Prestador",
+    "validator_id": "prestador.im",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0288",
+    "group": "Prestador",
+    "validator_id": "prestador.e0288",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0289",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0289",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0290",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0290",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0291",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0291",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0292",
+    "group": "Intermediario",
+    "validator_id": "intermediario.xnome",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0293",
+    "group": "Valores",
+    "validator_id": "valores.e0293",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0294",
+    "group": "Intermediario",
+    "validator_id": "intermediario.cmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0296",
+    "group": "Intermediario",
+    "validator_id": "intermediario.cep",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0298",
+    "group": "Tomador",
+    "validator_id": "tomador.endext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0299",
+    "group": "Intermediario",
+    "validator_id": "intermediario.cpais",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0300",
+    "group": "Intermediario",
+    "validator_id": "intermediario.email",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0302",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.clocprestacao",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0304",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.cpaisprestacao",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0310",
+    "group": "ServicoItem",
+    "validator_id": "servicoitem.ctribnac",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "clear_c_trib_nac": true
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0312",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0312",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0314",
+    "group": "ServicoItem",
+    "validator_id": "servicoitem.ctribmun",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "codigo_tributacao_municipal": "000"
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0315",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0315",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "codigo_tributacao_municipal": "000"
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0316",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.cnbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0318",
+    "group": "Tomador",
+    "validator_id": "tomador.e0318",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0320",
+    "group": "Tomador",
+    "validator_id": "tomador.e0320",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0322",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0322",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0330",
+    "group": "Tomador",
+    "validator_id": "tomador.comext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0331",
+    "group": "Tomador",
+    "validator_id": "tomador.e0331",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0333",
+    "group": "Exportacao",
+    "validator_id": "exportacao.mdprestacao",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0341",
+    "group": "Exportacao",
+    "validator_id": "exportacao.mecafcomexp",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0343",
+    "group": "Exportacao",
+    "validator_id": "exportacao.mecafcomext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0345",
+    "group": "Exportacao",
+    "validator_id": "exportacao.movtempbens",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0352",
+    "group": "Exportacao",
+    "validator_id": "exportacao.ndi",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0354",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0354",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0356",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0356",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0370",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.obra",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0372",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0372",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0373",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.ccib",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0380",
+    "group": "Endereco",
+    "validator_id": "endereco.cep",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0382",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0382",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0384",
+    "group": "Endereco",
+    "validator_id": "endereco.endext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0386",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0386",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0390",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.atvevento",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0392",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0392",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0398",
+    "group": "Evento",
+    "validator_id": "evento.cep",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0400",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0400",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0402",
+    "group": "Evento",
+    "validator_id": "evento.endext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0404",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0404",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0420",
+    "group": "Tomador",
+    "validator_id": "tomador.docref",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0423",
+    "group": "Valores",
+    "validator_id": "valores.vreceb",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0424",
+    "group": "Tomador",
+    "validator_id": "tomador.e0424",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0425",
+    "group": "Valores",
+    "validator_id": "valores.e0425",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0427",
+    "group": "Valores",
+    "validator_id": "valores.vserv",
+    "expect_ok_minimal": true,
+    "mutate": {
+      "valor_total_servicos_produtos": "0"
+    },
+    "pending": false
+  },
+  {
+    "cod_erro": "E0428",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0428",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0429",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0429",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0431",
+    "group": "Valores",
+    "validator_id": "valores.vdescincond",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0432",
+    "group": "Valores",
+    "validator_id": "valores.vdesccond",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0435",
+    "group": "Exportacao",
+    "validator_id": "exportacao.vdedred",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0436",
+    "group": "Prestador",
+    "validator_id": "prestador.e0436",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0438",
+    "group": "Prestador",
+    "validator_id": "prestador.e0438",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0439",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0439",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0440",
+    "group": "Prestador",
+    "validator_id": "prestador.e0440",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0441",
+    "group": "Prestador",
+    "validator_id": "prestador.e0441",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0442",
+    "group": "Prestador",
+    "validator_id": "prestador.e0442",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0444",
+    "group": "Valores",
+    "validator_id": "valores.e0444",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0446",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.vdr",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0447",
+    "group": "Valores",
+    "validator_id": "valores.e0447",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0449",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.documentos",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0453",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.pdr",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0454",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0455",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.chnfse",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0456",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0456",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0458",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0458",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0460",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.chnfe",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0462",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0462",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0464",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0464",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0466",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.cmunnfsemun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0468",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.xdescoutded",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0470",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0470",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0472",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.demidoc",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0474",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.vdeducaoreducao",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0476",
+    "group": "Valores",
+    "validator_id": "valores.e0476",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0477",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.fornec",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0478",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.cnpj",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0482",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0482",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0484",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.cpf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0488",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0488",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0490",
+    "group": "Valores",
+    "validator_id": "valores.e0490",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0492",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.endnac",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0494",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.cmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0496",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.cep",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0498",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.endext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0499",
+    "group": "DeducaoReducao",
+    "validator_id": "deducaoreducao.cpais",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0529",
+    "group": "Exportacao",
+    "validator_id": "exportacao.tribissqn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0530",
+    "group": "Exportacao",
+    "validator_id": "exportacao.e0530",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0532",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0532",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0533",
+    "group": "Exportacao",
+    "validator_id": "exportacao.bm",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0534",
+    "group": "Prestador",
+    "validator_id": "prestador.e0534",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0535",
+    "group": "Prestador",
+    "validator_id": "prestador.e0535",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0536",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0537",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0537",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0539",
+    "group": "Valores",
+    "validator_id": "valores.e0539",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0540",
+    "group": "Valores",
+    "validator_id": "valores.e0540",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0541",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.nbm",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0544",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0544",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0548",
+    "group": "Prestador",
+    "validator_id": "prestador.e0548",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0550",
+    "group": "Prestador",
+    "validator_id": "prestador.e0550",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0565",
+    "group": "Valores",
+    "validator_id": "valores.vredbcbm",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0567",
+    "group": "Valores",
+    "validator_id": "valores.e0567",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0574",
+    "group": "Valores",
+    "validator_id": "valores.e0574",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0575",
+    "group": "Valores",
+    "validator_id": "valores.e0575",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0577",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.predbcbm",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0579",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0579",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0580",
+    "group": "Exportacao",
+    "validator_id": "exportacao.tpretissqn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0583",
+    "group": "Prestador",
+    "validator_id": "prestador.e0583",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0585",
+    "group": "Exportacao",
+    "validator_id": "exportacao.exigsusp",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0586",
+    "group": "Valores",
+    "validator_id": "valores.e0586",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0587",
+    "group": "Valores",
+    "validator_id": "valores.e0587",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0588",
+    "group": "Prestador",
+    "validator_id": "prestador.e0588",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0590",
+    "group": "Tomador",
+    "validator_id": "tomador.cpaisresult",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0591",
+    "group": "Tomador",
+    "validator_id": "tomador.e0591",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0592",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.tpimunidade",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0593",
+    "group": "Valores",
+    "validator_id": "valores.e0593",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0594",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0594",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0595",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.paliq",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0596",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0596",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0600",
+    "group": "Prestador",
+    "validator_id": "prestador.e0600",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0602",
+    "group": "Exportacao",
+    "validator_id": "exportacao.e0602",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0604",
+    "group": "Prestador",
+    "validator_id": "prestador.e0604",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0612",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0612",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0617",
+    "group": "Prestador",
+    "validator_id": "prestador.e0617",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0619",
+    "group": "Prestador",
+    "validator_id": "prestador.e0619",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0621",
+    "group": "Prestador",
+    "validator_id": "prestador.e0621",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0625",
+    "group": "Prestador",
+    "validator_id": "prestador.e0625",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0628",
+    "group": "Prestador",
+    "validator_id": "prestador.e0628",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0631",
+    "group": "Prestador",
+    "validator_id": "prestador.e0631",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0635",
+    "group": "Prestador",
+    "validator_id": "prestador.e0635",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0640",
+    "group": "Prestador",
+    "validator_id": "prestador.e0640",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0650",
+    "group": "Tomador",
+    "validator_id": "tomador.e0650",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0652",
+    "group": "Tomador",
+    "validator_id": "tomador.e0652",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0667",
+    "group": "Tomador",
+    "validator_id": "tomador.e0667",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0670",
+    "group": "CatalogoMunicipal",
+    "validator_id": "catalogo.adn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0672",
+    "group": "Tomador",
+    "validator_id": "tomador.e0672",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0673",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0673",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0686",
+    "group": "PisCofins",
+    "validator_id": "piscofins.paliqpis",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0692",
+    "group": "PisCofins",
+    "validator_id": "piscofins.paliqcofins",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0694",
+    "group": "Valores",
+    "validator_id": "valores.vpis",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0696",
+    "group": "Valores",
+    "validator_id": "valores.vcofins",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0699",
+    "group": "Valores",
+    "validator_id": "valores.vretcp",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0700",
+    "group": "Valores",
+    "validator_id": "valores.vretirrf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0701",
+    "group": "Valores",
+    "validator_id": "valores.e0701",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0702",
+    "group": "Valores",
+    "validator_id": "valores.vtottribfed",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0703",
+    "group": "Valores",
+    "validator_id": "valores.vtottribest",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0704",
+    "group": "Valores",
+    "validator_id": "valores.vtottribmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0706",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.ptottribfed",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0707",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.ptottribest",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0708",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.ptottribmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0710",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0710",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0712",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.indtottrib",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0713",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0713",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0714",
+    "group": "IdentificacaoDps",
+    "validator_id": "identificacaodps.signature",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0715",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0715",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0716",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0716",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0717",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0717",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0718",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0718",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0720",
+    "group": "PisCofins",
+    "validator_id": "piscofins.vretcsll",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0724",
+    "group": "PisCofins",
+    "validator_id": "piscofins.e0724",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0850",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.ibscbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0854",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0854",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0901",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cindop",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0903",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.tpoper",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0904",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0904",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0905",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.grefnfse",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0906",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0906",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0907",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.refnfse",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0910",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.dest",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0911",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cnpj",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0912",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0912",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0913",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cpf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0914",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0914",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0920",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0921",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0921",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0922",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0922",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0928",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0928",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0930",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.email",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0931",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.imovel",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0932",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0932",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0933",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.ccib",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0934",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.endext",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0935",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0935",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0940",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.chavedfe",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0942",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.docfiscaloutro",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0943",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cmundocfiscal",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0945",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cnpj",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0946",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0946",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0947",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cpf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0948",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0948",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0950",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.dtemidoc",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0951",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.dtcompdoc",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0952",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.xtpreerepres",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0953",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vlrreerepres",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0958",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cclasstrib",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0959",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0959",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0964",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.gtribregular",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0965",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0965",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0969",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.cclasstribreg",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0970",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0970",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0971",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.gdif",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E0972",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e0972",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1260",
+    "group": "Plataforma",
+    "validator_id": "plataforma.layout",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1263",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.id",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1268",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1268",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1270",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1270",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1272",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1272",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1274",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.ambger",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1276",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.procemi",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1278",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.dhproc",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1280",
+    "group": "CadastroParte",
+    "validator_id": "cadastroparte.cnpj",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1282",
+    "group": "Tomador",
+    "validator_id": "tomador.e1282",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1284",
+    "group": "CadastroParte",
+    "validator_id": "cadastroparte.cpf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1285",
+    "group": "Tomador",
+    "validator_id": "tomador.e1285",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1286",
+    "group": "CadastroParte",
+    "validator_id": "cadastroparte.cmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1287",
+    "group": "Valores",
+    "validator_id": "valores.vcalcdr",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1288",
+    "group": "Valores",
+    "validator_id": "valores.vcalcbm",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1289",
+    "group": "Valores",
+    "validator_id": "valores.vissqn",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1294",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1294",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1295",
+    "group": "Valores",
+    "validator_id": "valores.vbc",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1297",
+    "group": "Valores",
+    "validator_id": "valores.e1297",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1300",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.paliqaplic",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1301",
+    "group": "Exportacao",
+    "validator_id": "exportacao.clocincid",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1302",
+    "group": "Prestador",
+    "validator_id": "prestador.valores",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1303",
+    "group": "Exportacao",
+    "validator_id": "exportacao.e1303",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1304",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1304",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1305",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1305",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1307",
+    "group": "Prestador",
+    "validator_id": "prestador.e1307",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1308",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1308",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1309",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1309",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1310",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1310",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1311",
+    "group": "Valores",
+    "validator_id": "valores.e1311",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1313",
+    "group": "Prestador",
+    "validator_id": "prestador.e1313",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1317",
+    "group": "Exportacao",
+    "validator_id": "exportacao.e1317",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1321",
+    "group": "Tomador",
+    "validator_id": "tomador.e1321",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1325",
+    "group": "Tomador",
+    "validator_id": "tomador.e1325",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1327",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.xlocincid",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1329",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1329",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1388",
+    "group": "Intermediario",
+    "validator_id": "intermediario.endnac",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1402",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1402",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1506",
+    "group": "Valores",
+    "validator_id": "valores.vtotalret",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1508",
+    "group": "Valores",
+    "validator_id": "valores.vliq",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1515",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.ibscbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1517",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1517",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1521",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.clocalidadeincid",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1522",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.predutor",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1523",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1523",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1530",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vbc",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1531",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vcalcreerepres",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1533",
+    "group": "Valores",
+    "validator_id": "valores.e1533",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1534",
+    "group": "Valores",
+    "validator_id": "valores.e1534",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1535",
+    "group": "Valores",
+    "validator_id": "valores.e1535",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1538",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1538",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1539",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.pibsuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1540",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.predaliquf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1541",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1541",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1543",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1543",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1545",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.predaliqmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1546",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1546",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1547",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1547",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1548",
+    "group": "Valores",
+    "validator_id": "valores.e1548",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1549",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.paliqefetmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1550",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.predaliqcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1551",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1551",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1552",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1552",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1553",
+    "group": "Valores",
+    "validator_id": "valores.e1553",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1554",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.paliqefetcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1555",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vtotnf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1556",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vibstot",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1557",
+    "group": "Valores",
+    "validator_id": "valores.e1557",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1558",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.pcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1560",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.gibscredpres",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1561",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1561",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1565",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vdifuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1566",
+    "group": "Valores",
+    "validator_id": "valores.e1566",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1567",
+    "group": "Valores",
+    "validator_id": "valores.e1567",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1568",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vibsuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1569",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vdifmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1570",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vdifcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1571",
+    "group": "Valores",
+    "validator_id": "valores.e1571",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1572",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vibsmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1575",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.gcbscredpres",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1576",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1576",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1577",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.paliqefetuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1578",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.pibsmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1580",
+    "group": "Valores",
+    "validator_id": "valores.e1580",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1581",
+    "group": "Valores",
+    "validator_id": "valores.e1581",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1582",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1583",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.gtribregular",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1584",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1584",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1585",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.paliqeferegibsuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1586",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vtribregibsuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1587",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.paliqeferegibsmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1588",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vtribregibsmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1589",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.paliqeferegcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1590",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vtribregcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1600",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.gtribcompragov",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1601",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1601",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1602",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.pibsuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1603",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vibsuf",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1604",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.pibsmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1605",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vibsmun",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1606",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.pcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1607",
+    "group": "Ibscbs",
+    "validator_id": "ibscbs.vcbs",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1630",
+    "group": "Assinatura",
+    "validator_id": "assinatura.signature",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1632",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1632",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1634",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1634",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1636",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1636",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E1638",
+    "group": "RegraGeral",
+    "validator_id": "regrageral.e1638",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  },
+  {
+    "cod_erro": "E9996",
+    "group": "Tomador",
+    "validator_id": "tomador.tpemit",
+    "expect_ok_minimal": true,
+    "mutate": {},
+    "pending": false
+  }
+]

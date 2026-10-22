@@ -54,6 +54,21 @@ pub async fn load_dps_context(
     db: &doido::model::sea_orm::DatabaseConnection,
     doc: Documento,
 ) -> Result<DpsContext, ApiError> {
+    let itens = ItemEntity::find()
+        .filter(ItemColumn::DocumentoFiscalId.eq(doc.id))
+        .order_by_asc(ItemColumn::NumeroItem)
+        .all(db)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
+
+    load_dps_context_with_itens(db, doc, itens).await
+}
+
+pub async fn load_dps_context_with_itens(
+    db: &doido::model::sea_orm::DatabaseConnection,
+    doc: Documento,
+    itens: Vec<ItemDoc>,
+) -> Result<DpsContext, ApiError> {
     let prestador = EmpresaEntity::find_by_id(doc.empresa_id)
         .one(db)
         .await
@@ -95,13 +110,6 @@ pub async fn load_dps_context(
     } else {
         None
     };
-
-    let itens = ItemEntity::find()
-        .filter(ItemColumn::DocumentoFiscalId.eq(doc.id))
-        .order_by_asc(ItemColumn::NumeroItem)
-        .all(db)
-        .await
-        .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     let tomador_exterior = decode_exterior(&doc.tomador_exterior);
     let intermediario_exterior = decode_exterior(&doc.intermediario_exterior);

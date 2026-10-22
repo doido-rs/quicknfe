@@ -21,10 +21,14 @@ use crate::services::api_error::{
 use crate::services::documento_presentacao::{documento_detalhe, documentos_list_items};
 use crate::services::dto::ParteExteriorDto;
 use crate::services::documento_enqueue::{enqueue_assinar, enqueue_transmitir};
+use crate::controllers::api::itens_controller::ItemForm;
+use crate::models::item_documento_fiscal::Model as ItemDoc;
+use crate::services::item_documento::resolve_item_tributacao;
 use crate::services::nfse::{
-    load_dps_context, montar_dps_xml_context, validar_dps_contexto_com_catalogo,
-    DocumentoAssinarParams,
+    load_dps_context, load_dps_context_with_itens, montar_dps_xml_context,
+    validar_dps_contexto_com_catalogo, DocumentoAssinarParams,
 };
+use doido::model::sea_orm::TransactionTrait;
 use crate::services::pagination::PageResponse;
 use crate::services::municipio::require_municipio;
 use crate::services::pagination::{page_params_from_ctx, paginate_select};

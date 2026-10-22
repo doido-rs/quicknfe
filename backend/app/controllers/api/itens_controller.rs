@@ -13,7 +13,7 @@ use crate::services::dto::ItemDto;
 use crate::services::item_documento::resolve_item_tributacao;
 use crate::services::tenant_scope;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ItemForm {
     pub numero_item: i32,
     pub descricao: String,

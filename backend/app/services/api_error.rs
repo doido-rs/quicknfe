@@ -5,11 +5,20 @@ use serde::Serialize;
 
 use crate::auth::tenant::TenantError;
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ValidationRnError {
+    pub error: &'static str,
+    pub cod_erro: String,
+    pub message: String,
+    pub fields: Vec<String>,
+}
+
 #[derive(Debug)]
 pub enum ApiError {
     Tenant(TenantError),
     NotFound,
     Validation(String),
+    ValidationRn(ValidationRnError),
     Internal(String),
 }
 
@@ -56,6 +65,7 @@ impl std::fmt::Display for ApiError {
             ApiError::Tenant(e) => write!(f, "{e}"),
             ApiError::NotFound => write!(f, "not found"),
             ApiError::Validation(msg) => write!(f, "{msg}"),
+            ApiError::ValidationRn(v) => write!(f, "{}: {}", v.cod_erro, v.message),
             ApiError::Internal(msg) => write!(f, "{msg}"),
         }
     }
@@ -79,8 +89,12 @@ impl IntoResponse for ApiError {
             }
             ApiError::NotFound => StatusCode::NOT_FOUND,
             ApiError::Validation(_) => StatusCode::UNPROCESSABLE_ENTITY,
+            ApiError::ValidationRn(_) => StatusCode::UNPROCESSABLE_ENTITY,
         };
-        (status, self.to_string()).into_response()
+        match &self {
+            ApiError::ValidationRn(v) => json_with_status(422, v.clone()).into_response(),
+            _ => (status, self.to_string()).into_response(),
+        }
     }
 }
 

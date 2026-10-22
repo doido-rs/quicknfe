@@ -7,6 +7,8 @@ use super::dps_layout_csv::{
 };
 
 const RN_CSV: &str = "layout_dps.csv";
+const RN_SPLIT_NFSE: &str = "rn_layout_dps_nfse.csv";
+const RN_SPLIT_RECEP: &str = "rn_layout_recepcao_dps.csv";
 const SHEET_RN_DPS: &str = "RN DPS_NFS-e";
 const SHEET_RN_RECEPCAO: &str = "RN_RECEPCAO_DPS";
 
@@ -19,6 +21,46 @@ pub struct RnRow {
     pub efeito: String,
     pub cod_erro: String,
     pub msg_erro: String,
+    pub recv_dps: String,
+}
+
+fn load_rn_split_file(repo_root: &Path, filename: &str) -> Result<Vec<RnRow>, String> {
+    let path = repo_root.join(filename);
+    let records = read_csv_records(&path)?;
+    let mut rows = Vec::new();
+    for rec in records {
+        if rec.len() < 8 {
+            continue;
+        }
+        let aplic = rec[5].trim();
+        let efeito = rec[6].trim();
+        if !aplic.to_lowercase().contains("obrig") || !efeito.to_lowercase().starts_with("rej") {
+            continue;
+        }
+        let cod = rec[7].trim();
+        if cod.is_empty() {
+            continue;
+        }
+        rows.push(RnRow {
+            xml_path: rec.get(1).map(|s| s.trim().to_string()).unwrap_or_default(),
+            campo: rec.get(2).map(|s| s.trim().to_string()).unwrap_or_default(),
+            descricao: rec.get(3).map(|s| s.trim().to_string()).unwrap_or_default(),
+            aplic: aplic.to_string(),
+            efeito: efeito.to_string(),
+            cod_erro: cod.to_string(),
+            msg_erro: rec.get(8).map(|s| s.trim().to_string()).unwrap_or_default(),
+            recv_dps: rec.get(10).map(|s| s.trim().to_uppercase()).unwrap_or_default(),
+        });
+    }
+    Ok(rows)
+}
+
+pub fn load_rn_split_rows(repo_root: &Path) -> Result<Vec<RnRow>, String> {
+    load_rn_split_file(repo_root, RN_SPLIT_NFSE)
+}
+
+pub fn load_rn_split_recepcao_rows(repo_root: &Path) -> Result<Vec<RnRow>, String> {
+    load_rn_split_file(repo_root, RN_SPLIT_RECEP)
 }
 
 fn load_rn_rows_filtered(repo_root: &Path, origem: Option<&str>) -> Result<Vec<RnRow>, String> {
@@ -68,6 +110,7 @@ fn load_rn_rows_filtered(repo_root: &Path, origem: Option<&str>) -> Result<Vec<R
             efeito: get_field(rec, idx_efeito),
             cod_erro: get_field(rec, idx_cod),
             msg_erro: get_field(rec, idx_msg),
+            recv_dps: String::new(),
         });
     }
     Ok(rows)
@@ -99,5 +142,12 @@ mod tests {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
         let rows = load_rn_recepcao_rows(&root).expect("rn recepcao");
         assert!(!rows.is_empty());
+    }
+
+    #[test]
+    fn rn_split_csv_carrega() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+        let rows = load_rn_split_rows(&root).expect("split nfse");
+        assert!(rows.len() >= 400);
     }
 }
