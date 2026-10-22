@@ -17,7 +17,8 @@ pub async fn validar_dps_contexto_com_catalogo(
 ) -> Result<(), ApiError> {
     validar_dps_contexto(ctx)?;
     super::e0312_validacao::validar_e0312_catalogo(db, ctx).await?;
-    super::e0539_validacao::validar_trib_issqn_incidencia_catalogo(db, ctx).await
+    super::e0539_validacao::validar_trib_issqn_incidencia_catalogo(db, ctx).await?;
+    super::issqn_simples_nacional::validar_e0621_e0625(ctx)
 }
 
 /// Valida documento + contexto carregado (espelha RN críticas do leiaute / formulário).
@@ -244,6 +245,7 @@ pub fn minimal_dps_context() -> DpsContext {
                 valor_total_bruto: Decimal::from(100),
                 valor_desconto: None,
             }],
+            municipio_incidencia_sn_ativo: true,
         }
 }
 

@@ -92,6 +92,16 @@ export function ResourceEditPage() {
       ? { empresa_id: watch('empresa_id') ?? '' }
       : undefined
   const editEmpresaId = def.key === 'documentos' ? watch('empresa_id') : undefined
+  const prestadorIdNum =
+    def.key === 'documentos' && editEmpresaId
+      ? Number(editEmpresaId)
+      : Number.NaN
+  const { data: documentoPrestador } = useQuery({
+    queryKey: ['prestadores', 'detail', editEmpresaId],
+    queryFn: () =>
+      resourceApi<{ regime_tributario?: string }>('/api/prestadores').get(prestadorIdNum),
+    enabled: def.key === 'documentos' && Number.isFinite(prestadorIdNum),
+  })
 
   useEffect(() => {
     if (def.key !== 'documentos' || !editEmpresaId) return
@@ -251,6 +261,7 @@ export function ResourceEditPage() {
             submitLabel="Salvar cabeçalho"
             cancelLink={resourceShowTo(def, recordId)}
             actionsAlign={def.key === 'documentos' ? 'end' : undefined}
+            documentoPrestadorRegime={documentoPrestador?.regime_tributario}
           />
           {updateMutation.isSuccess && (
             <p className="mt-4 text-sm text-muted-foreground">Alterações salvas.</p>

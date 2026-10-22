@@ -468,17 +468,22 @@ fn append_valores(xml: &mut String, ctx: &DpsContext) {
         push_elem(xml, 12, "nProcesso", proc);
         xml.push_str("          </exigSusp>\n");
     }
-    if doc.issqn_beneficio_municipal == 1 {
+    let omit_aliquota_issqn = super::issqn_simples_nacional::omitir_campos_aliquota_issqn_me_epp(ctx);
+    if doc.issqn_beneficio_municipal == 1
+        && !super::issqn_simples_nacional::proibir_beneficio_municipal_me_epp_sn(ctx)
+    {
         push_elem(xml, 10, "nBM", "0");
     }
-    if let Some(v) = doc.issqn_aliquota {
-        push_elem(xml, 10, "pAliq", &decimal_xml(&v));
-    }
-    if let Some(v) = doc.issqn_base_calculo {
-        push_elem(xml, 10, "vBC", &decimal_xml(&v));
-    }
-    if let Some(v) = doc.issqn_valor {
-        push_elem(xml, 10, "vISSQN", &decimal_xml(&v));
+    if !omit_aliquota_issqn {
+        if let Some(v) = doc.issqn_aliquota {
+            push_elem(xml, 10, "pAliq", &decimal_xml(&v));
+        }
+        if let Some(v) = doc.issqn_base_calculo {
+            push_elem(xml, 10, "vBC", &decimal_xml(&v));
+        }
+        if let Some(v) = doc.issqn_valor {
+            push_elem(xml, 10, "vISSQN", &decimal_xml(&v));
+        }
     }
     xml.push_str("        </tribMun>\n");
     xml.push_str("        <tribFed>\n");
@@ -714,6 +719,7 @@ mod tests {
             intermediario_municipio: None,
             intermediario_exterior: None,
             itens: vec![],
+            municipio_incidencia_sn_ativo: false,
         };
         let id = gerar_id_inf_dps(&ctx).expect("id");
         assert_eq!(id.len(), 45);
@@ -807,6 +813,7 @@ mod tests {
                 valor_total_bruto: Decimal::from(100),
                 valor_desconto: None,
             }],
+            municipio_incidencia_sn_ativo: true,
         };
         super::super::rn_validacao::validar_dps_contexto(&ctx).expect("rn");
         let xml = montar_dps_xml_context(&ctx).expect("xml");
@@ -856,6 +863,7 @@ mod tests {
                 valor_total_bruto: Decimal::from(100),
                 valor_desconto: None,
             }],
+            municipio_incidencia_sn_ativo: true,
         };
         let xml = montar_dps_xml_context(&ctx).expect("xml");
         let fin_pos = xml.find("<finNFSe>").expect("finNFSe");
@@ -907,5 +915,58 @@ mod tests {
             !xml.contains("<pTotTrib>"),
             "totTrib é choice — não emitir pTotTrib junto com vTotTrib"
         );
+    }
+
+    #[test]
+    fn me_epp_sn_omite_pAliq_sem_retencao() {
+        use super::super::dps_context::DpsContext;
+        use crate::models::item_documento_fiscal::Model as ItemDoc;
+        use crate::models::municipio::Model as Municipio;
+        use doido::model::sea_orm::prelude::Decimal;
+
+        let municipio = Municipio {
+            id: 1,
+            codigo_ibge: "3304557".into(),
+            nome: "Rio de Janeiro".into(),
+            uf: "RJ".into(),
+        };
+        let mut doc = sample_doc();
+        doc.issqn_aliquota = Some(Decimal::from(5));
+        doc.issqn_base_calculo = Some(Decimal::from(100));
+        doc.issqn_valor = Some(Decimal::from(5));
+        let ctx = DpsContext {
+            doc,
+            prestador: sample_prestador(),
+            municipio_emissao: municipio.clone(),
+            municipio_prestacao: municipio.clone(),
+            municipio_prestador: municipio,
+            tomador: None,
+            tomador_municipio: None,
+            tomador_exterior: None,
+            intermediario: None,
+            intermediario_municipio: None,
+            intermediario_exterior: None,
+            itens: vec![ItemDoc {
+                id: 1,
+                documento_fiscal_id: 1,
+                numero_item: 1,
+                descricao: "Serviço".into(),
+                descricao_servico: Some("Serviço".into()),
+                codigo_ncm: None,
+                codigo_tributacao_nacional: Some("010101".into()),
+                codigo_tributacao_municipal: Some("001".into()),
+                cna_id: None,
+                conta_fiscal_id: None,
+                quantidade: Decimal::from(1),
+                valor_unitario: Decimal::from(100),
+                valor_total_bruto: Decimal::from(100),
+                valor_desconto: None,
+            }],
+            municipio_incidencia_sn_ativo: true,
+        };
+        let xml = montar_dps_xml_context(&ctx).expect("xml");
+        assert!(!xml.contains("<pAliq>"));
+        assert!(!xml.contains("<vBC>"));
+        assert!(!xml.contains("<vISSQN>"));
     }
 }

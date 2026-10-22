@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate, useNavigate } from '@tanstack/react-router'
 import { GuardedLink } from '@/components/navigation/GuardedLink'
 import { useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
@@ -27,6 +27,14 @@ export function ResourceNewPage() {
   const { me } = useAuth()
   const form = useResourceFieldForm(def.fields)
   const empresaId = form.watch('empresa_id')
+  const prestadorIdNum =
+    def.key === 'documentos' && empresaId ? Number(empresaId) : Number.NaN
+  const { data: documentoPrestador } = useQuery({
+    queryKey: ['prestadores', 'detail', empresaId],
+    queryFn: () =>
+      resourceApi<{ regime_tributario?: string }>('/api/prestadores').get(prestadorIdNum),
+    enabled: def.key === 'documentos' && Number.isFinite(prestadorIdNum),
+  })
 
   useEffect(() => {
     if (def.key !== 'documentos' || !me?.prestador_ativo) return
@@ -122,6 +130,7 @@ export function ResourceNewPage() {
             submitLabel="Criar"
             cancelLink={resourceListTo(def)}
             actionsAlign={def.key === 'documentos' ? 'end' : undefined}
+            documentoPrestadorRegime={documentoPrestador?.regime_tributario}
           />
         </CardContent>
       </Card>

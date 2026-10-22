@@ -46,6 +46,8 @@ pub struct DpsContext {
     pub intermediario_municipio: Option<Municipio>,
     pub intermediario_exterior: Option<ParteExterior>,
     pub itens: Vec<ItemDoc>,
+    /// Proxy local: município de incidência com parametrização ADN sincronizada (convênio ativo).
+    pub municipio_incidencia_sn_ativo: bool,
 }
 
 pub async fn load_dps_context(
@@ -104,7 +106,7 @@ pub async fn load_dps_context(
     let tomador_exterior = decode_exterior(&doc.tomador_exterior);
     let intermediario_exterior = decode_exterior(&doc.intermediario_exterior);
 
-    Ok(DpsContext {
+    let mut ctx = DpsContext {
         doc,
         prestador,
         municipio_emissao,
@@ -117,7 +119,13 @@ pub async fn load_dps_context(
         intermediario_municipio,
         intermediario_exterior,
         itens,
-    })
+        municipio_incidencia_sn_ativo: false,
+    };
+    ctx.municipio_incidencia_sn_ativo =
+        super::catalog_item_incidencia::municipio_incidencia_sn_ativo(db, &ctx)
+            .await
+            .unwrap_or(false);
+    Ok(ctx)
 }
 
 async fn load_municipio(

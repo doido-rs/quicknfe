@@ -97,6 +97,43 @@ pub async fn subitem_incidente_municipio_incidencia(
     Ok(!vigente_qualquer_desdobro.is_empty())
 }
 
+/// Município de incidência ISSQN (primeiro item com CNA ou prestador).
+pub async fn municipio_incidencia_id(
+    db: &impl ConnectionTrait,
+    ctx: &DpsContext,
+) -> Result<i64, ApiError> {
+    if let Some(item) = ctx.itens.first() {
+        let raw = item
+            .codigo_tributacao_nacional
+            .as_deref()
+            .filter(|s| !s.trim().is_empty());
+        if let Some(raw) = raw {
+            if let Some(codigo) = crate::services::nfse::codigo_servico::normalize_c_trib_nac(raw)
+            {
+                if let Some(cna) = CnaEntity::find()
+                    .filter(CnaColumn::Codigo.eq(&codigo))
+                    .one(db)
+                    .await
+                    .map_err(|e| ApiError::Internal(e.to_string()))?
+                {
+                    return Ok(resolve_municipio_incidencia(ctx, &cna)?.id);
+                }
+            }
+        }
+    }
+    Ok(ctx.municipio_prestador.id)
+}
+
+pub async fn municipio_incidencia_sn_ativo(
+    db: &impl ConnectionTrait,
+    ctx: &DpsContext,
+) -> Result<bool, ApiError> {
+    let municipio_id = municipio_incidencia_id(db, ctx).await?;
+    municipio_cna_sync::municipio_tem_parametrizacao(db, municipio_id)
+        .await
+        .map_err(|e| ApiError::Internal(e.to_string()))
+}
+
 fn resolve_municipio_incidencia(ctx: &DpsContext, cna: &Cna) -> Result<Municipio, ApiError> {
     let ibge = incidencia_issqn::codigo_ibge_incidencia(ctx, cna)?;
     let municipio = incidencia_issqn::resolve_municipio_by_ibge(&ibge, ctx).ok_or_else(|| {

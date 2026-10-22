@@ -9,6 +9,7 @@ mod codigo_servico;
 mod catalog_item_incidencia;
 mod e0312_validacao;
 mod e0539_validacao;
+mod issqn_simples_nacional;
 mod incidencia_issqn;
 mod municipio_cna_sync;
 mod municipio_cnas;

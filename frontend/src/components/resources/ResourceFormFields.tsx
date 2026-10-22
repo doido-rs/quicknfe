@@ -12,6 +12,10 @@ import { fieldsByKeys } from '@/lib/resourceForm'
 import { ParteLocalidadeFields } from '@/components/resources/ParteLocalidadeFields'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { buildDocumentoEditTabOrder, DOCUMENTO_EDIT_ITENS_TAB } from '@/lib/documentoEditTabs'
+import {
+  ISSQN_ALIQUOTA_FIELD_KEYS,
+  omitirCamposAliquotaIssqnMeEpp,
+} from '@/lib/documentoIssqnMeEpp'
 import type { CncLookupDef, FieldDef, FormSectionDef } from '@/resources/definitions'
 import type { ReactNode } from 'react'
 
@@ -159,6 +163,7 @@ function FormSectionBlock({
   relationDisplayLabels,
   displayRow,
   compact,
+  hideIssqnAliquotaFields,
 }: {
   section: FormSectionDef
   allFields: FieldDef[]
@@ -168,6 +173,7 @@ function FormSectionBlock({
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
   compact?: boolean
+  hideIssqnAliquotaFields?: boolean
 }) {
   if (section.type === 'identificacao-nota') {
     return (
@@ -286,7 +292,7 @@ function FormSectionBlock({
   }
 
   const issqnSuspensa = form.watch('issqn_exigibilidade_suspensa') === 'true'
-  const sectionFieldKeys =
+  let sectionFieldKeys =
     section.type === 'fields' && section.fieldKeys.includes('issqn_exigibilidade_suspensa')
       ? section.fieldKeys.filter((key) => {
           if (key === 'issqn_tp_suspensao' || key === 'issqn_n_processo_suspensao') {
@@ -295,6 +301,12 @@ function FormSectionBlock({
           return true
         })
       : section.fieldKeys
+
+  if (hideIssqnAliquotaFields && section.type === 'fields') {
+    sectionFieldKeys = sectionFieldKeys.filter(
+      (key) => !(ISSQN_ALIQUOTA_FIELD_KEYS as readonly string[]).includes(key),
+    )
+  }
 
   const sectionFields = fieldsByKeys(allFields, sectionFieldKeys).map((f) => {
     if (f.key === 'issqn_n_processo_suspensao' && issqnSuspensa) {
@@ -314,6 +326,12 @@ function FormSectionBlock({
       >
         {section.title}
       </h2>
+      {hideIssqnAliquotaFields && section.title === 'Tributação Municipal' && !readOnly && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          Prestador ME/EPP com ISSQN apurado pelo Simples e sem retenção: alíquota, BC e valor ISSQN
+          não se aplicam (regra E0625) — não serão enviados na DPS.
+        </p>
+      )}
       <SectionFields
         fields={sectionFields}
         form={form}
@@ -342,6 +360,7 @@ export function ResourceFormFields({
   displayRow,
   sectionTabs,
   itensTab,
+  documentoPrestadorRegime,
 }: {
   fields: FieldDef[]
   formSections?: FormSectionDef[]
@@ -364,6 +383,8 @@ export function ResourceFormFields({
   }>
   /** Aba extra de itens (conteúdo fora do fluxo de submit do cabeçalho). */
   itensTab?: { label: string; count?: number; content: ReactNode }
+  /** Regime do prestador (`empresa_id`) — regras ISSQN ME/EPP na nota fiscal. */
+  documentoPrestadorRegime?: string
 }) {
   const documentoTabOrder =
     sectionTabs?.length && itensTab
@@ -378,6 +399,22 @@ export function ResourceFormFields({
   const watchOperacao = form.watch('valor_total_servicos_produtos')
   const watchDescIncond = form.watch('desconto_incondicionado')
   const watchDescCond = form.watch('desconto_condicionado')
+  const watchIssqnRetencao = form.watch('issqn_retencao')
+  const watchIssqnBeneficio = form.watch('issqn_beneficio_municipal')
+  const hideIssqnAliquotaFields = omitirCamposAliquotaIssqnMeEpp(
+    documentoPrestadorRegime,
+    watchIssqnRetencao,
+    watchIssqnBeneficio,
+  )
+
+  useEffect(() => {
+    if (!hideIssqnAliquotaFields || readOnly) return
+    for (const key of ISSQN_ALIQUOTA_FIELD_KEYS) {
+      if ((form.getValues(key) ?? '') !== '') {
+        form.setValue(key, '', { shouldDirty: true })
+      }
+    }
+  }, [hideIssqnAliquotaFields, readOnly, form])
 
   useEffect(() => {
     if (!hasValorLiquidoField) return
@@ -435,6 +472,7 @@ export function ResourceFormFields({
         relationDisplayLabels={relationDisplayLabels}
         displayRow={displayRow}
         compact={compact}
+        hideIssqnAliquotaFields={hideIssqnAliquotaFields}
       />
     )
   }
