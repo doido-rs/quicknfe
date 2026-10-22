@@ -126,6 +126,12 @@ pub struct EmpresaPublic {
     pub logradouro: Option<String>,
     pub numero: Option<String>,
     pub bairro: Option<String>,
+    /// `opSimpNac` que a DPS emitiria com o regime tributário atual (1–3).
+    pub op_simp_nac_dps: i32,
+    /// Snapshot da consulta CNC / cadastro Simples (quando disponível).
+    pub op_simp_nac_cnc: Option<i32>,
+    /// Indica divergência que levaria à rejeição E0160 na SEFIN.
+    pub regime_tributario_requer_atualizacao: bool,
     pub criado_em: DateTime<Utc>,
 }
 
@@ -162,6 +168,16 @@ impl EmpresaPublic {
         e: Empresa,
         m: &Municipio,
     ) -> Result<Self, crate::services::api_error::ApiError> {
+        use crate::services::nfse::op_simp_nac::{
+            op_simp_nac_from_regime_code, regime_requer_atualizacao_para_cnc,
+        };
+        let op_simp_nac_dps = op_simp_nac_from_regime_code(e.regime_tributario)?.as_i32();
+        let regime_tributario_requer_atualizacao = e
+            .op_simp_nac_verificado
+            .map(|cnc| {
+                regime_requer_atualizacao_para_cnc(e.regime_tributario, cnc).unwrap_or(false)
+            })
+            .unwrap_or(false);
         Ok(Self {
             id: e.id,
             cpf_cnpj: e.cpf_cnpj,
@@ -175,6 +191,9 @@ impl EmpresaPublic {
             logradouro: e.logradouro,
             numero: e.numero,
             bairro: e.bairro,
+            op_simp_nac_dps,
+            op_simp_nac_cnc: e.op_simp_nac_verificado,
+            regime_tributario_requer_atualizacao,
             criado_em: e.criado_em,
         })
     }
@@ -669,6 +688,9 @@ pub struct CncCadastroItemPublic {
     pub numero: Option<String>,
     pub complemento: Option<String>,
     pub bairro: Option<String>,
+    /// Valor `opSimpNac` (1–3) retornado pelo CNC, quando informado.
+    pub op_simp_nac: Option<i32>,
+    pub regime_tributario_sugerido: Option<RegimeTributario>,
 }
 
 #[derive(Serialize)]

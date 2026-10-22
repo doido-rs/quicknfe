@@ -18,6 +18,7 @@ pub struct Model {
     pub inscricao_municipal: Option<String>,
     pub inscricao_estadual: Option<String>,
     pub regime_tributario: i32,
+    pub op_simp_nac_verificado: Option<i32>,
     pub municipio_id: i64,
     pub cep: Option<String>,
     pub logradouro: Option<String>,

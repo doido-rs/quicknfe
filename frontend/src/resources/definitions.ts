@@ -53,6 +53,8 @@ export interface CncLookupDef {
   emailFieldKey?: string
   telefoneFieldKey?: string
   municipioFieldKey?: string
+  /** Atualiza regime tributário a partir da opção Simples Nacional do CNC (E0160). */
+  regimeTributarioFieldKey?: string
 }
 
 export interface FieldDef {
@@ -631,6 +633,7 @@ export const resources: ResourceDef[] = [
       razaoSocialFieldKey: 'razao_social',
       inscricaoMunicipalFieldKey: 'inscricao_municipal',
       municipioFieldKey: 'municipio_id',
+      regimeTributarioFieldKey: 'regime_tributario',
     },
     fields: [
       { key: 'cpf_cnpj', label: 'CPF/CNPJ do prestador', required: true },

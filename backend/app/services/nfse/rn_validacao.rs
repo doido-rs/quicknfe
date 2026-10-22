@@ -95,6 +95,7 @@ pub fn validar_dps_contexto(ctx: &DpsContext) -> Result<(), ApiError> {
         .map_err(|e| ApiError::Internal(format!("RN layout indisponível: {e}")))?;
     dps_presenca::validar_presenca_repo(ctx)?;
     dps_rn_engine::validar_rn_csv_incremental(ctx)?;
+    super::op_simp_nac::validar_e0160_op_simp_nac(ctx)?;
     Ok(())
 }
 
@@ -103,6 +104,30 @@ pub fn validar_rn_workbook_disponivel() -> Result<(), ApiError> {
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
     dps_rn::load_rn_dps_rows(&root).map_err(|e| ApiError::Internal(format!("RN layout: {e}")))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod e0160_tests {
+    use super::*;
+    use crate::models::regime_tributario::RegimeTributario;
+    use crate::services::nfse::op_simp_nac::validar_e0160_op_simp_nac;
+
+    #[test]
+    fn rejeita_regime_divergente_do_cnc() {
+        let mut ctx = minimal_dps_context();
+        ctx.prestador.regime_tributario = RegimeTributario::SimplesNacional.as_db_code();
+        ctx.prestador.op_simp_nac_verificado = Some(1);
+        let err = validar_e0160_op_simp_nac(&ctx).unwrap_err();
+        assert!(err.to_string().contains("E0160"));
+    }
+
+    #[test]
+    fn aceita_regime_alinhado_ao_cnc() {
+        let mut ctx = minimal_dps_context();
+        ctx.prestador.regime_tributario = RegimeTributario::RegimeNormal.as_db_code();
+        ctx.prestador.op_simp_nac_verificado = Some(1);
+        validar_e0160_op_simp_nac(&ctx).expect("ok");
+    }
 }
 
 #[cfg(test)]
@@ -185,6 +210,7 @@ pub fn minimal_dps_context() -> DpsContext {
                 inscricao_estadual: None,
                 regime_tributario: crate::models::regime_tributario::RegimeTributario::RegimeNormal
                     .as_db_code(),
+                op_simp_nac_verificado: None,
                 municipio_id: 1,
                 cep: Some("20040020".into()),
                 logradouro: Some("Rua Teste".into()),

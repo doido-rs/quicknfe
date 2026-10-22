@@ -27,6 +27,8 @@ pub struct RespostaConsultaCad {
 pub struct CadastroMunicipalCnc {
     pub codigo_municipio: Option<i64>,
     pub inf_cad: Option<InfCadCnc>,
+    #[serde(default, rename = "OpcaoSimplesNacional")]
+    pub opcao_simples_nacional: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

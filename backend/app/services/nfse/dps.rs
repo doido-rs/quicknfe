@@ -9,11 +9,10 @@ use super::dps_context::{
 
 use crate::models::documento_fiscal::Model as Documento;
 use crate::models::localidade_parte::LocalidadeParte;
-use crate::models::regime_tributario::RegimeTributario;
 use crate::services::api_error::ApiError;
 use crate::services::entity_enums::{
     cst_pis_cofins_from_db, issqn_tp_suspensao_from_db, localidade_from_db, reg_esp_trib_from_db,
-    regime_from_db, tp_ret_from_db, trib_issqn_from_db,
+    tp_ret_from_db, trib_issqn_from_db,
 };
 
 const VER_APLIC: &str = "QuickNFe/0.1";
@@ -145,9 +144,13 @@ fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> 
         xml.push_str("      </end>\n");
     }
     xml.push_str("      <regTrib>\n");
-    let op_simp = map_op_simp_nac(p.regime_tributario);
+    let op_simp = super::op_simp_nac::op_simp_nac_from_regime_code(p.regime_tributario)
+        .map(|o| o.as_layout_str().to_string())
+        .unwrap_or_else(|_| "1".into());
     push_elem(xml, 8, "opSimpNac", &op_simp);
-    let reg_ap_sn = (op_simp == "3").then(|| map_reg_ap_trib_sn(p.regime_tributario));
+    let reg_ap_sn = super::op_simp_nac::reg_ap_trib_sn_from_regime_code(p.regime_tributario)
+        .ok()
+        .flatten();
     if let Some(ref reg_ap) = reg_ap_sn {
         push_elem(xml, 8, "regApTribSN", reg_ap);
     }
@@ -162,27 +165,6 @@ fn append_prestador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> 
     xml.push_str("      </regTrib>\n");
     xml.push_str("    </prest>\n");
     Ok(())
-}
-
-fn map_op_simp_nac(regime_code: i32) -> String {
-    let regime = regime_from_db(regime_code).unwrap_or(RegimeTributario::RegimeNormal);
-    match regime {
-        RegimeTributario::MicroempreendedorIndividual => "2".into(),
-        RegimeTributario::SimplesNacional | RegimeTributario::SimplesNacionalExcessoSublimite => {
-            "3".into()
-        }
-        _ => "1".into(),
-    }
-}
-
-/// Regime de apuração SN (obrigatório quando `opSimpNac` = 3 — RN E0166).
-fn map_reg_ap_trib_sn(regime_code: i32) -> String {
-    let regime = regime_from_db(regime_code).unwrap_or(RegimeTributario::RegimeNormal);
-    match regime {
-        RegimeTributario::SimplesNacionalExcessoSublimite => "2".into(),
-        RegimeTributario::SimplesNacional => "1".into(),
-        _ => "1".into(),
-    }
 }
 
 fn append_tomador(xml: &mut String, ctx: &DpsContext) -> Result<(), ApiError> {
@@ -612,6 +594,7 @@ pub mod coverage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::regime_tributario::RegimeTributario;
     use crate::models::cst_pis_cofins::CstPisCofins;
     use crate::models::issqn_tp_suspensao::IssqnTpSuspensao;
     use crate::models::reg_esp_trib_issqn::RegEspTribIssqn;
@@ -630,6 +613,7 @@ mod tests {
             inscricao_municipal: Some("123".into()),
             inscricao_estadual: None,
             regime_tributario: RegimeTributario::SimplesNacional.as_db_code(),
+            op_simp_nac_verificado: None,
             municipio_id: 1,
             cep: Some("20040020".into()),
             logradouro: Some("Rua Teste".into()),

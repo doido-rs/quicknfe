@@ -4,7 +4,9 @@ use serde::Deserialize;
 
 use crate::models::certificado_digital::{Column as CertColumn, Entity as CertEntity};
 use crate::services::api_error::{require_tenant, scoped, to_response, ApiError};
-use crate::services::cnc::{consulta_cad, resposta_publica, ConsultaCadParams};
+use crate::services::cnc::{
+    consulta_cad, gravar_op_simp_nac_verificado, resposta_publica, ConsultaCadParams,
+};
 use crate::services::dto::decode_certificado_senha;
 use crate::services::nfse::CredenciaisMtls;
 use crate::services::tenant_scope;
@@ -86,6 +88,10 @@ impl ApiCncController {
                 credenciais,
             )
             .await,
+        ));
+
+        crate::api!(to_response(
+            gravar_op_simp_nac_verificado(ctx.db(), empresa_id, &raw).await,
         ));
 
         let public = crate::api!(to_response(resposta_publica(ctx.db(), raw).await));

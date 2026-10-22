@@ -25,6 +25,7 @@ mod endereco_brasil;
 mod documento_processamento;
 mod dps_rn;
 mod dps_rn_engine;
+pub mod op_simp_nac;
 mod resposta;
 mod rn_validacao;
 mod transmissao;

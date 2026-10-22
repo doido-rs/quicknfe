@@ -5,7 +5,11 @@ import { useAuth } from '@/auth/AuthContext'
 import { consultaCncCad, type CncCadastroItem } from '@/api/cnc'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { applyCncItemToForm, onlyDigits } from '@/lib/cncConsulta'
+import {
+  applyCncItemToForm,
+  cncRegimeRequerAtualizacao,
+  onlyDigits,
+} from '@/lib/cncConsulta'
 import { resourceApi } from '@/api/client'
 import type { CncLookupDef } from '@/resources/definitions'
 import { toastError, toastSuccess } from '@/lib/toast'
@@ -70,9 +74,19 @@ export function CncConsultaField({
         return
       }
       if (data.itens.length === 1) {
-        applyCncItemToForm(form, lookup, data.itens[0]!)
-        setMessage('Dados preenchidos a partir do CNC.')
-        toastSuccess('Dados preenchidos a partir do CNC')
+        const item = data.itens[0]!
+        const regimeMudou = cncRegimeRequerAtualizacao(lookup, form, item)
+        applyCncItemToForm(form, lookup, item)
+        setMessage(
+          regimeMudou
+            ? 'Dados preenchidos; regime tributário ajustado conforme opção Simples Nacional do CNC (evita E0160).'
+            : 'Dados preenchidos a partir do CNC.',
+        )
+        toastSuccess(
+          regimeMudou
+            ? 'Regime tributário atualizado conforme CNC (opSimpNac)'
+            : 'Dados preenchidos a partir do CNC',
+        )
         setChoices(null)
         return
       }

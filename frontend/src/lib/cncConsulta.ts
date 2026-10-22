@@ -20,6 +20,22 @@ export function applyCncItemToForm(
   if (lookup.municipioFieldKey && item.municipio_id != null) {
     form.setValue(lookup.municipioFieldKey, String(item.municipio_id))
   }
+  if (lookup.regimeTributarioFieldKey && item.regime_tributario_sugerido) {
+    form.setValue(lookup.regimeTributarioFieldKey, item.regime_tributario_sugerido)
+  }
+}
+
+/** Indica se o CNC sugere alterar o regime (evita rejeição E0160 na SEFIN). */
+export function cncRegimeRequerAtualizacao(
+  lookup: CncLookupDef,
+  form: UseFormReturn<Record<string, string>>,
+  item: CncCadastroItem,
+): boolean {
+  if (!lookup.regimeTributarioFieldKey || !item.regime_tributario_sugerido) {
+    return false
+  }
+  const atual = form.getValues(lookup.regimeTributarioFieldKey)
+  return atual !== item.regime_tributario_sugerido
 }
 
 export function onlyDigits(value: string): string {

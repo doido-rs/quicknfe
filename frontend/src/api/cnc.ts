@@ -14,6 +14,8 @@ export interface CncCadastroItem {
   numero?: string | null
   complemento?: string | null
   bairro?: string | null
+  op_simp_nac?: number | null
+  regime_tributario_sugerido?: string | null
 }
 
 export interface CncConsultaCadResponse {

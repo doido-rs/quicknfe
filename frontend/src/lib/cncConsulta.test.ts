@@ -30,4 +30,22 @@ describe('applyCncItemToForm', () => {
     expect(setValue).toHaveBeenCalledWith('razao_social', 'ACME')
     expect(setValue).toHaveBeenCalledWith('email', 'a@b.com')
   })
+
+  it('applies regime tributario sugerido when configured', () => {
+    const setValue = vi.fn()
+    const form = { setValue } as unknown as import('react-hook-form').UseFormReturn<
+      Record<string, string>
+    >
+    applyCncItemToForm(
+      form,
+      {
+        inscricaoFieldKey: 'cpf_cnpj',
+        regimeTributarioFieldKey: 'regime_tributario',
+      },
+      {
+        regime_tributario_sugerido: 'SIMPLES_NACIONAL',
+      },
+    )
+    expect(setValue).toHaveBeenCalledWith('regime_tributario', 'SIMPLES_NACIONAL')
+  })
 })
