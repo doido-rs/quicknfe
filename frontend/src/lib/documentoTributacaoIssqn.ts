@@ -17,15 +17,51 @@ export const REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS = [
   { value: '6', label: 'Microempresa ou empresa de pequeno porte (ME/EPP)' },
 ] as const
 
+/** Wire JSON (`OPERACAO_TRIBUTAVEL`) → valor do select (`1`). */
+const TRIB_ISSQN_WIRE_TO_FORM: Record<string, string> = {
+  OPERACAO_TRIBUTAVEL: '1',
+  IMUNIDADE: '2',
+  EXPORTACAO_SERVICO: '3',
+  NAO_INCIDENCIA: '4',
+}
+
+const REG_ESP_TRIB_WIRE_TO_FORM: Record<string, string> = {
+  NENHUM: '0',
+  MICROEMPRESA_MUNICIPAL: '1',
+  ESTIMATIVA: '2',
+  SOCIEDADE_PROFISSIONAIS: '3',
+  COOPERATIVA: '4',
+  MEI: '5',
+  ME_EPP: '6',
+}
+
+export function tribIssqnToFormValue(value: unknown): string {
+  if (value == null || value === '') return ''
+  const s = String(value).trim()
+  if (TRIBUTACAO_ISSQN_OPTIONS.some((o) => o.value === s)) return s
+  const upper = s.toUpperCase()
+  return TRIB_ISSQN_WIRE_TO_FORM[upper] ?? s
+}
+
+export function regEspTribIssqnToFormValue(value: unknown): string {
+  if (value == null || value === '') return ''
+  const s = String(value).trim()
+  if (REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS.some((o) => o.value === s)) return s
+  const upper = s.toUpperCase()
+  return REG_ESP_TRIB_WIRE_TO_FORM[upper] ?? s
+}
+
 export function tributacaoIssqnLabel(value: unknown): string {
   if (value == null || value === '') return '—'
-  const found = TRIBUTACAO_ISSQN_OPTIONS.find((o) => o.value === String(value))
+  const formVal = tribIssqnToFormValue(value)
+  const found = TRIBUTACAO_ISSQN_OPTIONS.find((o) => o.value === formVal)
   return found?.label ?? String(value)
 }
 
 export function regimeEspecialTribIssqnLabel(value: unknown): string {
   if (value == null || value === '') return '—'
-  const found = REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS.find((o) => o.value === String(value))
+  const formVal = regEspTribIssqnToFormValue(value)
+  const found = REGIME_ESPECIAL_TRIB_ISSQN_OPTIONS.find((o) => o.value === formVal)
   return found?.label ?? String(value)
 }
 

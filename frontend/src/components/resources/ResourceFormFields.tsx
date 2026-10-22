@@ -10,7 +10,10 @@ import { ResourceFieldInput } from '@/components/resources/ResourceFieldInput'
 import type { ResourceRouteLink } from '@/lib/resourcePaths'
 import { fieldsByKeys } from '@/lib/resourceForm'
 import { ParteLocalidadeFields } from '@/components/resources/ParteLocalidadeFields'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { buildDocumentoEditTabOrder, DOCUMENTO_EDIT_ITENS_TAB } from '@/lib/documentoEditTabs'
 import type { CncLookupDef, FieldDef, FormSectionDef } from '@/resources/definitions'
+import type { ReactNode } from 'react'
 
 function SectionFields({
   fields,
@@ -56,6 +59,7 @@ function IdentificacaoNotaSection({
   readOnly,
   relationDisplayLabels,
   displayRow,
+  compact,
 }: {
   section: Extract<FormSectionDef, { type: 'identificacao-nota' }>
   allFields: FieldDef[]
@@ -64,6 +68,7 @@ function IdentificacaoNotaSection({
   readOnly?: boolean
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
+  compact?: boolean
 }) {
   const automatico = form.watch(section.automaticoFieldKey) === 'true'
   const informarManual = readOnly || !automatico
@@ -80,12 +85,12 @@ function IdentificacaoNotaSection({
 
   return (
     <section
-      className="rounded-lg border bg-card p-4 md:p-6"
+      className={compact ? 'rounded-lg border bg-card p-3 md:p-4' : 'rounded-lg border bg-card p-4 md:p-6'}
       aria-labelledby={`form-section-${sectionIndex}-identificacao`}
     >
       <h2
         id={`form-section-${sectionIndex}-identificacao`}
-        className="mb-4 text-lg font-semibold tracking-tight"
+        className={compact ? 'mb-3 text-base font-semibold tracking-tight' : 'mb-4 text-lg font-semibold tracking-tight'}
       >
         {section.title}
       </h2>
@@ -148,6 +153,7 @@ function FormSectionBlock({
   readOnly,
   relationDisplayLabels,
   displayRow,
+  compact,
 }: {
   section: FormSectionDef
   allFields: FieldDef[]
@@ -156,6 +162,7 @@ function FormSectionBlock({
   readOnly?: boolean
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
+  compact?: boolean
 }) {
   if (section.type === 'identificacao-nota') {
     return (
@@ -167,6 +174,7 @@ function FormSectionBlock({
         readOnly={readOnly}
         relationDisplayLabels={relationDisplayLabels}
         displayRow={displayRow}
+        compact={compact}
       />
     )
   }
@@ -176,12 +184,12 @@ function FormSectionBlock({
     const prestacao = fieldsByKeys(allFields, [section.prestacaoFieldKey])
     return (
       <section
-        className="rounded-lg border bg-card p-4 md:p-6"
+        className={compact ? 'rounded-lg border bg-card p-3 md:p-4' : 'rounded-lg border bg-card p-4 md:p-6'}
         aria-labelledby={`form-section-${sectionIndex}-municipios`}
       >
         <h2
           id={`form-section-${sectionIndex}-municipios`}
-          className="mb-4 text-lg font-semibold tracking-tight"
+          className={compact ? 'mb-3 text-base font-semibold tracking-tight' : 'mb-4 text-lg font-semibold tracking-tight'}
         >
           {section.title}
         </h2>
@@ -292,10 +300,13 @@ function FormSectionBlock({
 
   return (
     <section
-      className="rounded-lg border bg-card p-4 md:p-6"
+      className={compact ? 'rounded-lg border bg-card p-3 md:p-4' : 'rounded-lg border bg-card p-4 md:p-6'}
       aria-labelledby={`form-section-${sectionIndex}`}
     >
-      <h2 id={`form-section-${sectionIndex}`} className="mb-4 text-lg font-semibold tracking-tight">
+      <h2
+        id={`form-section-${sectionIndex}`}
+        className={compact ? 'mb-3 text-base font-semibold tracking-tight' : 'mb-4 text-lg font-semibold tracking-tight'}
+      >
         {section.title}
       </h2>
       <SectionFields
@@ -324,6 +335,8 @@ export function ResourceFormFields({
   readOnly,
   relationDisplayLabels,
   displayRow,
+  sectionTabs,
+  itensTab,
 }: {
   fields: FieldDef[]
   formSections?: FormSectionDef[]
@@ -338,7 +351,19 @@ export function ResourceFormFields({
   readOnly?: boolean
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
+  /** Agrupa seções em abas (edição de nota fiscal). */
+  sectionTabs?: ReadonlyArray<{
+    value: string
+    label: string
+    sectionIndexes: readonly number[]
+  }>
+  /** Aba extra de itens (conteúdo fora do fluxo de submit do cabeçalho). */
+  itensTab?: { label: string; count?: number; content: ReactNode }
 }) {
+  const documentoTabOrder =
+    sectionTabs?.length && itensTab
+      ? buildDocumentoEditTabOrder(true, itensTab.label)
+      : sectionTabs?.map((tab) => ({ kind: 'section' as const, ...tab })) ?? []
   const {
     handleSubmit,
     formState: { isSubmitting, isDirty },
@@ -358,7 +383,7 @@ export function ResourceFormFields({
     })
     const current = form.getValues('valor_liquido')
     if (current !== String(next)) {
-      form.setValue('valor_liquido', String(next), { shouldDirty: false, shouldValidate: false })
+      form.setValue('valor_liquido', next.toFixed(2), { shouldDirty: false, shouldValidate: false })
     }
   }, [hasValorLiquidoField, watchOperacao, watchDescIncond, watchDescCond, form])
 
@@ -391,32 +416,86 @@ export function ResourceFormFields({
   const cncBlock =
     cncLookup && !readOnly ? <CncConsultaField lookup={cncLookup} form={form} /> : null
 
-  const body = formSections?.length ? (
+  const renderSection = (index: number, compact?: boolean) => {
+    const section = formSections?.[index]
+    if (!section) return null
+    return (
+      <FormSectionBlock
+        key={`${section.type}-${index}`}
+        section={section}
+        allFields={fields}
+        form={form}
+        sectionIndex={index}
+        readOnly={readOnly}
+        relationDisplayLabels={relationDisplayLabels}
+        displayRow={displayRow}
+        compact={compact}
+      />
+    )
+  }
+
+  const stackedBody = formSections?.length ? (
     <>
       {cncBlock && <div className="grid gap-4">{cncBlock}</div>}
-      {formSections.map((section, index) => (
-        <FormSectionBlock
-          key={`${section.type}-${index}`}
-          section={section}
-          allFields={fields}
-          form={form}
-          sectionIndex={index}
-          readOnly={readOnly}
-          relationDisplayLabels={relationDisplayLabels}
-          displayRow={displayRow}
-        />
-      ))}
+      {formSections.map((section, index) => renderSection(index))}
     </>
   ) : null
 
+  const tabbedBody =
+    formSections?.length && sectionTabs?.length ? (
+      <>
+        {cncBlock && <div className="mb-4 grid gap-4">{cncBlock}</div>}
+        <Tabs defaultValue={sectionTabs[0]?.value} className="w-full">
+          <TabsList
+            aria-label="Grupos da nota fiscal"
+            className="mb-4 h-auto flex-wrap justify-start gap-1"
+          >
+            {documentoTabOrder.map((entry) => (
+              <TabsTrigger
+                key={entry.value}
+                value={entry.value}
+                className="text-xs sm:text-sm"
+              >
+                {entry.label}
+                {entry.kind === 'itens' && itensTab?.count != null
+                  ? ` (${itensTab.count})`
+                  : ''}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {documentoTabOrder.map((entry) =>
+            entry.kind === 'itens' ? (
+              <TabsContent key={entry.value} value={DOCUMENTO_EDIT_ITENS_TAB} className="mt-0">
+                {itensTab?.content}
+              </TabsContent>
+            ) : (
+              <TabsContent key={entry.value} value={entry.value} className="mt-0 space-y-4">
+                {entry.sectionIndexes.map((index) => renderSection(index, true))}
+              </TabsContent>
+            ),
+          )}
+        </Tabs>
+      </>
+    ) : null
+
+  const body = tabbedBody ?? stackedBody
+
   if (formSections?.length) {
     if (readOnly) {
-      return <div className="space-y-8">{body}</div>
+      return <div className="space-y-8">{stackedBody}</div>
     }
     return (
-      <form onSubmit={handleSubmit(onSubmit!)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit!)} className="space-y-6">
         {body}
-        {actions}
+        <div
+          className={
+            actionsAlign === 'end'
+              ? 'sticky bottom-0 z-10 -mx-1 border-t bg-card/95 px-1 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/80'
+              : undefined
+          }
+        >
+          {actions}
+        </div>
       </form>
     )
   }

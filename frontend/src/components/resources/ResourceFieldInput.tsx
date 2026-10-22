@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { Controller } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
@@ -9,9 +10,88 @@ import {
   formDateToDisplay,
   parseDateFromDisplay,
 } from '@/lib/dateFormat'
+import {
+  formatMoneyForDisplay,
+  parseMoneyFromDisplay,
+  roundMoney,
+} from '@/lib/moneyFormat'
 import { readOnlyFieldDisplay } from '@/lib/documentoShowLabels'
 import { useDateFormat } from '@/theme/DateFormatContext'
 import type { FieldDef } from '@/resources/definitions'
+
+function MoneyFieldInput({
+  field,
+  form,
+  inputId,
+  dense,
+  readOnly,
+}: {
+  field: FieldDef
+  form: UseFormReturn<Record<string, string>>
+  inputId: string
+  dense?: boolean
+  readOnly?: boolean
+}) {
+  const [editing, setEditing] = useState(false)
+  const isReadOnly = readOnly || field.readOnly
+
+  return (
+    <Controller
+      name={field.key}
+      control={form.control}
+      rules={{
+        required: field.required && !isReadOnly ? `${field.label} é obrigatório.` : false,
+      }}
+      render={({ field: controlField, fieldState }) => {
+        const canonical = controlField.value ?? ''
+        const displayValue = isReadOnly
+          ? formatMoneyForDisplay(canonical)
+          : editing
+            ? canonical.replace('.', ',')
+            : formatMoneyForDisplay(canonical)
+
+        return (
+          <div className={cn('grid gap-2', dense && 'gap-1.5')}>
+            <Label htmlFor={inputId} className={dense ? 'text-xs' : undefined}>
+              {field.label}
+            </Label>
+            <Input
+              id={inputId}
+              readOnly={isReadOnly}
+              className={cn(isReadOnly && 'bg-muted', dense && 'h-8 text-sm')}
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              aria-invalid={!!fieldState.error}
+              value={displayValue}
+              onChange={(e) => {
+                if (isReadOnly) return
+                controlField.onChange(e.target.value.replace(',', '.'))
+              }}
+              onFocus={() => {
+                if (!isReadOnly) setEditing(true)
+              }}
+              onBlur={(e) => {
+                if (isReadOnly) return
+                setEditing(false)
+                const parsed = parseMoneyFromDisplay(e.target.value)
+                if (parsed != null) {
+                  controlField.onChange(roundMoney(parsed).toFixed(2))
+                } else if (e.target.value.trim() === '') {
+                  controlField.onChange('')
+                }
+                controlField.onBlur()
+              }}
+            />
+            {fieldState.error?.message && (
+              <p className="text-sm text-destructive">{fieldState.error.message}</p>
+            )}
+          </div>
+        )
+      }}
+    />
+  )
+}
 
 export function ResourceFieldInput({
   field,
@@ -23,6 +103,7 @@ export function ResourceFieldInput({
   relationDisplayLabels,
   displayRow,
   relationScopeValues,
+  dense,
 }: {
   field: FieldDef
   form: UseFormReturn<Record<string, string>>
@@ -33,6 +114,8 @@ export function ResourceFieldInput({
   relationDisplayLabels?: Record<string, string>
   displayRow?: Record<string, unknown>
   relationScopeValues?: Record<string, string>
+  /** Campos menores (ex.: itens da nota). */
+  dense?: boolean
 }) {
   const { preference: dateFormat } = useDateFormat()
 
@@ -196,11 +279,13 @@ export function ResourceFieldInput({
 
   if (field.type === 'textarea') {
     return (
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor={inputId}>{field.label}</Label>
+      <div className={cn('grid gap-2', dense ? 'gap-1.5' : 'md:col-span-2')}>
+        <Label htmlFor={inputId} className={dense ? 'text-xs' : undefined}>
+          {field.label}
+        </Label>
         <textarea
           id={inputId}
-          rows={4}
+          rows={dense ? 2 : 4}
           readOnly={field.readOnly}
           className={cn(
             'w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30',
@@ -209,6 +294,18 @@ export function ResourceFieldInput({
           {...form.register(field.key, { required: field.required && !field.readOnly })}
         />
       </div>
+    )
+  }
+
+  if (field.type === 'money') {
+    return (
+      <MoneyFieldInput
+        field={field}
+        form={form}
+        inputId={inputId}
+        dense={dense}
+        readOnly={readOnly}
+      />
     )
   }
 
@@ -236,12 +333,14 @@ export function ResourceFieldInput({
   }
 
   return (
-    <div className="grid gap-2">
-      <Label htmlFor={inputId}>{field.label}</Label>
+    <div className={cn('grid gap-2', dense && 'gap-1.5')}>
+      <Label htmlFor={inputId} className={dense ? 'text-xs' : undefined}>
+        {field.label}
+      </Label>
       <Input
         id={inputId}
         readOnly={field.readOnly}
-        className={field.readOnly ? 'bg-muted' : undefined}
+        className={cn(field.readOnly && 'bg-muted', dense && 'h-8 text-sm')}
         type={
           field.inputType === 'password'
             ? 'password'

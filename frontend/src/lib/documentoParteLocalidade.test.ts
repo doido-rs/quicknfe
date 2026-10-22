@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDocumentoBody } from './documentoParteLocalidade'
+import { buildDocumentoBody, flattenDocumentoRowToForm } from './documentoParteLocalidade'
 import type { FieldDef } from '@/resources/definitions'
 
 const fields: FieldDef[] = [
@@ -62,6 +62,38 @@ describe('buildDocumentoBody', () => {
     expect(body.valor_total_servicos_produtos).toBe(0)
     expect(typeof body.data_emissao).toBe('string')
     expect(String(body.data_emissao)).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+
+  it('maps trib issqn wire enums when flattening row to form', () => {
+    const base = buildDocumentoBody(fields, {
+      tomador_localidade: 'nao_informado',
+      intermediario_localidade: 'nao_informado',
+    })
+    const form = flattenDocumentoRowToForm(
+      {
+        trib_issqn: 'OPERACAO_TRIBUTAVEL',
+        reg_esp_trib_issqn: 'NENHUM',
+      },
+      base,
+    )
+    expect(form.trib_issqn).toBe('1')
+    expect(form.reg_esp_trib_issqn).toBe('0')
+  })
+
+  it('maps federal tributacao wire enums when flattening row to form', () => {
+    const base = buildDocumentoBody(fields, {
+      tomador_localidade: 'nao_informado',
+      intermediario_localidade: 'nao_informado',
+    })
+    const form = flattenDocumentoRowToForm(
+      {
+        cst_pis_cofins: 'NENHUM',
+        tp_ret_pis_cofins_csll: 'NAO_RETIDOS',
+      },
+      base,
+    )
+    expect(form.cst_pis_cofins).toBe('00')
+    expect(form.tp_ret_pis_cofins_csll).toBe('0')
   })
 
   it('computes valor liquido from operacao and descontos', () => {

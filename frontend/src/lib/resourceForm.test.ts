@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildBody,
   buildCreateBodyWithFiles,
   buildNestedCreateBody,
   fieldValue,
@@ -36,11 +37,19 @@ describe('resourceForm', () => {
   })
 
   it('maps row to form strings', () => {
-    const form = rowToForm({ id: 1, nome: 'X', count: 2 }, [
+    const form = rowToForm({ id: 1, nome: 'X', count: 2, total: 10.5 }, [
       { key: 'nome', label: 'Nome' },
       { key: 'count', label: 'Count', type: 'number' },
+      { key: 'total', label: 'Total', type: 'money' },
     ])
-    expect(form).toEqual({ nome: 'X', count: '2' })
+    expect(form).toEqual({ nome: 'X', count: '2', total: '10.50' })
+  })
+
+  it('buildBody sends money as rounded number', () => {
+    const body = buildBody([{ key: 'valor', label: 'V', type: 'money' }], {
+      valor: '123.456',
+    })
+    expect(body.valor).toBe(123.46)
   })
 
   it('reads nested field paths', () => {

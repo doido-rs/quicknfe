@@ -26,15 +26,59 @@ export const TP_RET_PIS_COFINS_CSLL_OPTIONS = [
   { value: '9', label: '9 — PIS/COFINS não retidos; CSLL retido' },
 ] as const
 
+const CST_PIS_COFINS_WIRE_TO_FORM: Record<string, string> = {
+  NENHUM: '00',
+  ALIQUOTA_BASICA: '01',
+  ALIQUOTA_DIFERENCIADA: '02',
+  ALIQUOTA_UNIDADE: '03',
+  MONOFASICA_REVENDA_ZERO: '04',
+  SUBSTITUICAO_TRIBUTARIA: '05',
+  ALIQUOTA_ZERO: '06',
+  ISENTA: '07',
+  SEM_INCIDENCIA: '08',
+  COM_SUSPENSAO: '09',
+  OUTRAS_SAIDA_49: '49',
+  OUTRAS_99: '99',
+}
+
+const TP_RET_PIS_COFINS_WIRE_TO_FORM: Record<string, string> = {
+  NAO_RETIDOS: '0',
+  RETIDOS: '3',
+  PIS_COFINS_RETIDOS_CSLL_NAO: '4',
+  PIS_RETIDO: '5',
+  COFINS_RETIDO: '6',
+  COFINS_CSLL_RETIDOS_PIS_NAO: '7',
+  PIS_CSLL_RETIDOS_COFINS_NAO: '8',
+  PIS_COFINS_NAO_RETIDOS_CSLL_RETIDO: '9',
+}
+
+export function cstPisCofinsToFormValue(value: unknown): string {
+  if (value == null || value === '') return ''
+  const s = String(value).trim()
+  const padded = /^\d$/.test(s) ? `0${s}` : s
+  if (CST_PIS_COFINS_OPTIONS.some((o) => o.value === padded)) return padded
+  const upper = s.toUpperCase()
+  return CST_PIS_COFINS_WIRE_TO_FORM[upper] ?? padded
+}
+
+export function tpRetPisCofinsCsllToFormValue(value: unknown): string {
+  if (value == null || value === '') return ''
+  const s = String(value).trim()
+  if (TP_RET_PIS_COFINS_CSLL_OPTIONS.some((o) => o.value === s)) return s
+  const upper = s.toUpperCase()
+  return TP_RET_PIS_COFINS_WIRE_TO_FORM[upper] ?? s
+}
+
 export function cstPisCofinsLabel(value: unknown): string {
   if (value == null || value === '') return '—'
-  const key = String(value).padStart(2, '0')
+  const key = cstPisCofinsToFormValue(value)
   const found = CST_PIS_COFINS_OPTIONS.find((o) => o.value === key)
   return found?.label ?? String(value)
 }
 
 export function tpRetPisCofinsCsllLabel(value: unknown): string {
   if (value == null || value === '') return '—'
-  const found = TP_RET_PIS_COFINS_CSLL_OPTIONS.find((o) => o.value === String(value))
+  const key = tpRetPisCofinsCsllToFormValue(value)
+  const found = TP_RET_PIS_COFINS_CSLL_OPTIONS.find((o) => o.value === key)
   return found?.label ?? String(value)
 }

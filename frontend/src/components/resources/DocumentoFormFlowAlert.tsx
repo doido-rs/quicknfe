@@ -28,8 +28,9 @@ export function DocumentoEditFlowAlert({ itensCount }: { itensCount?: number }) 
       <AlertDescription className="space-y-1">
         {itensLabel && <p>{itensLabel}</p>}
         <p>
-          Cadastre os itens no painel abaixo. Ao salvar o cabeçalho, o valor da operação pode ser
-          alinhado automaticamente à soma dos itens.
+          Cadastre os itens na aba <strong>Itens</strong> (entre Partes e Valores). A aba{' '}
+          <strong>Valores</strong> usa a soma dos totais brutos dos itens como valor da operação; salve
+          o cabeçalho para persistir.
         </p>
         <p className="text-muted-foreground">
           Revise tomador, competência e ISSQN antes de assinar na tela de visualização.

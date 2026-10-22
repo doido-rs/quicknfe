@@ -4,6 +4,7 @@ import {
   normalizeApiDateToForm,
   type DateFormatPreference,
 } from '@/lib/dateFormat'
+import { formatMoneyForDisplay, moneyFormToNumber, normalizeMoneyToForm } from '@/lib/moneyFormat'
 import type { FieldDef } from '../resources/definitions'
 
 export function fieldValue(row: Record<string, unknown>, key: string): unknown {
@@ -36,6 +37,9 @@ function formStringValue(raw: unknown, field: FieldDef): string {
   if (raw == null) return ''
   if (field.type === 'date') {
     return normalizeApiDateToForm(raw)
+  }
+  if (field.type === 'money') {
+    return normalizeMoneyToForm(raw)
   }
   return String(raw)
 }
@@ -80,6 +84,10 @@ export function formatFieldValue(
     if (fromNested) return fromNested
   }
   if (value == null || value === '') return '—'
+  if (field?.type === 'money') {
+    const display = formatMoneyForDisplay(String(value))
+    return display === '' ? '—' : display
+  }
   if (field?.enumOptions?.length) {
     const match = field.enumOptions.find((o) => o.value === value)
     if (match) return match.label
@@ -162,6 +170,10 @@ export function buildBody(fields: FieldDef[], form: Record<string, string>) {
       const raw = form[f.key]
       if (f.type === 'boolean') {
         return [f.key, raw === 'true' || raw === '1']
+      }
+      if (raw !== '' && f.type === 'money') {
+        const n = moneyFormToNumber(raw)
+        return [f.key, n]
       }
       if (raw !== '' && (f.type === 'number' || f.key.endsWith('_id'))) {
         return [f.key, Number(raw)]

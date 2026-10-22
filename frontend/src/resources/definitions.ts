@@ -38,6 +38,7 @@ function documentoParteLocalidadeFields(): FieldDef[] {
 export type FieldType =
   | 'text'
   | 'number'
+  | 'money'
   | 'date'
   | 'textarea'
   | 'relation'
@@ -271,36 +272,36 @@ export const resources: ResourceDef[] = [
       {
         key: 'valor_total_servicos_produtos',
         label: 'Valor da operação/serviço prestado',
-        type: 'number',
+        type: 'money',
         required: true,
         formOnly: true,
       },
       {
         key: 'valor_recebido_intermediario',
         label: 'Valor recebido pelo intermediário',
-        type: 'number',
+        type: 'money',
         formOnly: true,
       },
       {
         key: 'desconto_incondicionado',
         label: 'Desconto incondicionado',
-        type: 'number',
+        type: 'money',
         formOnly: true,
-        defaultValue: '0',
+        defaultValue: '0.00',
       },
       {
         key: 'desconto_condicionado',
         label: 'Desconto condicionado',
-        type: 'number',
+        type: 'money',
         formOnly: true,
-        defaultValue: '0',
+        defaultValue: '0.00',
       },
       {
         key: 'valor_liquido',
         label: 'Valor líquido',
-        type: 'number',
+        type: 'money',
         formOnly: true,
-        defaultValue: '0',
+        defaultValue: '0.00',
         readOnly: true,
       },
       {
@@ -371,8 +372,8 @@ export const resources: ResourceDef[] = [
         formOnly: true,
       },
       { key: 'issqn_aliquota', label: 'Alíquota (%)', type: 'number', formOnly: true },
-      { key: 'issqn_base_calculo', label: 'BC ISSQN (R$)', type: 'number', formOnly: true },
-      { key: 'issqn_valor', label: 'Valor ISSQN (R$)', type: 'number', formOnly: true },
+      { key: 'issqn_base_calculo', label: 'BC ISSQN (R$)', type: 'money', formOnly: true },
+      { key: 'issqn_valor', label: 'Valor ISSQN (R$)', type: 'money', formOnly: true },
       {
         key: 'cst_pis_cofins',
         label: 'Situação Tributária do PIS/COFINS',
@@ -391,17 +392,17 @@ export const resources: ResourceDef[] = [
         defaultValue: '0',
         formOnly: true,
       },
-      { key: 'valor_irrf', label: 'IRRF (R$)', type: 'number', formOnly: true },
+      { key: 'valor_irrf', label: 'IRRF (R$)', type: 'money', formOnly: true },
       {
         key: 'valor_contrib_sociais_retidas',
         label: 'Contribuições Sociais — Retidas (R$)',
-        type: 'number',
+        type: 'money',
         formOnly: true,
       },
       {
         key: 'valor_contrib_previdenciaria_retida',
         label: 'Contribuição Previdenciária — Retida (R$)',
-        type: 'number',
+        type: 'money',
         formOnly: true,
       },
     ],
@@ -537,9 +538,9 @@ export const resources: ResourceDef[] = [
           },
           { key: 'codigo_ncm', label: 'Código NCM' },
           { key: 'quantidade', label: 'Quantidade', type: 'number', defaultValue: '1' },
-          { key: 'valor_unitario', label: 'Valor unitário', type: 'number', defaultValue: '0' },
-          { key: 'valor_desconto', label: 'Desconto', type: 'number', defaultValue: '0' },
-          { key: 'valor_total_bruto', label: 'Total bruto', type: 'number', defaultValue: '0' },
+          { key: 'valor_unitario', label: 'Valor unitário', type: 'money', defaultValue: '0.00' },
+          { key: 'valor_desconto', label: 'Desconto', type: 'money', defaultValue: '0.00' },
+          { key: 'valor_total_bruto', label: 'Total bruto', type: 'money', defaultValue: '0.00' },
         ],
         itemTributos: {
           label: 'Tributos do item',
@@ -547,9 +548,9 @@ export const resources: ResourceDef[] = [
           fields: [
             { key: 'tipo_imposto', label: 'Tipo imposto', required: true },
             { key: 'cst_csosn', label: 'CST/CSOSN' },
-            { key: 'base_calculo', label: 'Base cálculo', type: 'number' },
+            { key: 'base_calculo', label: 'Base cálculo', type: 'money' },
             { key: 'aliquota', label: 'Alíquota', type: 'number' },
-            { key: 'valor_imposto', label: 'Valor imposto', type: 'number' },
+            { key: 'valor_imposto', label: 'Valor imposto', type: 'money' },
             { key: 'iss_retido', label: 'ISS retido (0/1)', type: 'number' },
           ],
         },

@@ -3,6 +3,14 @@ import {
   type LocalidadeParte,
   type ParteLocalidadeFormDef,
 } from '@/lib/documentoParteConstants'
+import {
+  cstPisCofinsToFormValue,
+  tpRetPisCofinsCsllToFormValue,
+} from '@/lib/documentoTributacaoFederal'
+import {
+  regEspTribIssqnToFormValue,
+  tribIssqnToFormValue,
+} from '@/lib/documentoTributacaoIssqn'
 import { buildBody } from '@/lib/resourceForm'
 import type { FieldDef } from '@/resources/definitions'
 
@@ -165,6 +173,19 @@ export function flattenDocumentoRowToForm(
     } else if (raw === false || raw === 'false' || raw === 0 || raw === '0') {
       next[key] = 'false'
     }
+  }
+
+  if (row.trib_issqn != null && String(row.trib_issqn).trim() !== '') {
+    next.trib_issqn = tribIssqnToFormValue(row.trib_issqn)
+  }
+  if (row.reg_esp_trib_issqn != null && String(row.reg_esp_trib_issqn).trim() !== '') {
+    next.reg_esp_trib_issqn = regEspTribIssqnToFormValue(row.reg_esp_trib_issqn)
+  }
+  if (row.cst_pis_cofins != null && String(row.cst_pis_cofins).trim() !== '') {
+    next.cst_pis_cofins = cstPisCofinsToFormValue(row.cst_pis_cofins)
+  }
+  if (row.tp_ret_pis_cofins_csll != null && String(row.tp_ret_pis_cofins_csll).trim() !== '') {
+    next.tp_ret_pis_cofins_csll = tpRetPisCofinsCsllToFormValue(row.tp_ret_pis_cofins_csll)
   }
 
   return next

@@ -5,14 +5,19 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useRegisterUnsavedSave, useUnsavedFormGuard } from '@/hooks/useUnsavedFormGuard'
 import { resourceApi } from '@/api/client'
 import { PageTitle } from '@/components/layout/PageTitle'
+import { DocumentoItensEditPanel } from '@/components/resources/DocumentoItensEditPanel'
 import { DocumentoEditFlowAlert } from '@/components/resources/DocumentoFormFlowAlert'
-import { NestedResourcePanel } from '@/components/resources/NestedResourcePanel'
 import { ResourceFormFields } from '@/components/resources/ResourceFormFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResourceDef, useResourceRecordId } from '@/hooks/useResourceDef'
-import { applyItensToDocumentoBody, sumDocumentoItensValor } from '@/lib/documentoItens'
+import {
+  applyItensToDocumentoBody,
+  operacaoFormValueFromItens,
+  sumDocumentoItensValor,
+} from '@/lib/documentoItens'
+import { normalizeMoneyToForm } from '@/lib/moneyFormat'
 import { buildDocumentoBody, flattenDocumentoRowToForm } from '@/lib/documentoParteLocalidade'
 import { parseDocumentoAmount } from '@/lib/documentoValorLiquido'
 import { prepareDocumentoSubmitBody } from '@/lib/documentoSubmit'
@@ -20,6 +25,7 @@ import { runDocumentoFormValidation } from '@/lib/submitDocumentoForm'
 import { buildBody, rowToForm, useResourceFieldForm } from '@/lib/resourceForm'
 import { resourceListTo, resourceShowTo } from '@/lib/resourcePaths'
 import { toastFromError, toastSuccess } from '@/lib/toast'
+import { DOCUMENTO_EDIT_SECTION_TABS } from '@/lib/documentoEditTabs'
 import { documentoItensNested } from '@/resources/definitions'
 
 export function ResourceEditPage() {
@@ -50,6 +56,19 @@ export function ResourceEditPage() {
     enabled: itensListPath != null,
   })
   const documentoItensCount = itensPage?.items?.length
+
+  useEffect(() => {
+    if (def.key !== 'documentos' || !row) return
+    const itens = itensPage?.items ?? []
+    const sync = operacaoFormValueFromItens(itens, row.valor_total_servicos_produtos)
+    if (!sync) return
+    const current = normalizeMoneyToForm(form.getValues('valor_total_servicos_produtos'))
+    if (current === sync.value) return
+    form.setValue('valor_total_servicos_produtos', sync.value, {
+      shouldDirty: sync.shouldDirty,
+      shouldValidate: false,
+    })
+  }, [def.key, row, itensPage?.items, form])
 
   useEffect(() => {
     if (row) {
@@ -209,11 +228,27 @@ export function ResourceEditPage() {
             formSections={def.formSections}
             cncLookup={def.cncLookup}
             form={form}
+            sectionTabs={def.key === 'documentos' ? DOCUMENTO_EDIT_SECTION_TABS : undefined}
+            itensTab={
+              def.key === 'documentos' && itensNested
+                ? {
+                    label: 'Itens',
+                    count: documentoItensCount,
+                    content: (
+                      <DocumentoItensEditPanel
+                        parentId={recordId}
+                        nested={itensNested}
+                        relationScopeValues={itemRelationScope}
+                      />
+                    ),
+                  }
+                : undefined
+            }
             onSubmit={(values) => {
               if (def.key === 'documentos' && !runDocumentoFormValidation(form)) return
               updateMutation.mutate(values)
             }}
-            submitLabel="Salvar"
+            submitLabel="Salvar cabeçalho"
             cancelLink={resourceShowTo(def, recordId)}
             actionsAlign={def.key === 'documentos' ? 'end' : undefined}
           />
@@ -223,13 +258,6 @@ export function ResourceEditPage() {
         </CardContent>
       </Card>
 
-      {itensNested && recordId != null && (
-        <NestedResourcePanel
-          parentId={recordId}
-          nested={itensNested}
-          relationScopeValues={itemRelationScope}
-        />
-      )}
     </div>
   )
 }

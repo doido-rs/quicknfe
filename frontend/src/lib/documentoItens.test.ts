@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { applyItensToDocumentoBody, sumDocumentoItensValor } from './documentoItens'
+import {
+  applyItensToDocumentoBody,
+  operacaoFormValueFromItens,
+  sumDocumentoItensValor,
+} from './documentoItens'
 
 describe('documentoItens', () => {
   it('sums valor_total_bruto', () => {
@@ -24,5 +28,15 @@ describe('documentoItens', () => {
     )
     expect(body.valor_total_servicos_produtos).toBe(200)
     expect(body.valor_liquido).toBe(185)
+  })
+
+  it('derives operacao form value from itens', () => {
+    expect(operacaoFormValueFromItens([], 100)).toBeNull()
+    expect(
+      operacaoFormValueFromItens([{ valor_total_bruto: 80 }, { valor_total_bruto: 20 }], 100),
+    ).toEqual({ value: '100.00', shouldDirty: false })
+    expect(
+      operacaoFormValueFromItens([{ valor_total_bruto: 150 }], 100),
+    ).toEqual({ value: '150.00', shouldDirty: true })
   })
 })
